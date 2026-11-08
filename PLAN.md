@@ -120,12 +120,12 @@ sift/
 ## 3. Fases
 
 ### Fase 0 — Cimientos
-- [ ] Repo en GitHub, licencia (MIT) y README mínimo.
-- [ ] Workspace de Rust con los crates vacíos + app Tauri 2 con React/TS/Vite.
-- [ ] Formato y lint: `rustfmt`, `clippy`, ESLint, Prettier.
-- [ ] CI en GitHub Actions (Windows): lint + tests + build.
-- [ ] `CLAUDE.md` con las reglas del proyecto (ver sección 5).
-- [ ] Primer ADR: por qué Tauri y por qué SQLite + Tantivy + HNSW.
+- [x] Repo en GitHub, licencia (MIT) y README mínimo.
+- [x] Workspace de Rust con los crates vacíos + app Tauri 2 con React/TS/Vite.
+- [x] Formato y lint: `rustfmt`, `clippy`, ESLint, Prettier.
+- [x] CI en GitHub Actions (Windows): lint + tests + build.
+- [x] `CLAUDE.md` con las reglas del proyecto (ver sección 5).
+- [x] Primer ADR: por qué Tauri y por qué SQLite + Tantivy + HNSW.
 
 **Hecho cuando:** `cargo test` y la CI pasan en verde y la app abre una ventana vacía.
 
