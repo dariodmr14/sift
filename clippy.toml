@@ -1,0 +1,2 @@
+# Los tests sí pueden usar unwrap(): si fallan, que fallen ruidosamente.
+allow-unwrap-in-tests = true
