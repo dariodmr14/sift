@@ -1,0 +1,14 @@
+[package]
+name = "sift-extract"
+description = "Extracción de texto: PDF, docx, texto plano y código"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

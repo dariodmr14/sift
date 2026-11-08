@@ -1,0 +1,17 @@
+# Rust (el workspace compila todo en /target)
+/target/
+
+# Node
+node_modules/
+dist/
+
+# Logs
+*.log
+
+# Editor / SO
+.idea/
+.DS_Store
+Thumbs.db
+
+# Ajustes locales de Claude Code (los compartidos van en .claude/settings.json)
+.claude/settings.local.json
