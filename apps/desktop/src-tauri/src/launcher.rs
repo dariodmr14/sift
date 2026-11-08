@@ -2,7 +2,15 @@
 //! muestra y se oculta. Crear una ventana con WebView2 cuesta cientos de milisegundos;
 //! mostrar una que ya existe, unos pocos. Así se cumple el objetivo de < 100 ms.
 
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
+
 use tauri::{AppHandle, Manager, PhysicalPosition, WebviewWindow};
+use tauri_specta::Event;
+
+use crate::commands::LauncherShown;
+use crate::latency::{LatencyStats, LatencySummary};
 
 /// Etiqueta de la ventana del lanzador en `tauri.conf.json`.
 pub const LABEL: &str = "main";
@@ -15,13 +23,42 @@ const ACRYLIC_TINT: (u8, u8, u8, u8) = (24, 24, 30, 170);
 /// Como Spotlight o PowerToys Run: algo por encima del centro, donde se mira primero.
 const TOP_FRACTION: f64 = 0.22;
 
+/// Estado compartido del lanzador (lo gestiona Tauri con `app.manage`).
+#[derive(Default)]
+pub struct LauncherState {
+    acrylic: AtomicBool,
+    /// Cuándo se pulsó el atajo que está mostrando la ventana ahora mismo.
+    pressed_at: Mutex<Option<Instant>>,
+    stats: Mutex<LatencyStats>,
+}
+
+impl LauncherState {
+    pub fn acrylic(&self) -> bool {
+        self.acrylic.load(Ordering::Relaxed)
+    }
+
+    pub fn latency(&self) -> Option<LatencySummary> {
+        self.stats
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .summary()
+    }
+}
+
 pub fn window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window(LABEL)
 }
 
-/// Aplica el efecto Acrylic. Devuelve `false` si el sistema no lo soporta (o falla):
-/// en ese caso la UI pinta un fondo opaco y la app funciona igual.
-pub fn apply_acrylic(window: &WebviewWindow) -> bool {
+/// Aplica el efecto Acrylic y guarda si funcionó. Si el sistema no lo soporta (o falla),
+/// la UI pinta un fondo opaco y la app funciona igual.
+pub fn init_acrylic(app: &AppHandle) {
+    let ok = window(app).is_some_and(|w| apply_acrylic(&w));
+    app.state::<LauncherState>()
+        .acrylic
+        .store(ok, Ordering::Relaxed);
+}
+
+fn apply_acrylic(window: &WebviewWindow) -> bool {
     #[cfg(windows)]
     {
         match window_vibrancy::apply_acrylic(window, Some(ACRYLIC_TINT)) {
@@ -71,8 +108,61 @@ pub fn show(app: &AppHandle) {
                 foreground::force(hwnd.0);
             }
             tracing::debug!("lanzador mostrado");
+            if let Err(e) = LauncherShown.emit(app) {
+                tracing::warn!(error = %e, "no se pudo avisar a la UI");
+            }
         }
         Err(e) => tracing::warn!(error = %e, "no se pudo mostrar el lanzador"),
+    }
+}
+
+/// Lo que hace el atajo: si el lanzador está delante, lo oculta; si no, lo muestra.
+/// `pressed_at` es el instante de la pulsación, para medir la latencia.
+pub fn toggle(app: &AppHandle, pressed_at: Instant) {
+    let Some(window) = window(app) else { return };
+    let visible = window.is_visible().unwrap_or(false);
+    let focused = window.is_focused().unwrap_or(false);
+    if visible && focused {
+        hide(app);
+    } else {
+        *app.state::<LauncherState>()
+            .pressed_at
+            .lock()
+            .unwrap_or_else(|p| p.into_inner()) = Some(pressed_at);
+        show(app);
+    }
+}
+
+/// La UI ha pintado el lanzador: si lo abrió el atajo, se apunta cuánto ha tardado.
+pub fn painted(app: &AppHandle) {
+    let state = app.state::<LauncherState>();
+    let Some(pressed_at) = state
+        .pressed_at
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .take()
+    else {
+        return; // se abrió desde la bandeja o al arrancar: no cuenta
+    };
+    let elapsed = pressed_at.elapsed();
+    let mut stats = state.stats.lock().unwrap_or_else(|p| p.into_inner());
+    stats.record(elapsed);
+    if let Some(s) = stats.summary() {
+        tracing::info!(
+            ms = s.last_ms,
+            p50 = s.p50_ms,
+            p95 = s.p95_ms,
+            n = s.samples,
+            "atajo → lanzador pintado"
+        );
+    }
+}
+
+pub fn hide(app: &AppHandle) {
+    let Some(window) = window(app) else { return };
+    match window.hide() {
+        Ok(()) => tracing::debug!("lanzador oculto"),
+        Err(e) => tracing::warn!(error = %e, "no se pudo ocultar el lanzador"),
     }
 }
 
@@ -113,25 +203,5 @@ mod foreground {
                 tracing::warn!("Windows no dejó poner el lanzador en primer plano");
             }
         }
-    }
-}
-
-/// Lo que hace el atajo: si el lanzador está delante, lo oculta; si no, lo muestra.
-pub fn toggle(app: &AppHandle) {
-    let Some(window) = window(app) else { return };
-    let visible = window.is_visible().unwrap_or(false);
-    let focused = window.is_focused().unwrap_or(false);
-    if visible && focused {
-        hide(app);
-    } else {
-        show(app);
-    }
-}
-
-pub fn hide(app: &AppHandle) {
-    let Some(window) = window(app) else { return };
-    match window.hide() {
-        Ok(()) => tracing::debug!("lanzador oculto"),
-        Err(e) => tracing::warn!(error = %e, "no se pudo ocultar el lanzador"),
     }
 }

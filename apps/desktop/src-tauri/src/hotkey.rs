@@ -26,7 +26,6 @@ pub enum Backend {
 }
 
 /// Escucha un atajo mientras exista. Al destruirse (`Drop`) lo libera.
-#[expect(dead_code, reason = "lo lee la pantalla de estado (siguiente tarea)")]
 pub struct HotkeyListener {
     hotkey: Hotkey,
     backend: Backend,
@@ -34,7 +33,6 @@ pub struct HotkeyListener {
     thread: Option<JoinHandle<()>>,
 }
 
-#[expect(dead_code, reason = "lo usa la pantalla de estado (siguiente tarea)")]
 impl HotkeyListener {
     /// Empieza a escuchar `hotkey`. `on_press` se llama en el hilo del atajo cada vez que
     /// se pulsa: tiene que volver enseguida (si el hook tarda más de ~1 s, Windows lo quita).
