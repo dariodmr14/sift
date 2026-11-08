@@ -3164,6 +3164,7 @@ dependencies = [
  "tauri-plugin-autostart",
  "tauri-plugin-single-instance",
  "tauri-specta",
+ "tempfile",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
