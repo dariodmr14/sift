@@ -1,2 +1,8 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Normaliza a LF en el repo y en la copia de trabajo: rustfmt y Prettier esperan LF,
+# y así no hay diffs fantasma por CRLF en Windows.
+* text=auto eol=lf
+
+# Binarios
+*.png binary
+*.ico binary
+*.icns binary

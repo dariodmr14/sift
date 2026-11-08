@@ -1,0 +1,6 @@
+# Fija la versión de Rust para que local y CI compilen igual
+# (una versión nueva de clippy puede añadir lints y romper la CI sin tocar código).
+[toolchain]
+channel = "1.99.1"
+components = ["rustfmt", "clippy"]
+targets = ["x86_64-pc-windows-msvc"]
