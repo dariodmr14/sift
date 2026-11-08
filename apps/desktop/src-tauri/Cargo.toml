@@ -1,0 +1,24 @@
+[package]
+name = "sift-desktop"
+description = "Sift: lanzador y buscador semántico de escritorio"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+# El sufijo `_lib` evita que el nombre de la lib choque con el del binario en Windows.
+# https://github.com/rust-lang/cargo/issues/8519
+name = "sift_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { workspace = true }
+
+[dependencies]
+tauri = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,45 @@
+[workspace]
+resolver = "3"
+members = ["apps/desktop/src-tauri", "crates/*"]
+
+# Metadatos comunes: cada crate los hereda con `xxx.workspace = true`.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+repository = "https://github.com/dariodmr14/Sift"
+authors = ["Darío"]
+
+# Versiones de dependencias en un solo sitio. Los crates las usan con `dep.workspace = true`.
+[workspace.dependencies]
+sift-core = { path = "crates/core" }
+sift-storage = { path = "crates/storage" }
+sift-extract = { path = "crates/extract" }
+sift-indexer = { path = "crates/indexer" }
+sift-embeddings = { path = "crates/embeddings" }
+sift-search = { path = "crates/search" }
+sift-spaces = { path = "crates/spaces" }
+
+tauri = "2.12"
+tauri-build = "2.7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Lints comunes. Con `cargo clippy -- -D warnings` en la CI, un "warn" rompe el build.
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+unwrap_used = "warn" # CLAUDE.md: nada de unwrap() fuera de tests (ver clippy.toml)
+dbg_macro = "warn"
+todo = "warn"
+
+# Los perfiles solo cuentan en la raíz del workspace.
+# https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
