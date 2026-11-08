@@ -21,10 +21,26 @@ sift-embeddings = { path = "crates/embeddings" }
 sift-search = { path = "crates/search" }
 sift-spaces = { path = "crates/spaces" }
 
-tauri = "2.12"
+tauri = { version = "2.12", features = ["tray-icon"] }
 tauri-build = "2.7"
+tauri-plugin-autostart = "2.7"
+tauri-plugin-single-instance = "2.5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+thiserror = "2"
+tempfile = "3"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+window-vibrancy = "0.8"
+windows-sys = "0.61"
+
+# IPC tipado. tauri-specta para Tauri 2 sigue en RC y exige versiones exactas de specta:
+# se fijan con "=" para que un `cargo update` no las mueva sin querer (ver ADR 0003).
+tauri-specta = { version = "=2.0.0-rc.26", features = ["derive", "typescript"] }
+specta = { version = "=2.0.0-rc.26", features = ["derive"] }
+specta-typescript = "=0.0.13"
 
 # Lints comunes. Con `cargo clippy -- -D warnings` en la CI, un "warn" rompe el build.
 [workspace.lints.rust]

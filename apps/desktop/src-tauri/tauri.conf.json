@@ -14,8 +14,19 @@
       {
         "label": "main",
         "title": "Sift",
-        "width": 800,
-        "height": 600
+        "url": "index.html",
+        "width": 680,
+        "height": 440,
+        "resizable": false,
+        "maximizable": false,
+        "minimizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "center": true
       }
     ],
     "security": {
@@ -24,7 +35,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "nsis"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

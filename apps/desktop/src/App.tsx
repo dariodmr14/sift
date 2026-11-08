@@ -1,8 +1,10 @@
-// Ventana vacía de la Fase 0. La barra de búsqueda llega en la Fase 1.
+// Lanzador: de momento solo la superficie. La caja de búsqueda llega en la siguiente tarea.
 function App() {
   return (
-    <main>
-      <h1>Sift</h1>
+    <main className="flex h-full flex-col bg-(--surface)">
+      <div className="border-b border-(--border) px-5 py-4 text-xl text-(--text-muted)">
+        Buscar en Sift…
+      </div>
     </main>
   );
 }
