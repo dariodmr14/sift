@@ -9,6 +9,9 @@ export const commands = {
 	/**  La UI lo llama tras pintar el primer fotograma con el lanzador visible. */
 	launcherPainted: () => __TAURI_INVOKE<void>("launcher_painted"),
 	getStatus: () => __TAURI_INVOKE<Status_Serialize>("get_status"),
+	getSettings: () => __TAURI_INVOKE<SettingsView>("get_settings"),
+	setHotkey: (hotkey: string) => typedError<string, AppError>(__TAURI_INVOKE("set_hotkey", { hotkey })),
+	setLaunchAtStartup: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_launch_at_startup", { enabled })),
 };
 
 /** Events */
@@ -17,6 +20,15 @@ export const events = {
 };
 
 /* Types */
+/**  Errores que la UI puede mostrar. En TypeScript llega como `{ kind, message }`. */
+export type AppError = 
+/**  El texto no es un atajo válido (p. ej. "Space" sin modificador). */
+{ kind: "invalidHotkey"; message: string } | 
+/**  El atajo es válido pero no se pudo activar. */
+{ kind: "hotkeyUnavailable"; message: string } | 
+/**  Fallo del sistema (registro de Windows, disco…). */
+{ kind: "system"; message: string };
+
 /**  Con qué mecanismo se está escuchando el atajo. */
 export type Backend = "registerHotKey" | "keyboardHook";
 
@@ -33,6 +45,16 @@ export type LatencySummary = {
  *  poner el foco en la caja y avisar de vuelta cuando se haya pintado.
  */
 export type LauncherShown = null;
+
+/**  Ajustes editables desde la ventana de ajustes. */
+export type SettingsView = {
+	hotkey: string,
+	/**
+	 *  Fuente de verdad: el registro de Windows (no el JSON), para no desincronizarse
+	 *  si el usuario lo desactiva desde el Administrador de tareas.
+	 */
+	launchAtStartup: boolean,
+};
 
 /**  Estado de la app para la UI (y para la pantalla de ajustes). */
 export type Status = Status_Serialize | Status_Deserialize;
@@ -58,6 +80,15 @@ export type Status_Serialize = {
 };
 
 /* Tauri Specta runtime */
+async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {
+    try {
+        return { status: "ok", data: await result };
+    } catch (e) {
+        if (e instanceof Error) throw e;
+        return { status: "error", error: e as any };
+    }
+}
+
 type EventEmit<T> = [T] extends [null] ? () => Promise<void> : (payload: T) => Promise<void>;
 
 type EventEmitTo<T> = [T] extends [null] ? (target: __TAURI_EVENT.EventTarget | string) => Promise<void> : (target: __TAURI_EVENT.EventTarget | string, payload: T) => Promise<void>;
