@@ -1,6 +1,11 @@
 //! Tipos de dominio, configuración y errores compartidos.
 //!
-//! Vacío por ahora: se rellena en su fase (ver PLAN.md).
+
+pub mod hotkey;
+pub mod settings;
+
+pub use hotkey::{Hotkey, HotkeyParseError, Key, Modifiers};
+pub use settings::{Settings, SettingsError};
 
 /// Versión de Sift, tomada de `Cargo.toml` en tiempo de compilación.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

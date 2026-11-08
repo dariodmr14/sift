@@ -64,15 +64,74 @@ fn position_on_active_monitor(app: &AppHandle, window: &WebviewWindow) {
 pub fn show(app: &AppHandle) {
     let Some(window) = window(app) else { return };
     position_on_active_monitor(app, &window);
-    if let Err(e) = window.show().and_then(|()| window.set_focus()) {
-        tracing::warn!(error = %e, "no se pudo mostrar el lanzador");
+    match window.show().and_then(|()| window.set_focus()) {
+        Ok(()) => {
+            #[cfg(windows)]
+            if let Ok(hwnd) = window.hwnd() {
+                foreground::force(hwnd.0);
+            }
+            tracing::debug!("lanzador mostrado");
+        }
+        Err(e) => tracing::warn!(error = %e, "no se pudo mostrar el lanzador"),
+    }
+}
+
+/// Traer una ventana al frente de forma fiable en Windows.
+///
+/// Windows no deja que cualquier proceso robe el foco (`SetForegroundWindow` falla en
+/// silencio si no cumples sus reglas). Con `RegisterHotKey` el sistema nos da permiso,
+/// pero con el hook de teclado no siempre. La técnica clásica: unir un momento nuestra
+/// cola de entrada a la de la ventana que está delante (`AttachThreadInput`); para
+/// Windows pasamos a ser "la misma entrada" y nos deja activar nuestra ventana.
+#[cfg(windows)]
+#[allow(unsafe_code)] // Llamadas a Win32 sobre handles de ventana válidos.
+mod foreground {
+    use std::ffi::c_void;
+
+    use windows_sys::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId, SetForegroundWindow,
+    };
+
+    pub fn force(hwnd: *mut c_void) {
+        // SAFETY: `hwnd` es la ventana del lanzador, viva mientras la app exista; las
+        // demás llamadas solo consultan o cambian el estado de foco de Windows.
+        unsafe {
+            let foreground = GetForegroundWindow();
+            if foreground == hwnd {
+                return; // ya estamos delante
+            }
+            let ours = GetCurrentThreadId();
+            let theirs = GetWindowThreadProcessId(foreground, std::ptr::null_mut());
+            let attached = theirs != 0 && theirs != ours && AttachThreadInput(ours, theirs, 1) != 0;
+            BringWindowToTop(hwnd);
+            let ok = SetForegroundWindow(hwnd) != 0;
+            if attached {
+                AttachThreadInput(ours, theirs, 0);
+            }
+            if !ok {
+                tracing::warn!("Windows no dejó poner el lanzador en primer plano");
+            }
+        }
+    }
+}
+
+/// Lo que hace el atajo: si el lanzador está delante, lo oculta; si no, lo muestra.
+pub fn toggle(app: &AppHandle) {
+    let Some(window) = window(app) else { return };
+    let visible = window.is_visible().unwrap_or(false);
+    let focused = window.is_focused().unwrap_or(false);
+    if visible && focused {
+        hide(app);
+    } else {
+        show(app);
     }
 }
 
 pub fn hide(app: &AppHandle) {
-    if let Some(window) = window(app)
-        && let Err(e) = window.hide()
-    {
-        tracing::warn!(error = %e, "no se pudo ocultar el lanzador");
+    let Some(window) = window(app) else { return };
+    match window.hide() {
+        Ok(()) => tracing::debug!("lanzador oculto"),
+        Err(e) => tracing::warn!(error = %e, "no se pudo ocultar el lanzador"),
     }
 }
