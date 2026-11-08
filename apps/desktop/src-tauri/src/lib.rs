@@ -21,6 +21,10 @@ use crate::hotkey::HotkeyListener;
 /// para poder probar la vía alternativa aunque la principal funcione.
 const FORCE_HOOK_ENV: &str = "SIFT_FORCE_KEYBOARD_HOOK";
 
+/// Argumento con el que Windows lanza Sift al iniciar sesión (lo registra el plugin de
+/// autostart). En ese caso no se muestra el lanzador: la app arranca en silencio.
+const AUTOSTART_ARG: &str = "--autostart";
+
 /// El atajo activo. En un `Mutex` porque los ajustes pueden cambiarlo en marcha.
 #[derive(Default)]
 struct HotkeyState(Mutex<Option<HotkeyListener>>);
@@ -29,7 +33,7 @@ fn settings_path(app: &AppHandle) -> anyhow::Result<PathBuf> {
     Ok(app.path().app_config_dir()?.join("settings.json"))
 }
 
-fn load_settings(app: &AppHandle) -> Settings {
+pub(crate) fn load_settings(app: &AppHandle) -> Settings {
     let loaded = settings_path(app).and_then(|p| Ok(Settings::load(&p)?));
     loaded.unwrap_or_else(|e| {
         tracing::warn!(error = %e, "no se pudieron cargar los ajustes; se usan los de por defecto");
@@ -52,6 +56,35 @@ fn start_hotkey(app: &AppHandle, hotkey: Hotkey) -> anyhow::Result<HotkeyListene
     })
 }
 
+/// Cambia el atajo en marcha. Si el nuevo no se puede registrar, se recupera el anterior
+/// y se devuelve el error: nunca te quedas sin atajo por probar uno ocupado.
+pub(crate) fn change_hotkey(app: &AppHandle, new: Hotkey) -> anyhow::Result<()> {
+    let state = app.state::<HotkeyState>();
+    let mut slot = state.0.lock().unwrap_or_else(|p| p.into_inner());
+    let old = slot.as_ref().map(HotkeyListener::hotkey);
+    if old == Some(new) {
+        return Ok(());
+    }
+    // Primero se suelta el anterior (si no, registrar el mismo u otro choca con él).
+    drop(slot.take());
+    match start_hotkey(app, new) {
+        Ok(listener) => {
+            *slot = Some(listener);
+            let path = settings_path(app)?;
+            let mut settings = Settings::load(&path).unwrap_or_default();
+            settings.hotkey = new;
+            settings.save(&path)?;
+            Ok(())
+        }
+        Err(e) => {
+            if let Some(old) = old {
+                *slot = start_hotkey(app, old).ok();
+            }
+            Err(e)
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let specta = commands::specta_builder();
@@ -61,7 +94,19 @@ pub fn run() {
         eprintln!("no se pudieron exportar los tipos a bindings.ts: {e}");
     }
 
+    let autostarted = std::env::args().any(|a| a == AUTOSTART_ARG);
+
     tauri::Builder::default()
+        // Tiene que ser el primer plugin. Si Sift ya está abierto y se lanza otra vez
+        // (p. ej. desde el menú Inicio), el segundo proceso se cierra y el primero muestra
+        // el lanzador. Así no hay dos procesos peleándose por el mismo atajo.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            launcher::show(app);
+        }))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent, // solo afecta a macOS
+            Some(vec![AUTOSTART_ARG]),
+        ))
         // Que tao NO registre el teclado como Raw Input. Con ese registro activo, Windows
         // deja de llamar a nuestro hook de teclado de bajo nivel (la vía alternativa del
         // atajo) dentro de este proceso. No usamos esos eventos de dispositivo, así que
@@ -92,7 +137,11 @@ pub fn run() {
                 Err(e) => tracing::error!(error = %e, "la app arranca sin atajo global"),
             }
 
-            launcher::show(handle);
+            // Al arrancar a mano se muestra el lanzador, para que se vea que Sift está
+            // funcionando. Al arrancar con Windows, no: espera en la bandeja.
+            if !autostarted {
+                launcher::show(handle);
+            }
             Ok(())
         })
         .on_window_event(|window, event| {

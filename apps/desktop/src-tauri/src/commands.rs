@@ -8,9 +8,34 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tauri_specta::{Event, collect_commands, collect_events};
 
+use sift_core::Hotkey;
+use tauri_plugin_autostart::ManagerExt;
+
 use crate::hotkey::Backend;
 use crate::latency::LatencySummary;
 use crate::{HotkeyState, launcher};
+
+/// Errores que la UI puede mostrar. En TypeScript llega como `{ kind, message }`.
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(tag = "kind", content = "message", rename_all = "camelCase")]
+pub enum AppError {
+    /// El texto no es un atajo válido (p. ej. "Space" sin modificador).
+    InvalidHotkey(String),
+    /// El atajo es válido pero no se pudo activar.
+    HotkeyUnavailable(String),
+    /// Fallo del sistema (registro de Windows, disco…).
+    System(String),
+}
+
+/// Ajustes editables desde la ventana de ajustes.
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingsView {
+    pub hotkey: String,
+    /// Fuente de verdad: el registro de Windows (no el JSON), para no desincronizarse
+    /// si el usuario lo desactiva desde el Administrador de tareas.
+    pub launch_at_startup: bool,
+}
 
 /// Rust avisa a la UI de que el lanzador acaba de mostrarse: hay que limpiar la búsqueda,
 /// poner el foco en la caja y avisar de vuelta cuando se haya pintado.
@@ -56,6 +81,42 @@ fn get_status(app: AppHandle) -> Status {
     }
 }
 
+#[tauri::command]
+#[specta::specta]
+fn get_settings(app: AppHandle) -> SettingsView {
+    SettingsView {
+        hotkey: crate::load_settings(&app).hotkey.to_string(),
+        launch_at_startup: app.autolaunch().is_enabled().unwrap_or(false),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+fn set_hotkey(app: AppHandle, hotkey: String) -> Result<String, AppError> {
+    let parsed: Hotkey = hotkey
+        .parse()
+        .map_err(|e: sift_core::HotkeyParseError| AppError::InvalidHotkey(e.to_string()))?;
+    crate::change_hotkey(&app, parsed)
+        .map_err(|e| AppError::HotkeyUnavailable(format!("{e:#}")))?;
+    Ok(parsed.to_string()) // forma canónica: "ctrl + k" → "Ctrl+K"
+}
+
+#[tauri::command]
+#[specta::specta]
+fn set_launch_at_startup(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
+    let autolaunch = app.autolaunch();
+    let result = if enabled {
+        autolaunch.enable()
+    } else {
+        autolaunch.disable()
+    };
+    result.map_err(|e| AppError::System(e.to_string()))?;
+    tracing::info!(enabled, "arranque con Windows cambiado");
+    autolaunch
+        .is_enabled()
+        .map_err(|e| AppError::System(e.to_string()))
+}
+
 /// Todos los comandos y eventos. Se usa al arrancar y en el test que comprueba que
 /// `bindings.ts` está al día.
 pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
@@ -63,7 +124,10 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         .commands(collect_commands![
             hide_launcher,
             launcher_painted,
-            get_status
+            get_status,
+            get_settings,
+            set_hotkey,
+            set_launch_at_startup
         ])
         .events(collect_events![LauncherShown])
 }
