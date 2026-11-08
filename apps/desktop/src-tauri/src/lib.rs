@@ -5,6 +5,8 @@ mod hotkey;
 mod latency;
 mod launcher;
 mod logging;
+mod settings_window;
+mod tray;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -76,6 +78,7 @@ pub fn run() {
 
             let handle = app.handle();
             launcher::init_acrylic(handle);
+            tray::create(handle)?;
 
             let settings = load_settings(handle);
             match start_hotkey(handle, settings.hotkey) {
