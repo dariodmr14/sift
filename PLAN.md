@@ -141,15 +141,15 @@ sift/
 
 ### Fase 1.5 — Espacios básicos y ajustes desde la barra (adelantada)
 > Adelantada de la Fase 6 tras usar la Fase 1 (ver [FEEDBACK.md](FEEDBACK.md)). Incluye lo que **no depende del indexado**.
-- [ ] Ajustes accesibles desde la barra: `Ctrl+,`, icono discreto y escribiendo "ajustes".
-- [ ] Persistencia en SQLite (`sift-storage`) con migraciones.
-- [ ] Modelo de Espacio: nombre, alias, icono y lista ordenada de acciones.
-- [ ] Acciones: abrir carpeta, abrir archivo, abrir URL, abrir aplicación (con selector) y ejecutar comando (programa + argumentos + carpeta de trabajo).
-- [ ] Seguridad: programa y argumentos por separado, sin shell; confirmación la primera vez que se ejecuta cada comando.
-- [ ] Editor en Ajustes: crear, editar, duplicar, borrar y reordenar; botón "probar" por acción.
-- [ ] Iconos: librería con buscador, emoji, imagen propia (PNG/SVG/ICO) o ninguno; icono real de Windows por defecto para apps y archivos; opción global "solo texto".
-- [ ] Exportar e importar los Espacios a JSON.
-- [ ] Sin datos de ejemplo: estado vacío con atajo para crear el primer Espacio.
+- [x] Ajustes accesibles desde la barra: `Ctrl+,`, icono discreto y escribiendo "ajustes".
+- [x] Persistencia en SQLite (`sift-storage`) con migraciones.
+- [x] Modelo de Espacio: nombre, alias, icono y lista ordenada de acciones.
+- [x] Acciones: abrir carpeta, abrir archivo, abrir URL, abrir aplicación (con selector) y ejecutar comando (programa + argumentos + carpeta de trabajo).
+- [x] Seguridad: programa y argumentos por separado, sin shell; confirmación la primera vez que se ejecuta cada comando.
+- [x] Editor en Ajustes: crear, editar, duplicar, borrar y reordenar; botón "probar" por acción.
+- [x] Iconos: librería con buscador, emoji, imagen propia (PNG/SVG/ICO) o ninguno; icono real de Windows por defecto para apps y archivos; opción global "solo texto".
+- [x] Exportar e importar los Espacios a JSON.
+- [x] Sin datos de ejemplo: estado vacío con atajo para crear el primer Espacio.
 - [ ] Dirección visual elegida y aplicada como sistema de diseño (tokens), respetando "reducir movimiento".
 
 **Hecho cuando:** creas un Espacio "bases de datos" desde Ajustes y, desde la barra, "bases" + Enter abre todas sus acciones (con confirmación la primera vez que hay un comando).
