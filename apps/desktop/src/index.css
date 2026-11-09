@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/*
+ * Colores como variables: el fondo depende de si Rust pudo aplicar Acrylic.
+ * - data-acrylic="true": fondo casi transparente; el desenfoque lo pone Windows.
+ * - cualquier otro caso (por defecto): fondo opaco, para que nunca se vea el escritorio
+ *   "a pelo" a través de la ventana si el efecto no está disponible.
+ */
+:root {
+  --surface: rgb(28 28 34);
+  --surface-hover: rgb(255 255 255 / 0.06);
+  --surface-selected: rgb(255 255 255 / 0.11);
+  --text: rgb(240 240 245);
+  --text-muted: rgb(160 160 172);
+  --border: rgb(255 255 255 / 0.08);
+  --accent: rgb(122 162 255);
+
+  color-scheme: dark;
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  color: var(--text);
+}
+
+:root[data-acrylic="true"] {
+  --surface: rgb(20 20 26 / 0.35);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  cursor: default;
+}
