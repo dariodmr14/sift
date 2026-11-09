@@ -1,12 +1,22 @@
 import { useEffect, useState } from "react";
 import { commands, type SettingsView, type Status } from "../bindings";
+import { SpacesSection } from "./SpacesSection";
 
 const BACKEND_LABEL = {
   registerHotKey: "RegisterHotKey (vía principal)",
   keyboardHook: "Hook de teclado (vía alternativa)",
 } as const;
 
+type Page = "spaces" | "general" | "status";
+
+const PAGES: { id: Page; label: string }[] = [
+  { id: "spaces", label: "Espacios" },
+  { id: "general", label: "General" },
+  { id: "status", label: "Estado" },
+];
+
 function Settings() {
+  const [page, setPage] = useState<Page>("spaces");
   const [status, setStatus] = useState<Status | null>(null);
   const [settings, setSettings] = useState<SettingsView | null>(null);
 
@@ -18,22 +28,84 @@ function Settings() {
   }, []);
 
   return (
-    <main className="h-full space-y-8 overflow-y-auto bg-(--surface) p-6 select-text">
-      <h1 className="text-2xl font-semibold">Ajustes</h1>
+    <div className="flex h-full bg-(--surface)">
+      <nav
+        aria-label="Secciones"
+        className="flex w-44 shrink-0 flex-col gap-1 border-r border-(--border) p-3"
+      >
+        <h1 className="mb-3 px-2 text-lg font-semibold">Ajustes</h1>
+        {PAGES.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            aria-current={page === p.id ? "page" : undefined}
+            onClick={() => {
+              setPage(p.id);
+              if (p.id === "status") refreshStatus();
+            }}
+            className={`rounded-md px-2 py-1.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-(--accent) ${
+              page === p.id
+                ? "bg-(--surface-selected)"
+                : "hover:bg-(--surface-hover)"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+        {status?.storageError && (
+          <p role="alert" className="mt-auto px-2 text-xs text-red-400">
+            La base de datos no se pudo abrir: los cambios no se guardarán. Mira
+            «Estado».
+          </p>
+        )}
+      </nav>
 
-      {settings ? (
-        <>
-          <HotkeyForm initial={settings.hotkey} onSaved={refreshStatus} />
-          <StartupToggle initial={settings.launchAtStartup} />
-        </>
-      ) : (
-        <p>Cargando…</p>
-      )}
+      <main className="min-w-0 flex-1 select-text">
+        {page === "spaces" && <SpacesSection />}
+        {page === "general" && (
+          <div className="h-full space-y-8 overflow-y-auto p-6">
+            {settings ? (
+              <>
+                <HotkeyForm initial={settings.hotkey} onSaved={refreshStatus} />
+                <StartupToggle initial={settings.launchAtStartup} />
+                <IconsToggle initial={settings.iconsHidden} />
+              </>
+            ) : (
+              <p>Cargando…</p>
+            )}
+          </div>
+        )}
+        {page === "status" && (
+          <div className="h-full overflow-y-auto p-6">
+            <Section title="Estado">
+              {status ? <StatusList status={status} /> : <p>Cargando…</p>}
+            </Section>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
 
-      <Section title="Estado">
-        {status ? <StatusList status={status} /> : <p>Cargando…</p>}
-      </Section>
-    </main>
+function IconsToggle({ initial }: { initial: boolean }) {
+  const [hidden, setHidden] = useState(initial);
+  return (
+    <Section title="Apariencia">
+      <label className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          checked={hidden}
+          onChange={(e) => {
+            const next = e.currentTarget.checked;
+            void commands
+              .setIconsHidden(next)
+              .then((r) => r.status === "ok" && setHidden(r.data));
+          }}
+          className="size-4 accent-(--accent)"
+        />
+        Solo texto: ocultar todos los iconos en la barra
+      </label>
+    </Section>
   );
 }
 
@@ -159,6 +231,12 @@ function StatusList({ status }: { status: Status }) {
       <dd>{status.backend ? BACKEND_LABEL[status.backend] : "—"}</dd>
       <dt className="text-(--text-muted)">Acrylic</dt>
       <dd>{status.acrylic ? "activo" : "no disponible (fondo opaco)"}</dd>
+      <dt className="text-(--text-muted)">Base de datos</dt>
+      <dd>
+        {status.storageError
+          ? `no disponible: ${status.storageError}`
+          : "correcta"}
+      </dd>
       <dt className="text-(--text-muted)">Latencia</dt>
       <dd>
         {l

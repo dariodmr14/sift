@@ -74,9 +74,13 @@ fn hide_launcher(app: AppHandle) {
 
 /// Abre la ventana de ajustes desde la barra (`Ctrl+,`, el engranaje o "ajustes").
 /// Con `new_space`, la abre directamente en "crear Espacio".
+///
+/// Tiene que ser `async`: los comandos síncronos se ejecutan en el hilo principal, y en
+/// Windows crear una ventana WebView2 desde ahí se bloquea (la ventana se queda en
+/// blanco). Documentado por Tauri en `WebviewWindowBuilder::new`.
 #[tauri::command]
 #[specta::specta]
-fn open_settings(app: AppHandle, new_space: bool) {
+async fn open_settings(app: AppHandle, new_space: bool) {
     launcher::hide(&app);
     settings_window::open(&app, new_space);
 }
