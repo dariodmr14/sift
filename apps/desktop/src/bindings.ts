@@ -9,6 +9,10 @@ export const commands = {
 	/**
 	 *  Abre la ventana de ajustes desde la barra (`Ctrl+,`, el engranaje o "ajustes").
 	 *  Con `new_space`, la abre directamente en "crear Espacio".
+	 * 
+	 *  Tiene que ser `async`: los comandos síncronos se ejecutan en el hilo principal, y en
+	 *  Windows crear una ventana WebView2 desde ahí se bloquea (la ventana se queda en
+	 *  blanco). Documentado por Tauri en `WebviewWindowBuilder::new`.
 	 */
 	openSettings: (newSpace: boolean) => __TAURI_INVOKE<void>("open_settings", { newSpace }),
 	/**  La UI lo llama tras pintar el primer fotograma con el lanzador visible. */
