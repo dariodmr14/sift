@@ -2,9 +2,9 @@
 // de la propia app ("Ajustes", y más adelante "Crear Espacio", "Exportar"…).
 // Se encuentran escribiendo, igual que todo lo demás en un lanzador.
 
-import { normalize } from "./results";
+import { normalize } from "./text";
 
-export type BuiltinId = "settings";
+export type BuiltinId = "settings" | "newSpace";
 
 export interface BuiltinCommand {
   id: BuiltinId;
@@ -29,6 +29,13 @@ export const BUILTINS: BuiltinCommand[] = [
       "settings",
     ],
     shortcut: "Ctrl+,",
+  },
+  {
+    id: "newSpace",
+    title: "Crear Espacio",
+    subtitle: "Un grupo de carpetas, webs, apps y comandos que se abren juntos",
+    keywords: ["crear", "nuevo", "espacio", "añadir", "space"],
+    shortcut: "Ctrl+N",
   },
 ];
 
