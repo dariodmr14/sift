@@ -66,9 +66,9 @@ export function ActionEditor({
   }
 
   return (
-    <li className="space-y-3 rounded-lg border border-(--border) p-3">
+    <li className="space-y-3 rounded-window border border-line p-3">
       <div className="flex items-center gap-2">
-        <span className="text-xs text-(--text-muted)">{index + 1}.</span>
+        <span className="text-xs text-muted">{index + 1}.</span>
         <span className="flex-1 text-sm font-medium">
           {ACTION_LABELS[action.kind]}
         </span>
@@ -141,7 +141,7 @@ export function ActionEditor({
               <span className="flex-1 text-sm">{action.name}</span>
             </>
           ) : (
-            <span className="flex-1 text-sm text-(--text-muted)">
+            <span className="flex-1 text-sm text-muted">
               Ninguna aplicación elegida
             </span>
           )}
@@ -208,21 +208,19 @@ export function ActionEditor({
                     args: argsFromText(e.currentTarget.value),
                   })
                 }
-                className="w-full rounded-md border border-(--border) bg-(--surface-hover) px-3 py-1.5 font-mono text-sm outline-none focus:border-(--accent)"
+                className="w-full rounded-item border border-line bg-hover px-3 py-1.5 font-mono text-sm outline-none focus:border-accent"
               />
             </Field>
           </div>
         </div>
       )}
 
-      {test.kind === "ok" && (
-        <p className="text-sm text-green-400">Funciona.</p>
-      )}
+      {test.kind === "ok" && <p className="text-sm text-success">Funciona.</p>}
       {test.kind === "error" && <ErrorText>{test.message}</ErrorText>}
       {test.kind === "confirm" && (
         <div
           role="alertdialog"
-          className="space-y-2 rounded-md bg-(--surface-selected) p-3 text-sm"
+          className="space-y-2 rounded-item bg-selected p-3 text-sm"
         >
           <p>Este comando se va a ejecutar por primera vez:</p>
           <pre className="font-mono text-[13px] whitespace-pre-wrap select-text">

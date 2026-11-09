@@ -21,5 +21,7 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
+  // Usa APIs de Node (fs, path): lo revisa tsconfig.node.json, no el de la UI.
+  "exclude": ["src/design-tokens.test.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

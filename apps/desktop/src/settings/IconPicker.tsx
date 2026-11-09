@@ -56,7 +56,7 @@ export function IconPicker({ icon, autoIcon, name, onChange }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <span className="flex size-10 items-center justify-center rounded-md bg-(--surface-hover)">
+        <span className="flex size-10 items-center justify-center rounded-item bg-hover">
           <SpaceIcon
             icon={icon}
             autoIcon={autoIcon}
@@ -88,7 +88,7 @@ export function IconPicker({ icon, autoIcon, name, onChange }: Props) {
       </div>
 
       {tab === "auto" && (
-        <p className="text-xs text-(--text-muted)">
+        <p className="text-xs text-muted">
           El icono real de Windows de la primera app, archivo o carpeta del
           Espacio.
         </p>
@@ -143,7 +143,7 @@ function LibraryTab({
         onChange={(e) => setQuery(e.currentTarget.value)}
       />
       {!library ? (
-        <p className="text-xs text-(--text-muted)">Cargando iconos…</p>
+        <p className="text-xs text-muted">Cargando iconos…</p>
       ) : (
         <div className="grid max-h-56 grid-cols-12 gap-1 overflow-y-auto">
           {hits.map((hit) => {
@@ -158,10 +158,8 @@ function LibraryTab({
                 onClick={() =>
                   onChange({ kind: "library", name: hit.name, svg })
                 }
-                className={`flex aspect-square items-center justify-center rounded-md hover:bg-(--surface-selected) ${
-                  selected === hit.name
-                    ? "bg-(--surface-selected) ring-2 ring-(--accent)"
-                    : ""
+                className={`flex aspect-square items-center justify-center rounded-item hover:bg-selected ${
+                  selected === hit.name ? "bg-selected ring-2 ring-accent" : ""
                 }`}
               >
                 <span
@@ -176,7 +174,7 @@ function LibraryTab({
             );
           })}
           {hits.length === 0 && (
-            <p className="col-span-12 text-xs text-(--text-muted)">
+            <p className="col-span-12 text-xs text-muted">
               Ningún icono con ese nombre
             </p>
           )}
@@ -201,7 +199,7 @@ function EmojiTab({
             key={e}
             type="button"
             onClick={() => onChange({ kind: "emoji", value: e })}
-            className={`size-9 rounded-md text-xl hover:bg-(--surface-selected) ${value === e ? "ring-2 ring-(--accent)" : ""}`}
+            className={`size-9 rounded-item text-xl hover:bg-selected ${value === e ? "ring-2 ring-accent" : ""}`}
           >
             {e}
           </button>
@@ -244,7 +242,7 @@ function ImageTab({
       <Button onClick={() => void pick()}>
         {hasImage ? "Cambiar imagen…" : "Elegir imagen…"}
       </Button>
-      <p className="text-xs text-(--text-muted)">
+      <p className="text-xs text-muted">
         PNG, SVG o ICO, hasta ~256 KB. Se guarda dentro del Espacio.
       </p>
       {error && <ErrorText>{error}</ErrorText>}

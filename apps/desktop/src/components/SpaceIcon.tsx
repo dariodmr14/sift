@@ -71,7 +71,7 @@ function Initial({ name, size }: { name: string; size: number }) {
     <span
       aria-hidden
       style={{ width: size, height: size, fontSize: size * 0.5 }}
-      className="flex items-center justify-center rounded-md bg-(--surface-selected) font-semibold"
+      className="flex items-center justify-center rounded-item bg-selected font-semibold"
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>

@@ -10,7 +10,7 @@ use tauri::{AppHandle, Manager, PhysicalPosition, WebviewWindow};
 use tauri_specta::Event;
 
 use crate::appearance::{self, Theme};
-use crate::commands::LauncherShown;
+use crate::commands::{LauncherHidden, LauncherShown};
 use crate::latency::{LatencyStats, LatencySummary};
 
 /// Etiqueta de la ventana del lanzador en `tauri.conf.json`.
@@ -197,7 +197,10 @@ pub fn painted(app: &AppHandle) {
 pub fn hide(app: &AppHandle) {
     let Some(window) = window(app) else { return };
     match window.hide() {
-        Ok(()) => tracing::debug!("lanzador oculto"),
+        Ok(()) => {
+            tracing::debug!("lanzador oculto");
+            let _ = LauncherHidden.emit(app);
+        }
         Err(e) => tracing::warn!(error = %e, "no se pudo ocultar el lanzador"),
     }
 }

@@ -48,6 +48,11 @@ pub struct SettingsView {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct LauncherShown;
 
+/// Rust avisa de que ha ocultado el lanzador (Esc, clic fuera, el atajo…): la UI se
+/// reinicia mientras está invisible, así al volver a mostrarse no enseña el estado viejo.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+pub struct LauncherHidden;
+
 /// Se pidió "crear Espacio" desde la barra con la ventana de ajustes ya abierta.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct NewSpaceRequested;
@@ -188,7 +193,11 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::export_spaces,
             spaces::import_spaces
         ])
-        .events(collect_events![LauncherShown, NewSpaceRequested])
+        .events(collect_events![
+            LauncherShown,
+            LauncherHidden,
+            NewSpaceRequested
+        ])
 }
 
 /// Ruta de los tipos generados, relativa a este crate (`src-tauri/`).

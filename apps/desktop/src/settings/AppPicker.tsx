@@ -90,12 +90,10 @@ export function AppPicker({
         className="min-h-40 overflow-y-auto px-2 pb-2"
       >
         {apps === null && !error && (
-          <li className="p-3 text-sm text-(--text-muted)">
-            Cargando aplicaciones…
-          </li>
+          <li className="p-3 text-sm text-muted">Cargando aplicaciones…</li>
         )}
         {apps !== null && visible.length === 0 && (
-          <li className="p-3 text-sm text-(--text-muted)">
+          <li className="p-3 text-sm text-muted">
             Ninguna aplicación con ese nombre
           </li>
         )}
@@ -106,9 +104,7 @@ export function AppPicker({
             aria-selected={i === selected}
             onMouseMove={() => setSelected(i)}
             onClick={() => onPick(app)}
-            className={`flex cursor-default items-center gap-3 rounded-md px-3 py-1.5 text-sm ${
-              i === selected ? "bg-(--surface-selected)" : ""
-            }`}
+            className="sift-option flex cursor-default items-center gap-3 px-3 py-1.5 text-sm"
           >
             {icons[app.id] ? (
               <img src={icons[app.id]!} alt="" className="size-6" />
