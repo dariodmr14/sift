@@ -27,6 +27,12 @@ Desde la raíz del repo:
 - UI (desde `apps/desktop/`): `npm run lint`, `npm run format`, `npm run typecheck`, `npm test`
 - App en desarrollo: `npm run tauri dev` (desde `apps/desktop/`)
 
+## Diseño
+- Sistema de diseño «Vidrio»: lee [docs/design-system.md](docs/design-system.md) antes de tocar la UI.
+- Solo tokens (`bg-surface`, `text-muted`, `bg-accent`, `rounded-item`…): nada de colores literales. Lo comprueba `design-tokens.test.ts`.
+- Listas seleccionables con `.sift-option`; controles de formulario de `src/settings/ui.tsx`.
+- Animaciones: solo opacidad y transformaciones, con los tokens de duración, y nada con «reducir movimiento». Que no afecten a la apertura en < 100 ms.
+
 ## Reglas de código
 - Errores: `thiserror` en los crates de librería, `anyhow` solo en la app. Nada de `unwrap()` fuera de tests.
 - Logs con `tracing`. Sin telemetría.
