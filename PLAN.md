@@ -130,12 +130,12 @@ sift/
 **Hecho cuando:** `cargo test` y la CI pasan en verde y la app abre una ventana vacía.
 
 ### Fase 1 — El lanzador
-- [ ] Ventana sin bordes, centrada, siempre encima, con fondo translúcido (Mica/Acrylic).
-- [ ] Atajo global `Alt+Espacio` (con alternativa configurable).
-- [ ] Mostrar/ocultar: se oculta con `Esc` o al perder el foco.
-- [ ] Caja de búsqueda y lista de resultados de prueba, todo con teclado (↑ ↓ Enter).
-- [ ] Icono en la bandeja del sistema con Ajustes y Salir.
-- [ ] Opción de arrancar con Windows.
+- [x] Ventana sin bordes, centrada, siempre encima, con fondo translúcido (Mica/Acrylic).
+- [x] Atajo global `Alt+Espacio` (con alternativa configurable).
+- [x] Mostrar/ocultar: se oculta con `Esc` o al perder el foco.
+- [x] Caja de búsqueda y lista de resultados de prueba, todo con teclado (↑ ↓ Enter).
+- [x] Icono en la bandeja del sistema con Ajustes y Salir.
+- [x] Opción de arrancar con Windows.
 
 **Hecho cuando:** el atajo abre la barra en < 100 ms desde cualquier app y se maneja sin ratón.
 
@@ -214,6 +214,8 @@ sift/
 - Sistema de extensiones.
 - macOS y Linux.
 - Firma de código del instalador (evita el aviso de SmartScreen; tiene coste).
+- Icono propio de la app y de la bandeja (ahora es el de Tauri por defecto).
+- Grabar el atajo pulsándolo en Ajustes, en vez de escribirlo como texto.
 
 ---
 
