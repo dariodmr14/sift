@@ -89,7 +89,7 @@ export function SpacesSection() {
 
   return (
     <div className="flex h-full min-h-0">
-      <aside className="flex w-64 shrink-0 flex-col border-r border-(--border)">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-line">
         <div className="flex gap-2 p-3">
           <Button
             variant="primary"
@@ -104,9 +104,7 @@ export function SpacesSection() {
           className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2"
         >
           {spaces?.length === 0 && (
-            <li className="p-2 text-sm text-(--text-muted)">
-              Aún no hay Espacios.
-            </li>
+            <li className="p-2 text-sm text-muted">Aún no hay Espacios.</li>
           )}
           {spaces?.map((view, i) => {
             const active =
@@ -129,11 +127,7 @@ export function SpacesSection() {
                       void reorder(i, e.key === "ArrowUp" ? -1 : 1);
                     }
                   }}
-                  className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-(--accent) ${
-                    active
-                      ? "bg-(--surface-selected)"
-                      : "hover:bg-(--surface-hover)"
-                  }`}
+                  className="sift-option flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <SpaceIcon
                     icon={view.space.icon}
@@ -169,7 +163,7 @@ export function SpacesSection() {
             );
           })}
         </ul>
-        <div className="space-y-2 border-t border-(--border) p-3">
+        <div className="space-y-2 border-t border-line p-3">
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => void importFile()}>
               Importar…
@@ -184,7 +178,7 @@ export function SpacesSection() {
           </div>
           {message &&
             (message.ok ? (
-              <p role="status" className="text-xs break-words text-green-400">
+              <p role="status" className="text-xs break-words text-success">
                 {message.text}
               </p>
             ) : (
@@ -234,7 +228,7 @@ export function SpacesSection() {
         {!selection && spaces?.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
             <p className="text-lg">Crea tu primer Espacio</p>
-            <p className="max-w-sm text-sm text-(--text-muted)">
+            <p className="max-w-sm text-sm text-muted">
               Por ejemplo «Bases de datos»: la carpeta de la asignatura, los
               apuntes, el campus virtual y `docker compose up` de las prácticas,
               todo con un Enter.

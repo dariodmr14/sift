@@ -1,6 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { commands } from "./bindings";
-import { useLauncher } from "./useLauncher";
+import { dismissLauncher, useLauncher } from "./useLauncher";
 import { matchBuiltins, type BuiltinId } from "./launcher/builtins";
 import { matchSpaces } from "./launcher/spaces";
 import { moveSelection } from "./launcher/selection";
@@ -55,6 +62,7 @@ function App() {
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
 
   // Los Espacios y el ajuste de iconos se recargan cada vez que se abre la barra, así
   // siempre reflejan lo último que se editó en Ajustes.
@@ -81,15 +89,25 @@ function App() {
     };
   }, []);
 
-  useLauncher(() => {
+  const dismiss = () => dismissLauncher(rootRef.current);
+  const reset = () => {
     setQuery("");
     setSelected(0);
     setMode({ kind: "list" });
-    inputRef.current?.focus();
-    void refresh();
-  });
+  };
 
-  async function launch(view: SpaceView, approve: boolean) {
+  useLauncher(
+    rootRef,
+    () => {
+      reset();
+      inputRef.current?.focus();
+      void refresh();
+    },
+    // Al ocultarse se limpia ya, con la ventana invisible: al volver no se ve lo de antes.
+    reset,
+  );
+
+  const launch = useCallback(async (view: SpaceView, approve: boolean) => {
     const result = await commands.runSpace(view.space.id, approve);
     if (result.status === "error") {
       setMode({
@@ -110,9 +128,9 @@ function App() {
     if (errors.length) {
       setMode({ kind: "result", title: view.space.name, errors });
     } else {
-      void commands.hideLauncher();
+      dismissLauncher(rootRef.current);
     }
-  }
+  }, []);
 
   const items = useMemo<Item[]>(() => {
     const fromSpaces = matchSpaces(
@@ -141,7 +159,7 @@ function App() {
     }));
     // Los comandos van detrás: lo que buscas suele ser un Espacio, no la propia app.
     return [...fromSpaces, ...builtins];
-  }, [query, spaces]);
+  }, [query, spaces, launch]);
 
   const isEmpty = spaces.length === 0 && !query.trim();
 
@@ -171,7 +189,7 @@ function App() {
     if (mode.kind === "result") {
       if (e.key === "Enter" || e.key === "Escape") {
         e.preventDefault();
-        void commands.hideLauncher();
+        dismiss();
       }
       return;
     }
@@ -190,7 +208,7 @@ function App() {
         break;
       case "Escape":
         e.preventDefault();
-        void commands.hideLauncher();
+        dismiss();
         break;
     }
   }
@@ -201,7 +219,7 @@ function App() {
       : undefined;
 
   return (
-    <main className="flex h-full flex-col bg-(--surface)">
+    <main ref={rootRef} className="sift-from flex h-full flex-col bg-surface">
       <input
         ref={inputRef}
         autoFocus
@@ -219,7 +237,7 @@ function App() {
         aria-expanded={mode.kind === "list" && items.length > 0}
         aria-controls="results"
         aria-activedescendant={activeId}
-        className="w-full border-b border-(--border) bg-transparent px-5 py-4 text-xl text-(--text) outline-none placeholder:text-(--text-muted)"
+        className="w-full border-b border-line bg-transparent px-5 py-4 text-xl text-fg outline-none placeholder:text-muted"
       />
 
       <div className="min-h-0 flex-1">
@@ -250,9 +268,7 @@ function App() {
                 onMouseMove={() => setSelected(i)}
                 onMouseDown={(e) => e.preventDefault()} // que el input no pierda el foco
                 onClick={item.activate}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 ${
-                  i === selected ? "bg-(--surface-selected)" : ""
-                }`}
+                className="sift-option flex items-center gap-3 px-3 py-2"
               >
                 {!iconsHidden && (
                   <span
@@ -266,17 +282,17 @@ function App() {
                   <span className="block truncate text-[15px]">
                     {item.title}
                   </span>
-                  <span className="block truncate text-xs text-(--text-muted)">
+                  <span className="block truncate text-xs text-muted">
                     {item.subtitle}
                   </span>
                 </span>
                 {item.shortcut ? (
-                  <kbd className="text-xs text-(--text-muted)" aria-hidden>
+                  <kbd className="text-xs text-muted" aria-hidden>
                     {item.shortcut}
                   </kbd>
                 ) : (
                   i === selected && (
-                    <kbd className="text-xs text-(--text-muted)" aria-hidden>
+                    <kbd className="text-xs text-muted" aria-hidden>
                       ↵
                     </kbd>
                   )
@@ -285,13 +301,13 @@ function App() {
             ))}
           </ul>
         ) : (
-          <p className="p-6 text-center text-(--text-muted)">
+          <p className="p-6 text-center text-muted">
             Sin resultados para «{query}»
           </p>
         )}
       </div>
 
-      <footer className="flex items-center gap-4 border-t border-(--border) px-5 py-2 text-xs text-(--text-muted)">
+      <footer className="flex items-center gap-4 border-t border-line px-5 py-2 text-xs text-muted">
         {mode.kind === "confirm" ? (
           <>
             <span>↵ ejecutar</span>
@@ -325,7 +341,7 @@ function EmptyState() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
       <p className="text-lg">Aún no tienes Espacios</p>
-      <p className="max-w-sm text-sm text-(--text-muted)">
+      <p className="max-w-sm text-sm text-muted">
         Un Espacio abre de golpe todo lo de un contexto: carpetas, webs, apps y
         comandos.
       </p>
@@ -333,10 +349,9 @@ function EmptyState() {
         type="button"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => openSettings(true)}
-        className="mt-2 rounded-md bg-(--surface-selected) px-4 py-2 text-sm"
+        className="mt-2 rounded-item bg-selected px-4 py-2 text-sm"
       >
-        Crear tu primer Espacio{" "}
-        <kbd className="ml-2 text-(--text-muted)">↵</kbd>
+        Crear tu primer Espacio <kbd className="ml-2 text-muted">↵</kbd>
       </button>
     </div>
   );
@@ -360,7 +375,7 @@ function ConfirmPanel({
         {commands.length === 1 ? "un comando" : "estos comandos"} por primera
         vez
       </p>
-      <p className="mb-4 text-xs text-(--text-muted)">
+      <p className="mb-4 text-xs text-muted">
         Revisa que sea lo que esperas. Solo se pregunta una vez por comando: si
         cambia, se vuelve a preguntar.
       </p>
@@ -368,11 +383,11 @@ function ConfirmPanel({
         {commands.map((c) => (
           <li
             key={c.display}
-            className="rounded-md bg-(--surface-selected) px-3 py-2 font-mono text-[13px] select-text"
+            className="rounded-item bg-selected px-3 py-2 font-mono text-[13px] select-text"
           >
             {c.display}
             {c.command.cwd && (
-              <span className="mt-1 block text-xs text-(--text-muted)">
+              <span className="mt-1 block text-xs text-muted">
                 en {c.command.cwd}
               </span>
             )}
@@ -387,12 +402,12 @@ function ResultPanel({ title, errors }: { title: string; errors: string[] }) {
   return (
     <div role="alert" className="h-full overflow-y-auto p-5">
       <p className="mb-3 text-[15px]">«{title}»: algo no se pudo abrir</p>
-      <ul className="space-y-1 text-sm text-red-400 select-text">
+      <ul className="space-y-1 text-sm text-danger select-text">
         {errors.map((e) => (
           <li key={e}>{e}</li>
         ))}
       </ul>
-      <p className="mt-4 text-xs text-(--text-muted)">
+      <p className="mt-4 text-xs text-muted">
         Revisa el Espacio en Ajustes. Esc para cerrar.
       </p>
     </div>

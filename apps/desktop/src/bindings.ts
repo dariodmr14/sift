@@ -56,6 +56,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	launcherHidden: makeEvent<LauncherHidden, LauncherHidden>("launcher-hidden"),
 	launcherShown: makeEvent<LauncherShown, LauncherShown>("launcher-shown"),
 	newSpaceRequested: makeEvent<NewSpaceRequested, NewSpaceRequested>("new-space-requested"),
 };
@@ -196,6 +197,12 @@ export type LatencySummary = {
 	p95Ms: number | null,
 	samples: number,
 };
+
+/**
+ *  Rust avisa de que ha ocultado el lanzador (Esc, clic fuera, el atajo…): la UI se
+ *  reinicia mientras está invisible, así al volver a mostrarse no enseña el estado viejo.
+ */
+export type LauncherHidden = null;
 
 /**
  *  Rust avisa a la UI de que el lanzador acaba de mostrarse: hay que limpiar la búsqueda,

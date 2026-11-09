@@ -10,10 +10,10 @@ import type {
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-(--accent) text-black font-medium hover:brightness-110",
-  secondary: "bg-(--surface-hover) hover:bg-(--surface-selected)",
-  ghost: "hover:bg-(--surface-hover)",
-  danger: "text-red-400 hover:bg-red-500/15",
+  primary: "bg-accent text-accent-fg font-medium hover:brightness-110",
+  secondary: "bg-hover hover:bg-selected",
+  ghost: "hover:bg-hover",
+  danger: "text-danger hover:bg-danger/15",
 };
 
 export function Button({
@@ -24,7 +24,7 @@ export function Button({
   return (
     <button
       type="button"
-      className={`rounded-md px-3 py-1.5 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-(--accent) disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
+      className={`rounded-item px-3 py-1.5 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
       {...props}
     />
   );
@@ -37,7 +37,7 @@ export function TextInput({
   return (
     <input
       spellCheck={false}
-      className={`w-full rounded-md border border-(--border) bg-(--surface-hover) px-3 py-1.5 text-sm outline-none focus:border-(--accent) ${className}`}
+      className={`w-full rounded-item border border-line bg-hover px-3 py-1.5 text-sm outline-none focus:border-accent ${className}`}
       {...props}
     />
   );
@@ -54,11 +54,9 @@ export function Field({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-(--text-muted)">{label}</span>
+      <span className="text-xs font-medium text-muted">{label}</span>
       {children}
-      {hint && (
-        <span className="block text-xs text-(--text-muted)">{hint}</span>
-      )}
+      {hint && <span className="block text-xs text-muted">{hint}</span>}
     </label>
   );
 }
@@ -75,7 +73,7 @@ export function Modal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-10 flex items-center justify-center bg-black/50 p-6"
+      className="fixed inset-0 z-10 flex items-center justify-center bg-scrim p-6"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
       onKeyDown={(e) => e.key === "Escape" && onClose()}
     >
@@ -83,9 +81,9 @@ export function Modal({
         role="dialog"
         aria-modal
         aria-label={title}
-        className="flex max-h-full w-full max-w-lg flex-col rounded-lg border border-(--border) bg-(--surface) shadow-2xl"
+        className="flex max-h-full w-full max-w-lg flex-col rounded-window border border-line bg-surface shadow-window"
       >
-        <header className="flex items-center justify-between border-b border-(--border) px-4 py-3">
+        <header className="flex items-center justify-between border-b border-line px-4 py-3">
           <h3 className="font-medium">{title}</h3>
           <Button variant="ghost" onClick={onClose} aria-label="Cerrar">
             ✕
@@ -99,7 +97,7 @@ export function Modal({
 
 export function ErrorText({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="text-sm text-red-400">
+    <p role="alert" className="text-sm text-danger">
       {children}
     </p>
   );

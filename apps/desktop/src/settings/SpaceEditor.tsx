@@ -140,7 +140,7 @@ export function SpaceEditor({
       </div>
 
       <section className="space-y-2">
-        <h3 className="text-xs font-medium text-(--text-muted)">Icono</h3>
+        <h3 className="text-xs font-medium text-muted">Icono</h3>
         <IconPicker
           icon={draft.icon}
           autoIcon={autoIcon}
@@ -150,11 +150,9 @@ export function SpaceEditor({
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-xs font-medium text-(--text-muted)">
-          Acciones, en orden
-        </h3>
+        <h3 className="text-xs font-medium text-muted">Acciones, en orden</h3>
         {draft.actions.length === 0 && (
-          <p className="text-sm text-(--text-muted)">
+          <p className="text-sm text-muted">
             Aún no hay acciones. Añade lo que quieres que se abra.
           </p>
         )}
@@ -206,7 +204,7 @@ export function SpaceEditor({
 
       {error && <ErrorText>{error}</ErrorText>}
 
-      <footer className="sticky bottom-0 flex items-center gap-2 border-t border-(--border) bg-(--surface) py-3">
+      <footer className="sticky bottom-0 flex items-center gap-2 border-t border-line bg-surface py-3">
         <Button type="submit" variant="primary" disabled={!dirty}>
           {id === null ? "Crear Espacio" : "Guardar"}
         </Button>
@@ -222,7 +220,7 @@ export function SpaceEditor({
             Descartar cambios
           </Button>
         )}
-        <span className="min-w-0 flex-1 truncate text-xs text-(--text-muted)">
+        <span className="min-w-0 flex-1 truncate text-xs text-muted">
           {dirty ? "Cambios sin guardar · Ctrl+S" : "Guardado"}
         </span>
         {id !== null && (
