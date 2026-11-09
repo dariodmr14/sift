@@ -9,6 +9,16 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+sift-spaces = { workspace = true }
+# `bundled` compila SQLite dentro de la app: no depende de que Windows lo tenga.
+rusqlite = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true
