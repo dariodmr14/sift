@@ -25,6 +25,11 @@ describe("matchBuiltins", () => {
     expect(ids("a")).toEqual([]);
   });
 
+  it("encuentra Crear Espacio", () => {
+    expect(ids("crear")).toEqual(["newSpace"]);
+    expect(ids("nuevo espacio")).toEqual(["newSpace"]);
+  });
+
   it("todas las palabras tienen que encajar", () => {
     expect(ids("ajustes sift")).toEqual(["settings"]);
     expect(ids("ajustes zzz")).toEqual([]);
