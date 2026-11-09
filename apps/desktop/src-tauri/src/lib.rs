@@ -1,5 +1,6 @@
 //! Punto de entrada de la app Tauri.
 
+mod appearance;
 mod commands;
 mod hotkey;
 mod latency;
