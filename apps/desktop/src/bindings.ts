@@ -6,6 +6,8 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	hideLauncher: () => __TAURI_INVOKE<void>("hide_launcher"),
+	/**  Abre la ventana de ajustes desde la barra (`Ctrl+,`, el engranaje o "ajustes"). */
+	openSettings: () => __TAURI_INVOKE<void>("open_settings"),
 	/**  La UI lo llama tras pintar el primer fotograma con el lanzador visible. */
 	launcherPainted: () => __TAURI_INVOKE<void>("launcher_painted"),
 	getStatus: () => __TAURI_INVOKE<Status_Serialize>("get_status"),
