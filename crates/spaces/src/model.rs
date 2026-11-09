@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct Space {
+    /// Id de SQLite. En TypeScript es un `number` normal: nunca pasará de 2³¹.
+    #[cfg_attr(feature = "specta", specta(type = i32))]
     pub id: i64,
     #[serde(flatten)]
     pub draft: SpaceDraft,

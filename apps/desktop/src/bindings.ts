@@ -6,33 +6,173 @@ import * as __TAURI_EVENT from "@tauri-apps/api/event";
 /** Commands */
 export const commands = {
 	hideLauncher: () => __TAURI_INVOKE<void>("hide_launcher"),
-	/**  Abre la ventana de ajustes desde la barra (`Ctrl+,`, el engranaje o "ajustes"). */
-	openSettings: () => __TAURI_INVOKE<void>("open_settings"),
+	/**
+	 *  Abre la ventana de ajustes desde la barra (`Ctrl+,`, el engranaje o "ajustes").
+	 *  Con `new_space`, la abre directamente en "crear Espacio".
+	 */
+	openSettings: (newSpace: boolean) => __TAURI_INVOKE<void>("open_settings", { newSpace }),
 	/**  La UI lo llama tras pintar el primer fotograma con el lanzador visible. */
 	launcherPainted: () => __TAURI_INVOKE<void>("launcher_painted"),
 	getStatus: () => __TAURI_INVOKE<Status_Serialize>("get_status"),
 	getSettings: () => __TAURI_INVOKE<SettingsView>("get_settings"),
 	setHotkey: (hotkey: string) => typedError<string, AppError>(__TAURI_INVOKE("set_hotkey", { hotkey })),
 	setLaunchAtStartup: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_launch_at_startup", { enabled })),
+	setIconsHidden: (hidden: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_icons_hidden", { hidden })),
+	listSpaces: () => typedError<SpaceView_Serialize[], AppError>(__TAURI_INVOKE("list_spaces")),
+	createSpace: (draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("create_space", { draft })),
+	updateSpace: (id: number, draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("update_space", { id, draft })),
+	duplicateSpace: (id: number) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("duplicate_space", { id })),
+	deleteSpace: (id: number) => typedError<null, AppError>(__TAURI_INVOKE("delete_space", { id })),
+	reorderSpaces: (ids: number[]) => typedError<null, AppError>(__TAURI_INVOKE("reorder_spaces", { ids })),
+	/**
+	 *  Ejecuta un Espacio guardado. Con `approve: false`, si hay comandos sin aprobar,
+	 *  devuelve `NeedsApproval` sin lanzar nada. Con `approve: true`, apunta como aprobados
+	 *  esos comandos y lo ejecuta.
+	 */
+	runSpace: (id: number, approve: boolean) => typedError<RunReport_Serialize, AppError>(__TAURI_INVOKE("run_space", { id, approve })),
+	/**
+	 *  El botón "probar" del editor: ejecuta una sola acción (aún sin guardar), con la misma
+	 *  regla de confirmación para los comandos.
+	 */
+	testAction: (action: Action_Deserialize, approve: boolean) => typedError<RunReport_Serialize, AppError>(__TAURI_INVOKE("test_action", { action, approve })),
+	listApps: () => typedError<InstalledApp[], AppError>(__TAURI_INVOKE("list_apps")),
+	/**  Iconos de Windows para varias claves a la vez (`app:<id>` o una ruta). */
+	getIcons: (keys: string[]) => typedError<(string | null)[], AppError>(__TAURI_INVOKE("get_icons", { keys })),
+	/**  Diálogo nativo para elegir un archivo o una carpeta. `None` si se cancela. */
+	pickPath: (kind: PathKind) => typedError<string | null, AppError>(__TAURI_INVOKE("pick_path", { kind })),
+	/**  Elige una imagen propia para el icono y la devuelve ya como `Icon::Image`. */
+	pickIconImage: () => typedError<Icon | null, AppError>(__TAURI_INVOKE("pick_icon_image")),
+	/**  Exporta todos los Espacios a un JSON que elige el usuario. Devuelve la ruta. */
+	exportSpaces: () => typedError<string | null, AppError>(__TAURI_INVOKE("export_spaces")),
+	/**  Importa Espacios de un JSON (se añaden al final). Devuelve cuántos. */
+	importSpaces: () => typedError<number | null, AppError>(__TAURI_INVOKE("import_spaces")),
 };
 
 /** Events */
 export const events = {
 	launcherShown: makeEvent<LauncherShown, LauncherShown>("launcher-shown"),
+	newSpaceRequested: makeEvent<NewSpaceRequested, NewSpaceRequested>("new-space-requested"),
 };
 
 /* Types */
+/**  Una acción de un Espacio. Se ejecutan en orden. */
+export type Action = Action_Serialize | Action_Deserialize;
+
+/**  Resultado de una acción, para mostrarlo en la UI. */
+export type ActionOutcome = ActionOutcome_Serialize | ActionOutcome_Deserialize;
+
+/**  Resultado de una acción, para mostrarlo en la UI. */
+export type ActionOutcome_Deserialize = {
+	/**  Posición de la acción (desde 1). */
+	index: number,
+	label: string,
+	/**  `None` si fue bien; si no, el motivo. */
+	error?: string | null,
+};
+
+/**  Resultado de una acción, para mostrarlo en la UI. */
+export type ActionOutcome_Serialize = {
+	/**  Posición de la acción (desde 1). */
+	index: number,
+	label: string,
+	/**  `None` si fue bien; si no, el motivo. */
+	error: string | null,
+};
+
+/**  Una acción de un Espacio. Se ejecutan en orden. */
+export type Action_Deserialize = ({ kind: "openFolder"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openFile"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openUrl"; url: string }) & { appId?: never; name?: never; path?: never } | 
+/**
+ *  Una app instalada, elegida en el selector. `app_id` es su identificador en la
+ *  carpeta de aplicaciones de Windows (`shell:AppsFolder`): una ruta o un AUMID.
+ */
+({ kind: "openApp"; appId: string; name: string }) & { path?: never; url?: never } | {
+	kind: "runCommand",
+} & CommandSpec_Deserialize;
+
+/**  Una acción de un Espacio. Se ejecutan en orden. */
+export type Action_Serialize = ({ kind: "openFolder"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openFile"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openUrl"; url: string }) & { appId?: never; name?: never; path?: never } | 
+/**
+ *  Una app instalada, elegida en el selector. `app_id` es su identificador en la
+ *  carpeta de aplicaciones de Windows (`shell:AppsFolder`): una ruta o un AUMID.
+ */
+({ kind: "openApp"; appId: string; name: string }) & { path?: never; url?: never } | {
+	kind: "runCommand",
+} & CommandSpec_Serialize;
+
 /**  Errores que la UI puede mostrar. En TypeScript llega como `{ kind, message }`. */
 export type AppError = 
 /**  El texto no es un atajo válido (p. ej. "Space" sin modificador). */
 { kind: "invalidHotkey"; message: string } | 
 /**  El atajo es válido pero no se pudo activar. */
 { kind: "hotkeyUnavailable"; message: string } | 
+/**  Datos que no pasan la validación (un Espacio sin nombre, una URL no web…). */
+{ kind: "invalid"; message: string } | { kind: "notFound"; message: string } | 
 /**  Fallo del sistema (registro de Windows, disco…). */
 { kind: "system"; message: string };
 
 /**  Con qué mecanismo se está escuchando el atajo. */
 export type Backend = "registerHotKey" | "keyboardHook";
+
+/**
+ *  Un comando: programa, argumentos y carpeta de trabajo, **siempre por separado**.
+ *  Nunca se junta en una sola cadena ni pasa por `cmd /c`: así ningún argumento puede
+ *  "salirse" y ejecutar otra cosa (inyección de comandos).
+ */
+export type CommandSpec = CommandSpec_Serialize | CommandSpec_Deserialize;
+
+/**
+ *  Un comando: programa, argumentos y carpeta de trabajo, **siempre por separado**.
+ *  Nunca se junta en una sola cadena ni pasa por `cmd /c`: así ningún argumento puede
+ *  "salirse" y ejecutar otra cosa (inyección de comandos).
+ */
+export type CommandSpec_Deserialize = {
+	/**
+	 *  Nombre de un `.exe` en el PATH (`docker`) o ruta completa. Los `.cmd`/`.bat`
+	 *  necesitan la extensión (`code.cmd`).
+	 */
+	program: string,
+	args?: string[],
+	cwd?: string | null,
+};
+
+/**
+ *  Un comando: programa, argumentos y carpeta de trabajo, **siempre por separado**.
+ *  Nunca se junta en una sola cadena ni pasa por `cmd /c`: así ningún argumento puede
+ *  "salirse" y ejecutar otra cosa (inyección de comandos).
+ */
+export type CommandSpec_Serialize = {
+	/**
+	 *  Nombre de un `.exe` en el PATH (`docker`) o ruta completa. Los `.cmd`/`.bat`
+	 *  necesitan la extensión (`code.cmd`).
+	 */
+	program: string,
+	args: string[],
+	cwd: string | null,
+};
+
+/**  Icono de un Espacio. */
+export type Icon = 
+/**  El icono real de Windows de la primera app, archivo o carpeta del Espacio. */
+{ kind: "auto" } | 
+/**  Sin icono. */
+{ kind: "none" } | { kind: "emoji"; value: string } | 
+/**
+ *  Icono de la librería (Lucide). Se guarda también su SVG para que la barra lo
+ *  pinte sin cargar la librería entera.
+ */
+{ kind: "library"; name: string; svg: string } | 
+/**
+ *  Imagen propia (PNG, SVG o ICO), guardada dentro del Espacio en base64 para que
+ *  viaje con él al exportar.
+ */
+{ kind: "image"; mime: string; data: string };
+
+/**  Una app instalada, para el selector. */
+export type InstalledApp = {
+	/**  Identificador en `shell:AppsFolder` (un AUMID o una ruta). */
+	id: string,
+	name: string,
+};
 
 /**  Resumen que se manda a la UI y se escribe en el log. */
 export type LatencySummary = {
@@ -48,6 +188,46 @@ export type LatencySummary = {
  */
 export type LauncherShown = null;
 
+/**  Se pidió "crear Espacio" desde la barra con la ventana de ajustes ya abierta. */
+export type NewSpaceRequested = null;
+
+export type PathKind = "file" | "folder";
+
+/**  Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar. */
+export type PendingCommand = PendingCommand_Serialize | PendingCommand_Deserialize;
+
+/**  Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar. */
+export type PendingCommand_Deserialize = {
+	command: CommandSpec_Deserialize,
+	display: string,
+};
+
+/**  Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar. */
+export type PendingCommand_Serialize = {
+	command: CommandSpec_Serialize,
+	display: string,
+};
+
+export type RunReport = RunReport_Serialize | RunReport_Deserialize;
+
+export type RunReport_Deserialize = 
+/**
+ *  Hay comandos que nunca se han ejecutado: la UI tiene que pedir confirmación y
+ *  volver a llamar con `approve: true`. No se ha lanzado nada.
+ */
+{ status: "needsApproval"; commands: PendingCommand_Deserialize[] } | 
+/**  Se lanzaron las acciones; cada una con su resultado. */
+{ status: "done"; outcomes: ActionOutcome_Deserialize[] };
+
+export type RunReport_Serialize = 
+/**
+ *  Hay comandos que nunca se han ejecutado: la UI tiene que pedir confirmación y
+ *  volver a llamar con `approve: true`. No se ha lanzado nada.
+ */
+{ status: "needsApproval"; commands: PendingCommand_Serialize[] } | 
+/**  Se lanzaron las acciones; cada una con su resultado. */
+{ status: "done"; outcomes: ActionOutcome_Serialize[] };
+
 /**  Ajustes editables desde la ventana de ajustes. */
 export type SettingsView = {
 	hotkey: string,
@@ -56,7 +236,69 @@ export type SettingsView = {
 	 *  si el usuario lo desactiva desde el Administrador de tareas.
 	 */
 	launchAtStartup: boolean,
+	/**  "Solo texto": la barra no muestra iconos. */
+	iconsHidden: boolean,
 };
+
+/**  Un Espacio guardado (con su id de la base de datos). */
+export type Space = Space_Serialize | Space_Deserialize;
+
+/**  Un Espacio sin id: lo que se edita, se valida, se exporta y se importa. */
+export type SpaceDraft = SpaceDraft_Serialize | SpaceDraft_Deserialize;
+
+/**  Un Espacio sin id: lo que se edita, se valida, se exporta y se importa. */
+export type SpaceDraft_Deserialize = {
+	name: string,
+	/**  Otras palabras que lo activan ("bd", "bases"). */
+	aliases?: string[],
+	icon?: Icon,
+	actions?: Action_Deserialize[],
+};
+
+/**  Un Espacio sin id: lo que se edita, se valida, se exporta y se importa. */
+export type SpaceDraft_Serialize = {
+	name: string,
+	/**  Otras palabras que lo activan ("bd", "bases"). */
+	aliases: string[],
+	icon: Icon,
+	actions: Action_Serialize[],
+};
+
+/**
+ *  Un Espacio tal como lo pinta la UI: sus datos y, si su icono es "automático", el
+ *  icono real de Windows de su primera app, archivo o carpeta.
+ */
+export type SpaceView = SpaceView_Serialize | SpaceView_Deserialize;
+
+/**
+ *  Un Espacio tal como lo pinta la UI: sus datos y, si su icono es "automático", el
+ *  icono real de Windows de su primera app, archivo o carpeta.
+ */
+export type SpaceView_Deserialize = {
+	space: Space_Deserialize,
+	autoIcon?: string | null,
+};
+
+/**
+ *  Un Espacio tal como lo pinta la UI: sus datos y, si su icono es "automático", el
+ *  icono real de Windows de su primera app, archivo o carpeta.
+ */
+export type SpaceView_Serialize = {
+	space: Space_Serialize,
+	autoIcon: string | null,
+};
+
+/**  Un Espacio guardado (con su id de la base de datos). */
+export type Space_Deserialize = {
+	/**  Id de SQLite. En TypeScript es un `number` normal: nunca pasará de 2³¹. */
+	id: number,
+} & SpaceDraft_Deserialize;
+
+/**  Un Espacio guardado (con su id de la base de datos). */
+export type Space_Serialize = {
+	/**  Id de SQLite. En TypeScript es un `number` normal: nunca pasará de 2³¹. */
+	id: number,
+} & SpaceDraft_Serialize;
 
 /**  Estado de la app para la UI (y para la pantalla de ajustes). */
 export type Status = Status_Serialize | Status_Deserialize;
@@ -69,6 +311,8 @@ export type Status_Deserialize = {
 	hotkey?: string | null,
 	backend?: Backend | null,
 	latency?: LatencySummary | null,
+	/**  Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán). */
+	storageError?: string | null,
 };
 
 /**  Estado de la app para la UI (y para la pantalla de ajustes). */
@@ -79,6 +323,8 @@ export type Status_Serialize = {
 	hotkey: string | null,
 	backend: Backend | null,
 	latency: LatencySummary | null,
+	/**  Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán). */
+	storageError: string | null,
 };
 
 /* Tauri Specta runtime */
