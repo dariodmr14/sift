@@ -2,21 +2,33 @@
 //! destruye al cerrarla: se usa poco y así no ocupa memoria el resto del tiempo.
 
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri_specta::Event;
+
+use crate::commands::NewSpaceRequested;
 
 pub const LABEL: &str = "settings";
 
-pub fn open(app: &AppHandle) {
-    // Si ya está abierta, solo se trae al frente.
+/// Abre los ajustes. Con `new_space`, directamente en "crear Espacio".
+pub fn open(app: &AppHandle, new_space: bool) {
+    // Si ya está abierta, se trae al frente (y se le avisa si hay que crear un Espacio).
     if let Some(window) = app.get_webview_window(LABEL) {
         let _ = window.unminimize();
         let _ = window.set_focus();
+        if new_space {
+            let _ = NewSpaceRequested.emit(app);
+        }
         return;
     }
-    let built = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App("settings.html".into()))
+    // Si no, se crea; el parámetro de la URL le dice que empiece creando un Espacio.
+    let page = if new_space {
+        "settings.html?new=1"
+    } else {
+        "settings.html"
+    };
+    let built = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::App(page.into()))
         .title("Ajustes de Sift")
-        .inner_size(520.0, 520.0)
-        .resizable(false)
-        .maximizable(false)
+        .inner_size(920.0, 680.0)
+        .min_inner_size(760.0, 520.0)
         .center()
         .build();
     if let Err(e) = built {

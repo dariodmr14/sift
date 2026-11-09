@@ -39,6 +39,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 window-vibrancy = "0.8"
 windows-sys = "0.61"
+windows = "0.62"
 
 # IPC tipado. tauri-specta para Tauri 2 sigue en RC y exige versiones exactas de specta:
 # se fijan con "=" para que un `cargo update` no las mueva sin querer (ver ADR 0003).
