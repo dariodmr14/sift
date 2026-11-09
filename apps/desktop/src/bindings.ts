@@ -19,6 +19,8 @@ export const commands = {
 	launcherPainted: () => __TAURI_INVOKE<void>("launcher_painted"),
 	getStatus: () => __TAURI_INVOKE<Status_Serialize>("get_status"),
 	getSettings: () => __TAURI_INVOKE<SettingsView>("get_settings"),
+	/**  Tema y color de acento de Windows, para que la UI los siga. */
+	getAppearance: () => __TAURI_INVOKE<Appearance>("get_appearance"),
 	setHotkey: (hotkey: string) => typedError<string, AppError>(__TAURI_INVOKE("set_hotkey", { hotkey })),
 	setLaunchAtStartup: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_launch_at_startup", { enabled })),
 	setIconsHidden: (hidden: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_icons_hidden", { hidden })),
@@ -113,6 +115,15 @@ export type AppError =
 { kind: "invalid"; message: string } | { kind: "notFound"; message: string } | 
 /**  Fallo del sistema (registro de Windows, disco…). */
 { kind: "system"; message: string };
+
+/**  Lo que la UI necesita para pintarse como Windows. */
+export type Appearance = {
+	theme: Theme,
+	/**  Acento para este tema, en `#RRGGBB`. */
+	accent: string,
+	/**  Texto legible encima del acento (botones principales). */
+	accentText: string,
+};
 
 /**  Con qué mecanismo se está escuchando el atajo. */
 export type Backend = "registerHotKey" | "keyboardHook";
@@ -330,6 +341,8 @@ export type Status_Serialize = {
 	/**  Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán). */
 	storageError: string | null,
 };
+
+export type Theme = "light" | "dark";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

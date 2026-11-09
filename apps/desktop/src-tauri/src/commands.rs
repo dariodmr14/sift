@@ -107,6 +107,13 @@ fn get_status(app: AppHandle) -> Status {
     }
 }
 
+/// Tema y color de acento de Windows, para que la UI los siga.
+#[tauri::command]
+#[specta::specta]
+fn get_appearance() -> crate::appearance::Appearance {
+    crate::appearance::current()
+}
+
 #[tauri::command]
 #[specta::specta]
 fn get_settings(app: AppHandle) -> SettingsView {
@@ -162,6 +169,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             launcher_painted,
             get_status,
             get_settings,
+            get_appearance,
             set_hotkey,
             set_launch_at_startup,
             set_icons_hidden,
