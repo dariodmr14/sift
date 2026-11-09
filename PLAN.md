@@ -150,7 +150,7 @@ sift/
 - [x] Iconos: librería con buscador, emoji, imagen propia (PNG/SVG/ICO) o ninguno; icono real de Windows por defecto para apps y archivos; opción global "solo texto".
 - [x] Exportar e importar los Espacios a JSON.
 - [x] Sin datos de ejemplo: estado vacío con atajo para crear el primer Espacio.
-- [ ] Dirección visual elegida y aplicada como sistema de diseño (tokens), respetando "reducir movimiento".
+- [x] Dirección visual elegida («Vidrio», [ADR 0005](docs/adr/0005-direccion-visual-vidrio.md)) y aplicada como sistema de diseño ([tokens](docs/design-system.md)), respetando "reducir movimiento".
 
 **Hecho cuando:** creas un Espacio "bases de datos" desde Ajustes y, desde la barra, "bases" + Enter abre todas sus acciones (con confirmación la primera vez que hay un comando).
 
