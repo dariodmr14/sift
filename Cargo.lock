@@ -3191,6 +3191,13 @@ version = "0.1.0"
 [[package]]
 name = "sift-spaces"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "specta",
+ "tempfile",
+ "thiserror 2.0.21",
+]
 
 [[package]]
 name = "sift-storage"
