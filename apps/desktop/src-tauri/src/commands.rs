@@ -13,7 +13,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::hotkey::Backend;
 use crate::latency::LatencySummary;
-use crate::{HotkeyState, launcher};
+use crate::{HotkeyState, launcher, settings_window};
 
 /// Errores que la UI puede mostrar. En TypeScript llega como `{ kind, message }`.
 #[derive(Debug, Clone, Serialize, specta::Type)]
@@ -58,6 +58,14 @@ pub struct Status {
 #[specta::specta]
 fn hide_launcher(app: AppHandle) {
     launcher::hide(&app);
+}
+
+/// Abre la ventana de ajustes desde la barra (`Ctrl+,`, el engranaje o "ajustes").
+#[tauri::command]
+#[specta::specta]
+fn open_settings(app: AppHandle) {
+    launcher::hide(&app);
+    settings_window::open(&app);
 }
 
 /// La UI lo llama tras pintar el primer fotograma con el lanzador visible.
@@ -123,6 +131,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(collect_commands![
             hide_launcher,
+            open_settings,
             launcher_painted,
             get_status,
             get_settings,
