@@ -49,6 +49,59 @@ const MIGRATIONS: &[&str] = &[
         PRIMARY KEY (program, args, cwd)
     );
     "#,
+    // v2: indexado de archivos (Fase 2, ver ADR 0006). Los fragmentos (`chunks`) son la
+    // unidad de búsqueda y serán la de los embeddings en la Fase 4 (clave: chunks.id).
+    r#"
+    CREATE TABLE roots (
+        id               INTEGER PRIMARY KEY,
+        path             TEXT NOT NULL UNIQUE,
+        added_at         TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        last_indexed_at  TEXT
+    );
+
+    CREATE TABLE ignore_patterns (
+        position  INTEGER NOT NULL PRIMARY KEY,
+        pattern   TEXT    NOT NULL
+    );
+    -- Patrones por defecto: carpetas de dependencias, compilación y temporales.
+    INSERT INTO ignore_patterns (position, pattern) VALUES
+        (0, '.git'), (1, 'node_modules'), (2, 'target'), (3, 'dist'), (4, 'build'),
+        (5, '.venv'), (6, 'venv'), (7, '__pycache__'), (8, '.idea'), (9, '.vscode'),
+        (10, '$RECYCLE.BIN'), (11, '*.tmp'), (12, '~$*'), (13, 'Thumbs.db'), (14, 'desktop.ini');
+
+    CREATE TABLE files (
+        id            INTEGER PRIMARY KEY,
+        root_id       INTEGER NOT NULL REFERENCES roots(id) ON DELETE CASCADE,
+        path          TEXT    NOT NULL UNIQUE,
+        name          TEXT    NOT NULL,
+        ext           TEXT    NOT NULL,             -- en minúsculas, sin punto ('' si no hay)
+        size          INTEGER NOT NULL,
+        mtime         INTEGER NOT NULL,             -- milisegundos desde 1970
+        content_hash  TEXT,                         -- blake3 del contenido (si se extrajo)
+        indexed_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        error         TEXT                          -- por qué no se pudo leer (si pasó)
+    );
+    CREATE INDEX files_root ON files(root_id);
+
+    CREATE TABLE chunks (
+        id         INTEGER PRIMARY KEY,
+        file_id    INTEGER NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+        ordinal    INTEGER NOT NULL,                -- posición dentro del archivo
+        start      INTEGER NOT NULL,                -- desplazamiento en caracteres
+        text       TEXT    NOT NULL,
+        UNIQUE (file_id, ordinal)
+    );
+
+    -- Qué abres y cuándo (frecuencia de uso, Fase 5).
+    CREATE TABLE opens (
+        id         INTEGER PRIMARY KEY,
+        file_id    INTEGER REFERENCES files(id) ON DELETE CASCADE,
+        space_id   INTEGER REFERENCES spaces(id) ON DELETE CASCADE,
+        opened_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+        CHECK ((file_id IS NULL) <> (space_id IS NULL))
+    );
+    CREATE INDEX opens_file ON opens(file_id);
+    "#,
 ];
 
 pub struct Database {
@@ -122,6 +175,28 @@ mod tests {
         // Si volviera a aplicar la v1, fallaría con "table spaces already exists".
         let db = Database::open(&path).unwrap();
         assert_eq!(db.schema_version().unwrap() as usize, MIGRATIONS.len());
+    }
+
+    #[test]
+    fn upgrades_a_v1_database_keeping_its_data() {
+        // Una base de datos real de la Fase 1.5: solo la v1 aplicada y un Espacio dentro.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("sift.db");
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(MIGRATIONS[0]).unwrap();
+            conn.pragma_update(None, "user_version", 1).unwrap();
+            conn.execute(
+                "INSERT INTO spaces (position, name, icon) VALUES (0, 'Uni', '{\"kind\":\"auto\"}')",
+                [],
+            )
+            .unwrap();
+        }
+        let db = Database::open(&path).unwrap();
+        assert_eq!(db.schema_version().unwrap() as usize, MIGRATIONS.len());
+        assert_eq!(db.list_spaces().unwrap()[0].draft.name, "Uni");
+        assert!(db.list_roots().unwrap().is_empty());
+        assert!(!db.ignore_patterns().unwrap().is_empty());
     }
 
     #[test]
