@@ -81,7 +81,7 @@
 }
 
 /*
- * Con un material de Windows detrás (Acrylic en la barra, Mica o blur en Ajustes), el
+ * Con el vidrio de Windows detrás (Acrylic con el mismo tinte en todas las ventanas), el
  * fondo lo pinta Windows: la UI casi no añade. Lo marca `data-glass="true"` en <html>.
  */
 :root[data-glass="true"] {
@@ -92,14 +92,21 @@
 }
 
 /*
- * Vidrio por CSS para lo que flota *dentro* de una ventana (diálogos, menús): desenfoca
- * lo que hay detrás en la propia página. Más opaco que la ventana, para separarse de ella.
+ * Vidrio por CSS para lo que flota *dentro* de una ventana (diálogos, barras fijas):
+ * desenfoca lo que hay detrás en la propia página. Es el MISMO aspecto que la ventana:
+ * el tinte del Acrylic (alfa 200/255 = 0,78, materials.rs) más la capa `--surface` de
+ * encima, compuestos: 1 − (1 − 0,78)·(1 − 0,22) ≈ 0,83 en oscuro (0,84 en claro).
  */
 :root {
-  --glass: rgb(44 44 50 / 0.72);
+  --glass: rgb(32 32 36 / 0.83);
 }
 :root[data-theme="light"] {
-  --glass: rgb(250 250 252 / 0.74);
+  --glass: rgb(243 243 245 / 0.84);
+}
+
+/* Sin vidrio («Desactivar vidrio» o sin material): diálogos y barras fijas, opacos. */
+:root:not([data-glass="true"]) {
+  --glass: var(--surface);
 }
 
 /* «Efectos de transparencia» desactivados en Windows: todo opaco. */
@@ -113,6 +120,13 @@
   :root {
     --glass: var(--surface);
   }
+}
+
+/* Mientras se arrastra una tarjeta (Sortable.tsx): agarre y nada seleccionable. */
+:root.sift-sorting,
+:root.sift-sorting * {
+  cursor: grabbing !important;
+  user-select: none !important;
 }
 
 html,
@@ -130,8 +144,8 @@ body,
   /* Superficie flotante de vidrio (diálogos). */
   .sift-glass {
     background: var(--glass);
-    -webkit-backdrop-filter: blur(24px) saturate(140%);
-    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(30px) saturate(125%);
+    backdrop-filter: blur(30px) saturate(125%);
     border: 1px solid var(--line);
     border-radius: var(--radius-window);
     box-shadow: var(--shadow-window);
@@ -168,33 +182,9 @@ body,
     background: var(--accent);
   }
 
-  /*
-   * Reordenar arrastrando: el elemento que se arrastra se atenúa y una línea del acento
-   * marca dónde caerá (antes de un elemento, o después del último).
-   */
-  .sift-dragging {
-    opacity: 0.45;
-  }
-  .sift-drop-before,
-  .sift-drop-after {
-    position: relative;
-  }
-  .sift-drop-before::after,
-  .sift-drop-after::after {
-    content: "";
-    position: absolute;
-    left: 4px;
-    right: 4px;
-    height: 2px;
-    border-radius: 1px;
-    background: var(--accent);
-    pointer-events: none;
-  }
-  .sift-drop-before::after {
-    top: -2px;
-  }
-  .sift-drop-after::after {
-    bottom: -2px;
+  /* Progreso indeterminado (el total no se conoce hasta terminar de recorrer). */
+  .sift-progress {
+    animation: sift-progress 1.2s ease-in-out infinite;
   }
 
   /*
@@ -231,6 +221,15 @@ body,
   }
 }
 
+@keyframes sift-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
 /* «Reducir movimiento» (en Windows: «Mostrar animaciones en Windows» desactivado). */
 @media (prefers-reduced-motion: reduce) {
   .sift-from {
@@ -238,7 +237,8 @@ body,
     transform: none;
   }
   .sift-enter,
-  .sift-exit {
+  .sift-exit,
+  .sift-progress {
     animation: none;
   }
 }

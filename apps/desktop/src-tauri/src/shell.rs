@@ -53,6 +53,22 @@ fn parsing_name(key: &str) -> String {
     }
 }
 
+/// Abre el Explorador en la carpeta del archivo, con el archivo seleccionado.
+pub fn reveal_in_explorer(path: &Path) -> Result<(), String> {
+    let mut cmd = std::process::Command::new("explorer.exe");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // El Explorador espera `/select,"ruta"` como un solo argumento con estas comillas
+        // exactas; `arg()` las escaparía. La ruta sale del índice (no la escribe nadie) y
+        // en Windows no puede contener comillas.
+        cmd.raw_arg(format!("/select,\"{}\"", path.display()));
+    }
+    cmd.spawn()
+        .map(|_| ())
+        .map_err(|e| format!("no se pudo abrir el Explorador: {e}"))
+}
+
 pub fn list_apps() -> Result<Vec<InstalledApp>, String> {
     let mut apps = platform::list_apps()?;
     apps.retain(|a| !a.name.trim().is_empty());

@@ -155,14 +155,19 @@ sift/
 **Hecho cuando:** creas un Espacio "bases de datos" desde Ajustes y, desde la barra, "bases" + Enter abre todas sus acciones (con confirmación la primera vez que hay un comando).
 
 ### Fase 2 — Indexado y búsqueda por palabras
-- [ ] Esquema SQLite con migraciones: `roots`, `files`, `chunks`, `opens`.
-- [ ] Ajustes: elegir carpetas a indexar y patrones a ignorar (`node_modules`, `.git`…).
-- [ ] Recorrido de carpetas y extracción de texto/Markdown/código.
-- [ ] Índice Tantivy con analizador en español; búsqueda con prefijos y erratas.
-- [ ] Resultados con nombre, ruta, fragmento con el término resaltado e icono por tipo.
-- [ ] Acciones: abrir, abrir carpeta contenedora, copiar ruta.
+> Arquitectura pensada para la Fase 4: ver [ADR 0006](docs/adr/0006-arquitectura-de-busqueda.md).
+- [x] Esquema SQLite con migraciones: `roots`, `ignore_patterns`, `files`, `chunks` (fragmentos, la unidad de la Fase 4) y `opens`.
+- [x] Ajustes → «Carpetas»: añadir y quitar carpetas (selector de Windows), patrones a ignorar y estado del indexado.
+- [x] Recorrido de carpetas y extracción de texto/Markdown/código (con detección de codificación); el resto, por nombre.
+- [x] Troceado en fragmentos con solapamiento.
+- [x] Índice Tantivy con analizador en español; búsqueda con prefijos y erratas, en nombre y contenido.
+- [x] Pipeline de recuperadores + fusión RRF (hoy solo el léxico; el semántico se añade en la Fase 4).
+- [x] La barra busca en todo a la vez: Espacios, comandos y archivos, con secciones.
+- [x] Resultados con nombre, ruta, fragmento con el término resaltado e icono por tipo.
+- [x] Acciones: abrir, abrir carpeta contenedora, copiar ruta.
+- [x] Latencia de búsqueda medida (objetivo < 50 ms).
 
-**Hecho cuando:** buscas una palabra que está dentro de un apunte y aparece en < 50 ms.
+**Hecho cuando:** buscas una palabra que está dentro de un apunte y aparece en < 50 ms. ✅ p50 6,3 ms · p95 12,1 ms con 50.000 fragmentos.
 
 ### Fase 3 — Más formatos e indexado incremental
 - [ ] Extracción de PDF (PDFium) y Word.

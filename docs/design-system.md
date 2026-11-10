@@ -11,15 +11,16 @@ Sift tiene que parecer parte de Windows: Acrylic, Segoe UI y **tu** color de ace
 
 ## Materiales (el vidrio)
 
-Como en Fluent, cada tipo de superficie tiene su material de Windows (`apps/desktop/src-tauri/src/materials.rs`):
+**Un único vidrio para toda la app** (`apps/desktop/src-tauri/src/materials.rs`): Acrylic de Windows con el mismo tinte (`tint()`, alfa 200/255) en la barra, en Ajustes y en cualquier ventana nueva. Encima, la UI solo pone `--surface` casi transparente.
 
-| Superficie | Material | Alternativa |
+| Superficie | Vidrio | Sin vidrio |
 |---|---|---|
-| Barra (flotante, nunca se arrastra) | Acrylic | Opaco |
-| Ventanas de app (Ajustes) | Mica (Windows 11) | Blur con tinte (Windows 10), luego opaco |
-| Diálogos y barras fijas dentro de una ventana | Vidrio por CSS: `.sift-glass` o `bg-glass backdrop-blur-xl` | Opaco |
+| Ventanas (barra, Ajustes) | Acrylic con el tinte común | Opaco |
+| Diálogos y barras fijas dentro de una ventana | `.sift-glass` o `bg-glass backdrop-blur-xl`: el mismo tinte compuesto con `--surface` (≈ 83 %) | Opaco |
 
-Acrylic no se usa en ventanas que se arrastran o redimensionan: en Windows 10 v1903+ y Windows 11 22000 va a tirones. La UI sabe qué material tiene su ventana (`get_window_material`) y lo marca en `<html data-glass>`. Con «Efectos de transparencia» desactivados en Windows (`prefers-reduced-transparency`), todo es opaco.
+Acrylic va a tirones al **arrastrar o redimensionar** una ventana en Windows 10 v1903+ y Windows 11 22000. Por eso, mientras Ajustes se mueve, pasa a *blur* con el mismo tinte (`materials::on_moved`), y 200 ms después de soltarla vuelve el Acrylic. En reposo, que es lo que se ve, es idéntico a la barra.
+
+Vidrio por defecto; **«Desactivar vidrio»** (Ajustes → General) deja toda la app opaca. La UI sabe qué material tiene su ventana (`get_window_material`) y lo marca en `<html data-glass>`. Con «Efectos de transparencia» desactivados en Windows (`prefers-reduced-transparency`), todo es opaco.
 
 ## Tokens
 
@@ -27,7 +28,7 @@ Acrylic no se usa en ventanas que se arrastran o redimensionan: en Windows 10 v1
 
 | Token | Utilidad | Oscuro | Claro | Uso |
 |---|---|---|---|---|
-| `--surface` | `bg-surface` | `rgb(32 32 36)` · con Acrylic 22 % | `rgb(243 243 245)` · con Acrylic 28 % | Fondo de ventana |
+| `--surface` | `bg-surface` | `rgb(32 32 36)` · con vidrio 22 % | `rgb(243 243 245)` · con vidrio 28 % | Fondo de ventana |
 | `--fg` | `text-fg` | `rgb(243 244 246)` | `rgb(27 27 31)` | Texto principal |
 | `--muted` | `text-muted` | `rgb(166 173 187)` | `rgb(92 99 112)` | Texto secundario, ayudas |
 | `--line` | `border-line` | blanco 8 % | negro 8 % | Separadores y bordes |
@@ -38,7 +39,7 @@ Acrylic no se usa en ventanas que se arrastran o redimensionan: en Windows 10 v1
 | `--accent-fg` | `text-accent-fg` | negro o blanco, el de más contraste | | Texto sobre el acento |
 | `--danger` | `text-danger` | `rgb(255 153 164)` | `rgb(196 43 28)` | Errores |
 | `--success` | `text-success` | `rgb(108 203 95)` | `rgb(15 123 15)` | Confirmaciones |
-| `--glass` | `bg-glass` | `rgb(44 44 50 / 0.72)` | `rgb(250 250 252 / 0.74)` | Diálogos y barras fijas (con `backdrop-blur`) |
+| `--glass` | `bg-glass` | `rgb(32 32 36 / 0.83)` | `rgb(243 243 245 / 0.84)` | Diálogos y barras fijas (con `backdrop-blur`); el mismo aspecto que la ventana |
 | | `bg-scrim` | negro 50 % | negro 50 % | Fondo tras un diálogo |
 
 Sin acento legible en el registro, se usa el azul de Windows (`#60CDFF` en oscuro, `#005FB8` en claro).
@@ -77,7 +78,7 @@ Cuando la barra se oculta (por cualquier vía), Rust emite `LauncherHidden` y la
 - **`.sift-option`** (`index.css`): opción de lista con la selección de Windows. Se marca con `aria-selected="true"` o `aria-current`.
 - **`Button`, `TextInput`, `Field`, `Modal`, `ErrorText`** (`src/settings/ui.tsx`): controles de los ajustes, ya con los tokens. Variantes de botón: `primary` (acento), `secondary`, `ghost`, `danger`.
 - **`.sift-glass`** (`index.css`): superficie flotante de vidrio para diálogos (`Modal` ya la usa).
-- **Reordenar arrastrando**: `useDragReorder` (`src/settings/useDragReorder.ts`) con eventos de puntero, más `.sift-dragging` (lo que se arrastra, atenuado) y `.sift-drop-before`/`.sift-drop-after` (línea del acento donde caerá). Siempre con la alternativa de teclado Alt+↑/↓ y un `aria-live` que anuncie el cambio.
+- **Reordenar arrastrando**: `SortableList` y `useSortableItem` (`src/settings/Sortable.tsx`), sobre [dnd-kit](https://dndkit.com). La tarjeta sigue al puntero, se levanta (`bg-glass` + `shadow-window`) y las demás se apartan con una transición de 180 ms solo de `transform` (ninguna con «reducir movimiento»). Mientras se arrastra, `<html class="sift-sorting">` impide seleccionar texto. El asa lleva `select-none touch-none` y las imágenes `draggable={false}`. Siempre con la alternativa de teclado Alt+↑/↓ y anuncios en español para lectores de pantalla.
 - **`SpaceIcon`** (`src/components/SpaceIcon.tsx`): icono de un Espacio. Los SVG se pintan con `<img>` o máscara CSS, nunca como HTML.
 
 ## Cómo añadir algo nuevo
