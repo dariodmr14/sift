@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -6,12 +7,19 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { commands } from "./bindings";
+import { commands, type FileHit, type Segment } from "./bindings";
 import { dismissLauncher, useLauncher } from "./useLauncher";
 import { matchBuiltins, type BuiltinId } from "./launcher/builtins";
 import { matchSpaces } from "./launcher/spaces";
 import { moveSelection } from "./launcher/selection";
 import { SpaceIcon } from "./components/SpaceIcon";
+import {
+  SECTION_LABEL,
+  isLatest,
+  sectionStarts,
+  shortFolder,
+  type Section,
+} from "./launcher/files";
 
 type Ok<T> = Extract<T, { status: "ok" }> extends { data: infer D } ? D : never;
 type SpaceView = Ok<Awaited<ReturnType<typeof commands.listSpaces>>>[number];
@@ -29,11 +37,42 @@ const BUILTIN_ICON: Record<BuiltinId, string> = {
 /** Lo que la lista sabe pintar y ejecutar, venga de donde venga. */
 interface Item {
   key: string;
-  title: string;
-  subtitle: string;
+  section: Section;
+  title: ReactNode;
+  subtitle: ReactNode;
   icon: ReactNode;
   shortcut?: string;
+  /** Ruta del archivo (solo resultados de archivos): Ctrl+↵ carpeta, Ctrl+Shift+C copiar. */
+  path?: string;
   activate: () => void;
+}
+
+/** Texto con las partes encontradas resaltadas (los trozos vienen de Rust). */
+function Highlighted({ segments }: { segments: Segment[] }) {
+  return (
+    <>
+      {segments.map((s, i) =>
+        s.hit ? (
+          <mark key={i} className="rounded-[2px] bg-accent/25 text-fg">
+            {s.text}
+          </mark>
+        ) : (
+          <span key={i}>{s.text}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+/** Abre un archivo encontrado; si falla, el motivo va al panel de resultado. */
+async function openFile(
+  hit: FileHit,
+  onError: (msg: string) => void,
+  done: () => void,
+) {
+  const r = await commands.openFile(hit.path);
+  if (r.status === "error") onError(r.error.message);
+  else done();
 }
 
 /** La barra está en uno de tres modos. */
@@ -63,6 +102,45 @@ function App() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const rootRef = useRef<HTMLElement>(null);
+  const [fileHits, setFileHits] = useState<FileHit[]>([]);
+  const [fileIcons, setFileIcons] = useState<Record<string, string | null>>({});
+  // Número de la última búsqueda pedida: las respuestas de búsquedas anteriores se ignoran.
+  const searchSeq = useRef(0);
+
+  // Búsqueda de archivos en Rust a cada tecla (es rápida: < 50 ms).
+  useEffect(() => {
+    const seq = ++searchSeq.current;
+    if (!query.trim()) {
+      // Sin consulta no hay archivos que mostrar (se limpia en la siguiente vuelta).
+      void Promise.resolve().then(
+        () => isLatest(seq, searchSeq.current) && setFileHits([]),
+      );
+      return;
+    }
+    void commands.searchFiles(query, seq).then((r) => {
+      if (r.status !== "ok" || !isLatest(r.data.seq, searchSeq.current)) return;
+      setFileHits(r.data.results.hits);
+    });
+  }, [query]);
+
+  // Iconos de Windows de los archivos encontrados (una vez por ruta).
+  useEffect(() => {
+    const missing = fileHits
+      .map((h) => h.path)
+      .filter((p) => !(p in fileIcons));
+    if (missing.length === 0) return;
+    let alive = true;
+    void commands.getIcons(missing).then((r) => {
+      if (!alive || r.status !== "ok") return;
+      setFileIcons((prev) => ({
+        ...prev,
+        ...Object.fromEntries(missing.map((p, i) => [p, r.data[i] ?? null])),
+      }));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [fileHits, fileIcons]);
 
   // Los Espacios y el ajuste de iconos se recargan cada vez que se abre la barra, así
   // siempre reflejan lo último que se editó en Ajustes.
@@ -138,6 +216,7 @@ function App() {
       spaces.map((v) => ({ ...v.space, view: v })),
     ).map(({ view }) => ({
       key: `space-${view.space.id}`,
+      section: "spaces" as const,
       title: view.space.name,
       subtitle: subtitleFor(view),
       icon: (
@@ -149,17 +228,51 @@ function App() {
       ),
       activate: () => void launch(view, false),
     }));
+    const files = fileHits.map((hit) => ({
+      key: `file-${hit.fileId}`,
+      section: "files" as const,
+      title: <Highlighted segments={hit.nameSegments} />,
+      // Con coincidencia en el contenido, el fragmento; si no, la carpeta.
+      subtitle: hit.snippet.length ? (
+        <Highlighted segments={hit.snippet} />
+      ) : (
+        shortFolder(hit.path)
+      ),
+      icon: fileIcons[hit.path] ? (
+        <img
+          src={fileIcons[hit.path]!}
+          alt=""
+          className="size-6"
+          draggable={false}
+        />
+      ) : (
+        <span className="size-6" />
+      ),
+      path: hit.path,
+      activate: () =>
+        void openFile(
+          hit,
+          (msg) => setMode({ kind: "result", title: hit.name, errors: [msg] }),
+          () => dismissLauncher(rootRef.current),
+        ),
+    }));
     const builtins = matchBuiltins(query).map((c) => ({
       key: `builtin-${c.id}`,
+      section: "commands" as const,
       title: c.title,
       subtitle: c.subtitle,
       icon: <span className="text-xl">{BUILTIN_ICON[c.id]}</span>,
       shortcut: c.shortcut,
       activate: () => openSettings(c.id === "newSpace"),
     }));
-    // Los comandos van detrás: lo que buscas suele ser un Espacio, no la propia app.
-    return [...fromSpaces, ...builtins];
-  }, [query, spaces, launch]);
+    // Espacios, luego archivos y, al final, los comandos de la propia app.
+    return [...fromSpaces, ...files, ...builtins];
+  }, [query, spaces, launch, fileHits, fileIcons]);
+
+  const starts = useMemo(
+    () => sectionStarts(items.map((i) => i.section)),
+    [items],
+  );
 
   const isEmpty = spaces.length === 0 && !query.trim();
 
@@ -171,10 +284,25 @@ function App() {
   }, [selected]);
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.ctrlKey && (e.key === "," || e.key.toLowerCase() === "n")) {
+    // Por la tecla física (`code`) y no por el carácter (`key`): con el teclado español
+    // la coma no siempre llega como "," con Ctrl pulsado.
+    if (e.ctrlKey && (e.code === "Comma" || e.code === "KeyN")) {
       e.preventDefault(); // Ctrl+, ajustes; Ctrl+N crear Espacio
-      openSettings(e.key !== ",");
+      openSettings(e.code === "KeyN");
       return;
+    }
+    const current = items[selected];
+    if (mode.kind === "list" && current?.path) {
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault(); // Ctrl+↵: abrir la carpeta con el archivo seleccionado
+        void commands.revealFile(current.path).then(() => dismiss());
+        return;
+      }
+      if (e.ctrlKey && e.shiftKey && e.code === "KeyC") {
+        e.preventDefault(); // Ctrl+Shift+C: copiar la ruta
+        void navigator.clipboard.writeText(current.path).then(() => dismiss());
+        return;
+      }
     }
     if (mode.kind === "confirm") {
       if (e.key === "Enter") {
@@ -230,7 +358,7 @@ function App() {
           setMode({ kind: "list" });
         }}
         onKeyDown={onKeyDown}
-        placeholder="Buscar un Espacio…"
+        placeholder="Buscar en Sift…"
         spellCheck={false}
         role="combobox"
         aria-label="Buscar"
@@ -259,45 +387,55 @@ function App() {
             className="h-full overflow-y-auto p-2"
           >
             {items.map((item, i) => (
-              <li
-                key={item.key}
-                id={`result-${item.key}`}
-                data-index={i}
-                role="option"
-                aria-selected={i === selected}
-                onMouseMove={() => setSelected(i)}
-                onMouseDown={(e) => e.preventDefault()} // que el input no pierda el foco
-                onClick={item.activate}
-                className="sift-option flex items-center gap-3 px-3 py-2"
-              >
-                {!iconsHidden && (
-                  <span
-                    className="flex w-7 shrink-0 items-center justify-center"
-                    aria-hidden
+              <Fragment key={item.key}>
+                {starts.has(i) && (
+                  // Cabecera de sección: no se puede seleccionar (no es una opción).
+                  <li
+                    role="presentation"
+                    className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase first:pt-0"
                   >
-                    {item.icon}
-                  </span>
+                    {SECTION_LABEL[item.section]}
+                  </li>
                 )}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px]">
-                    {item.title}
+                <li
+                  id={`result-${item.key}`}
+                  data-index={i}
+                  role="option"
+                  aria-selected={i === selected}
+                  onMouseMove={() => setSelected(i)}
+                  onMouseDown={(e) => e.preventDefault()} // que el input no pierda el foco
+                  onClick={item.activate}
+                  className="sift-option flex items-center gap-3 px-3 py-2"
+                >
+                  {!iconsHidden && (
+                    <span
+                      className="flex w-7 shrink-0 items-center justify-center"
+                      aria-hidden
+                    >
+                      {item.icon}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px]">
+                      {item.title}
+                    </span>
+                    <span className="block truncate text-xs text-muted">
+                      {item.subtitle}
+                    </span>
                   </span>
-                  <span className="block truncate text-xs text-muted">
-                    {item.subtitle}
-                  </span>
-                </span>
-                {item.shortcut ? (
-                  <kbd className="text-xs text-muted" aria-hidden>
-                    {item.shortcut}
-                  </kbd>
-                ) : (
-                  i === selected && (
+                  {item.shortcut ? (
                     <kbd className="text-xs text-muted" aria-hidden>
-                      ↵
+                      {item.shortcut}
                     </kbd>
-                  )
-                )}
-              </li>
+                  ) : (
+                    i === selected && (
+                      <kbd className="text-xs text-muted" aria-hidden>
+                        ↵
+                      </kbd>
+                    )
+                  )}
+                </li>
+              </Fragment>
             ))}
           </ul>
         ) : (
@@ -317,7 +455,14 @@ function App() {
           <>
             <span>↑↓ moverse</span>
             <span>↵ abrir</span>
-            <span>Ctrl+N nuevo Espacio</span>
+            {items[selected]?.path ? (
+              <>
+                <span>Ctrl+↵ carpeta</span>
+                <span>Ctrl+Shift+C copiar ruta</span>
+              </>
+            ) : (
+              <span>Ctrl+N nuevo Espacio</span>
+            )}
           </>
         )}
         {/* Para quien use el ratón. Con teclado: Ctrl+, o escribir "ajustes". */}
