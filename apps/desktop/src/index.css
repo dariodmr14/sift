@@ -169,6 +169,35 @@ body,
   }
 
   /*
+   * Reordenar arrastrando: el elemento que se arrastra se atenúa y una línea del acento
+   * marca dónde caerá (antes de un elemento, o después del último).
+   */
+  .sift-dragging {
+    opacity: 0.45;
+  }
+  .sift-drop-before,
+  .sift-drop-after {
+    position: relative;
+  }
+  .sift-drop-before::after,
+  .sift-drop-after::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--accent);
+    pointer-events: none;
+  }
+  .sift-drop-before::after {
+    top: -2px;
+  }
+  .sift-drop-after::after {
+    bottom: -2px;
+  }
+
+  /*
    * Entrada y salida de la barra. Solo opacidad y escala: el compositor las anima sin
    * recalcular el diseño. La entrada arranca en 0,5 de opacidad, no en 0: el primer
    * fotograma ya enseña el contenido, así la animación no retrasa la apertura.

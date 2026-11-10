@@ -4,6 +4,8 @@ import { SpaceIcon } from "../components/SpaceIcon";
 import { SpaceEditor } from "./SpaceEditor";
 import { emptyDraft, move, toDraft, type SpaceView } from "./draft";
 import { Button, ErrorText } from "./ui";
+import { reorder as reorderList } from "./reorder";
+import { useDragReorder } from "./useDragReorder";
 
 /** Qué se está editando: un Espacio guardado (su id) o uno nuevo. */
 type Selection = { kind: "space"; id: number } | { kind: "new" } | null;
@@ -50,16 +52,30 @@ export function SpacesSection() {
     };
   }, [reload]);
 
-  async function reorder(index: number, delta: -1 | 1) {
-    if (!spaces) return;
-    const next = move(spaces, index, delta);
+  const [announcement, setAnnouncement] = useState("");
+
+  /** Guarda un orden nuevo en SQLite (y lo pinta ya, sin esperar). */
+  async function saveOrder(next: SpaceView[], moved: SpaceView) {
     setSpaces(next); // optimista: se ve al instante
+    setAnnouncement(
+      `«${moved.space.name}» movido a la posición ${next.indexOf(moved) + 1}`,
+    );
     const r = await commands.reorderSpaces(next.map((v) => v.space.id));
     if (r.status === "error") {
       setMessage({ ok: false, text: r.error.message });
       void reload();
     }
   }
+
+  function reorder(index: number, delta: -1 | 1) {
+    if (!spaces) return;
+    void saveOrder(move(spaces, index, delta), spaces[index]);
+  }
+
+  const spaceDrag = useDragReorder((from, slot) => {
+    if (!spaces) return;
+    void saveOrder(reorderList(spaces, from, slot), spaces[from]);
+  });
 
   async function exportAll() {
     const r = await commands.exportSpaces();
@@ -90,6 +106,9 @@ export function SpacesSection() {
   return (
     <div className="flex h-full min-h-0">
       <aside className="flex w-64 shrink-0 flex-col border-r border-line">
+        <p aria-live="polite" className="sr-only">
+          {announcement}
+        </p>
         <ul
           aria-label="Espacios"
           className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pt-3"
@@ -101,9 +120,15 @@ export function SpacesSection() {
             const active =
               selection?.kind === "space" && selection.id === view.space.id;
             return (
-              <li key={view.space.id} className="group flex items-center">
+              <li
+                key={view.space.id}
+                ref={spaceDrag.itemRef(i)}
+                className={`flex items-center ${spaceDrag.itemClass(i, spaces.length)}`}
+              >
                 <button
                   type="button"
+                  {...spaceDrag.handleProps(i)}
+                  title="Arrastra para reordenar (o Alt+↑/↓)"
                   aria-current={active}
                   onClick={() =>
                     setSelection({ kind: "space", id: view.space.id })
@@ -118,7 +143,7 @@ export function SpacesSection() {
                       void reorder(i, e.key === "ArrowUp" ? -1 : 1);
                     }
                   }}
-                  className="sift-option flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+                  className="sift-option flex min-w-0 flex-1 touch-none items-center gap-2 px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <SpaceIcon
                     icon={view.space.icon}
@@ -128,28 +153,6 @@ export function SpacesSection() {
                   />
                   <span className="truncate">{view.space.name}</span>
                 </button>
-                <span className="flex opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
-                  <Button
-                    variant="ghost"
-                    className="px-1.5"
-                    aria-label={`Subir ${view.space.name}`}
-                    title="Subir (Alt+↑)"
-                    disabled={i === 0}
-                    onClick={() => void reorder(i, -1)}
-                  >
-                    ↑
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="px-1.5"
-                    aria-label={`Bajar ${view.space.name}`}
-                    title="Bajar (Alt+↓)"
-                    disabled={i === spaces.length - 1}
-                    onClick={() => void reorder(i, 1)}
-                  >
-                    ↓
-                  </Button>
-                </span>
               </li>
             );
           })}

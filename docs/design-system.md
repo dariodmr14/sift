@@ -76,6 +76,8 @@ Cuando la barra se oculta (por cualquier vía), Rust emite `LauncherHidden` y la
 
 - **`.sift-option`** (`index.css`): opción de lista con la selección de Windows. Se marca con `aria-selected="true"` o `aria-current`.
 - **`Button`, `TextInput`, `Field`, `Modal`, `ErrorText`** (`src/settings/ui.tsx`): controles de los ajustes, ya con los tokens. Variantes de botón: `primary` (acento), `secondary`, `ghost`, `danger`.
+- **`.sift-glass`** (`index.css`): superficie flotante de vidrio para diálogos (`Modal` ya la usa).
+- **Reordenar arrastrando**: `useDragReorder` (`src/settings/useDragReorder.ts`) con eventos de puntero, más `.sift-dragging` (lo que se arrastra, atenuado) y `.sift-drop-before`/`.sift-drop-after` (línea del acento donde caerá). Siempre con la alternativa de teclado Alt+↑/↓ y un `aria-live` que anuncie el cambio.
 - **`SpaceIcon`** (`src/components/SpaceIcon.tsx`): icono de un Espacio. Los SVG se pintan con `<img>` o máscara CSS, nunca como HTML.
 
 ## Cómo añadir algo nuevo
