@@ -6,6 +6,7 @@ mod hotkey;
 mod latency;
 mod launcher;
 mod logging;
+mod materials;
 mod settings_window;
 mod shell;
 mod spaces_commands;
@@ -148,6 +149,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(launcher::LauncherState::default())
         .manage(shell::IconCache::default())
+        .manage(materials::Materials::default())
         .invoke_handler(specta.invoke_handler())
         .setup(move |app| {
             specta.mount_events(app);

@@ -4,7 +4,9 @@
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_specta::Event;
 
+use crate::appearance;
 use crate::commands::NewSpaceRequested;
+use crate::materials::{self, Materials, Surface};
 
 pub const LABEL: &str = "settings";
 
@@ -30,8 +32,14 @@ pub fn open(app: &AppHandle, new_space: bool) {
         .inner_size(920.0, 680.0)
         .min_inner_size(760.0, 520.0)
         .center()
+        // Transparente para que se vea el material de Windows (Mica o blur) detrás.
+        .transparent(true)
         .build();
-    if let Err(e) = built {
-        tracing::error!(error = %e, "no se pudo abrir la ventana de ajustes");
+    match built {
+        Ok(window) => {
+            let material = materials::apply(&window, Surface::AppWindow, appearance::theme());
+            app.state::<Materials>().set(LABEL, material);
+        }
+        Err(e) => tracing::error!(error = %e, "no se pudo abrir la ventana de ajustes"),
     }
 }

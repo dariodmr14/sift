@@ -204,7 +204,7 @@ export function SpaceEditor({
 
       {error && <ErrorText>{error}</ErrorText>}
 
-      <footer className="sticky bottom-0 flex items-center gap-2 border-t border-line bg-surface py-3">
+      <footer className="sticky bottom-0 flex items-center gap-2 border-t border-line bg-glass py-3 backdrop-blur-xl">
         <Button type="submit" variant="primary" disabled={!dirty}>
           {id === null ? "Crear Espacio" : "Guardar"}
         </Button>
