@@ -102,6 +102,11 @@
   --glass: rgb(250 250 252 / 0.74);
 }
 
+/* Sin material de Windows (Ajustes por defecto): diálogos y barras fijas, opacos. */
+:root:not([data-glass="true"]) {
+  --glass: var(--surface);
+}
+
 /* «Efectos de transparencia» desactivados en Windows: todo opaco. */
 @media (prefers-reduced-transparency: reduce) {
   :root[data-glass="true"] {

@@ -23,3 +23,21 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - ✅ **«Nuevo Espacio» al final de la lista**, donde aparecerá el Espacio creado. Resuelto.
 - ✅ **Icono como avatar.** El icono va a la izquierda, con nombre y alias a su derecha (tarjeta de contacto); clic en el avatar para cambiarlo. Resuelto.
 - ✅ **Reordenar arrastrando** Espacios y acciones, con línea del acento donde caerá; Alt+↑/↓ con teclado. El orden de los Espacios se guarda en SQLite al soltar; el de las acciones, al guardar el Espacio. Resuelto.
+
+## 2026-11-10 — Feedback tras usar feat/pulido-ajustes
+
+### Bugs
+- [x] ✅ **Ctrl+, no abre Ajustes** (resuelto en `feat/fase-2-indexado`: se detecta por tecla física `e.code`; Ctrl+N abre Ajustes en «Nuevo Espacio», que es lo esperado) desde la barra (teclado español). Ctrl+N sí abre Ajustes. Flechas, Enter y Esc funcionan bien. Revisar cómo se detecta la tecla coma con distribuciones no inglesas (usar `event.code` y no solo `event.key`, o lo que corresponda) y comprobar que Ctrl+N hace lo que debe.
+- [x] ✅ **El vidrio de Ajustes y el de la barra no se parecen** (tintes ajustados por material): Ajustes es mucho más translúcido. Deben verse coherentes.
+
+### Apariencia: vidrio vs opaco
+- [x] ✅ **Barra principal**: vidrio, pero menos translúcido que ahora, para que el fondo no choque ni reste legibilidad.
+- [x] ✅ **Ajustes y diálogos: opacos por defecto.** Para algunas personas el vidrio en ventanas de trabajo es incómodo.
+- [x] ✅ **Opción en Ajustes → Apariencia**: "Vidrio en toda la app" (desactivada por defecto). Si se activa, Ajustes y diálogos usan vidrio con la misma intensidad que la barra.
+- [x] ✅ Dejarlo preparado para un futuro sistema de temas (bloque `appearance` en los ajustes) y personalización de la apariencia (no hacerlo ahora, solo no cerrarle la puerta).
+
+### Editor de Espacios
+- [x] ✅ **"Nuevo Espacio"**: sacarlo de la lista y ponerlo como botón fijo justo encima de "Importar" / "Exportar", con su mismo formato. Con muchos Espacios, al final de la lista quedaría inaccesible.
+- [x] ✅ **Quitar el arrastre para reordenar Espacios.** (se mantiene Alt+↑/↓ hasta el orden por uso de la Fase 5) Solo cambia el orden de la lista y no aporta nada. Valorar si mantener Alt+↑/↓ o quitar también el orden manual (por ejemplo, orden alfabético o por uso).
+- [ ] ⏳ **Arrastre de acciones con animación real** — pendiente para la Fase 7 (pulido): coste medio y necesita afinado visual con ratón real.: al arrastrar, la tarjeta se mueve con el puntero y las demás se desplazan con una animación suave para hacerle hueco (tipo listas de Notion o Linear), no solo una línea que marca dónde cae. Respetar "reducir movimiento" de Windows.
+- [x] ✅ **Avatar y campos desalineados** (avatar de 88 px = bloque de campos 40+12+36, en la rejilla de 4 px): el icono (80 px) es más bajo que el bloque de Nombre + Alias, así que queda a una altura rara. Ajustarlo aplicando buenas prácticas de diseño de interfaces (alineación, ritmo vertical y espaciado del sistema Vidrio): por ejemplo, que el avatar ocupe la altura del bloque o que ambos queden alineados arriba con una relación de tamaños coherente. Decidir y justificar.

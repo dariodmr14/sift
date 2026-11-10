@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { commands, type SettingsView, type Status } from "../bindings";
+import { applyWindowMaterial } from "../appearance";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 
@@ -68,6 +69,7 @@ function Settings() {
                 <HotkeyForm initial={settings.hotkey} onSaved={refreshStatus} />
                 <StartupToggle initial={settings.launchAtStartup} />
                 <IconsToggle initial={settings.iconsHidden} />
+                <GlassToggle initial={settings.glassEverywhere} />
               </>
             ) : (
               <p>Cargando…</p>
@@ -83,6 +85,34 @@ function Settings() {
         )}
       </main>
     </div>
+  );
+}
+
+function GlassToggle({ initial }: { initial: boolean }) {
+  const [enabled, setEnabled] = useState(initial);
+  return (
+    <label className="flex items-start gap-3">
+      <input
+        type="checkbox"
+        checked={enabled}
+        onChange={(e) => {
+          const next = e.currentTarget.checked;
+          void commands.setGlassEverywhere(next).then((r) => {
+            if (r.status !== "ok") return;
+            setEnabled(r.data);
+            void applyWindowMaterial(); // esta ventana cambia al momento
+          });
+        }}
+        className="mt-1 size-4 accent-accent"
+      />
+      <span>
+        Vidrio en toda la app
+        <span className="block text-xs text-muted">
+          Ajustes y diálogos con el mismo vidrio que la barra. Desactivado, son
+          opacos (más cómodos para trabajar).
+        </span>
+      </span>
+    </label>
   );
 }
 

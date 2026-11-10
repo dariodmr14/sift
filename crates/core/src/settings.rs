@@ -16,6 +16,17 @@ pub struct Settings {
     pub hotkey: Hotkey,
     /// "Solo texto": oculta todos los iconos de la barra.
     pub icons_hidden: bool,
+    /// Apariencia. Bloque propio para que crezca (tema, intensidad del vidrio…) sin
+    /// llenar de campos sueltos el nivel de arriba.
+    pub appearance: AppearanceSettings,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+pub struct AppearanceSettings {
+    /// Vidrio también en Ajustes y diálogos. Por defecto no: en ventanas de trabajo el
+    /// fondo translúcido puede molestar; la barra siempre es de vidrio.
+    pub glass_everywhere: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -68,6 +79,9 @@ mod tests {
         let s = Settings {
             hotkey: "Ctrl+Shift+K".parse().unwrap(),
             icons_hidden: true,
+            appearance: AppearanceSettings {
+                glass_everywhere: true,
+            },
         };
         s.save(&path).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), s);
@@ -91,6 +105,7 @@ mod tests {
         let s = Settings::load(&path).unwrap();
         assert_eq!(s.hotkey.to_string(), "Ctrl+K");
         assert!(!s.icons_hidden);
+        assert!(!s.appearance.glass_everywhere); // opaco por defecto
     }
 
     #[test]

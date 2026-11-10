@@ -39,3 +39,5 @@ Desde la raíz del repo:
 - Los comandos de los Espacios se ejecutan con programa y argumentos separados, nunca concatenando en una shell.
 - Todo es local: nada de red salvo descargar el modelo de embeddings la primera vez.
 - Antes de dar una tarea por terminada: fmt, clippy y tests en verde.
+- Al empezar cada fase o rama nueva, lee FEEDBACK.md. Resuelve los puntos pendientes que encajen con el trabajo actual o con poco coste, y del resto di cuáles dejas para más adelante y por qué. Marca como resueltos los que hagas.
+- Antes de dar por buena una pantalla, revisa alineación, espaciado y jerarquía visual siguiendo el sistema de diseño.
