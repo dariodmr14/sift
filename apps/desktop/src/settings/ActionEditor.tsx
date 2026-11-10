@@ -20,6 +20,12 @@ interface Props {
   onChange: (action: Action) => void;
   onMove: (delta: -1 | 1) => void;
   onRemove: () => void;
+  /** Para medir la tarjeta al arrastrar (de `useDragReorder`). */
+  itemRef: (el: HTMLElement | null) => void;
+  /** Clases del arrastre: atenuada, o con la línea de dónde caerá. */
+  dragClass: string;
+  /** Eventos de puntero del asa (de `useDragReorder`). */
+  handleProps: React.HTMLAttributes<HTMLElement>;
 }
 
 export function ActionEditor({
@@ -30,6 +36,9 @@ export function ActionEditor({
   onChange,
   onMove,
   onRemove,
+  itemRef,
+  dragClass,
+  handleProps,
 }: Props) {
   const [test, setTest] = useState<TestState>({ kind: "idle" });
   const [picking, setPicking] = useState(false);
@@ -66,28 +75,33 @@ export function ActionEditor({
   }
 
   return (
-    <li className="space-y-3 rounded-window border border-line p-3">
+    <li
+      ref={itemRef}
+      // Alt+↑/↓ desde cualquier sitio de la tarjeta: la alternativa con teclado a arrastrar.
+      onKeyDown={(e) => {
+        if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+          e.preventDefault();
+          const delta = e.key === "ArrowUp" ? -1 : 1;
+          if ((delta < 0 && index > 0) || (delta > 0 && index < count - 1))
+            onMove(delta);
+        }
+      }}
+      className={`space-y-3 rounded-window border border-line p-3 ${dragClass}`}
+    >
       <div className="flex items-center gap-2">
+        <button
+          type="button"
+          {...handleProps}
+          aria-label={`Mover acción ${index + 1}: arrastra, o Alt+↑/↓`}
+          title="Arrastra para reordenar (o Alt+↑/↓)"
+          className="cursor-grab touch-none rounded-item px-1 text-muted outline-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
+        >
+          <span aria-hidden>⠿</span>
+        </button>
         <span className="text-xs text-muted">{index + 1}.</span>
         <span className="flex-1 text-sm font-medium">
           {ACTION_LABELS[action.kind]}
         </span>
-        <Button
-          variant="ghost"
-          aria-label="Subir acción"
-          disabled={index === 0}
-          onClick={() => onMove(-1)}
-        >
-          ↑
-        </Button>
-        <Button
-          variant="ghost"
-          aria-label="Bajar acción"
-          disabled={index === count - 1}
-          onClick={() => onMove(1)}
-        >
-          ↓
-        </Button>
         <Button
           onClick={() => void runTest(false)}
           disabled={test.kind === "running"}

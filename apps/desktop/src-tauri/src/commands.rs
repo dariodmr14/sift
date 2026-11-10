@@ -112,6 +112,16 @@ fn get_status(app: AppHandle) -> Status {
     }
 }
 
+/// Material de Windows de la ventana que pregunta (Acrylic, Mica, blur o ninguno), para
+/// que su UI elija fondo translúcido u opaco.
+#[tauri::command]
+#[specta::specta]
+fn get_window_material(window: tauri::WebviewWindow) -> crate::materials::Material {
+    window
+        .state::<crate::materials::Materials>()
+        .get(window.label())
+}
+
 /// Tema y color de acento de Windows, para que la UI los siga.
 #[tauri::command]
 #[specta::specta]
@@ -175,6 +185,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             get_status,
             get_settings,
             get_appearance,
+            get_window_material,
             set_hotkey,
             set_launch_at_startup,
             set_icons_hidden,

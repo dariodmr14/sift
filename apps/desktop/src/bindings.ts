@@ -21,6 +21,11 @@ export const commands = {
 	getSettings: () => __TAURI_INVOKE<SettingsView>("get_settings"),
 	/**  Tema y color de acento de Windows, para que la UI los siga. */
 	getAppearance: () => __TAURI_INVOKE<Appearance>("get_appearance"),
+	/**
+	 *  Material de Windows de la ventana que pregunta (Acrylic, Mica, blur o ninguno), para
+	 *  que su UI elija fondo translúcido u opaco.
+	 */
+	getWindowMaterial: () => __TAURI_INVOKE<Material>("get_window_material"),
 	setHotkey: (hotkey: string) => typedError<string, AppError>(__TAURI_INVOKE("set_hotkey", { hotkey })),
 	setLaunchAtStartup: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_launch_at_startup", { enabled })),
 	setIconsHidden: (hidden: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_icons_hidden", { hidden })),
@@ -209,6 +214,10 @@ export type LauncherHidden = null;
  *  poner el foco en la caja y avisar de vuelta cuando se haya pintado.
  */
 export type LauncherShown = null;
+
+export type Material = "acrylic" | "mica" | "blur" | 
+/**  Sin material: fondo opaco. */
+"none";
 
 /**  Se pidió "crear Espacio" desde la barra con la ventana de ajustes ya abierta. */
 export type NewSpaceRequested = null;
