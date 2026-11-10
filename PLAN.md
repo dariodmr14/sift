@@ -156,18 +156,18 @@ sift/
 
 ### Fase 2 — Indexado y búsqueda por palabras
 > Arquitectura pensada para la Fase 4: ver [ADR 0006](docs/adr/0006-arquitectura-de-busqueda.md).
-- [ ] Esquema SQLite con migraciones: `roots`, `ignore_patterns`, `files`, `chunks` (fragmentos, la unidad de la Fase 4) y `opens`.
-- [ ] Ajustes → «Carpetas»: añadir y quitar carpetas (selector de Windows), patrones a ignorar y estado del indexado.
-- [ ] Recorrido de carpetas y extracción de texto/Markdown/código (con detección de codificación); el resto, por nombre.
-- [ ] Troceado en fragmentos con solapamiento.
-- [ ] Índice Tantivy con analizador en español; búsqueda con prefijos y erratas, en nombre y contenido.
-- [ ] Pipeline de recuperadores + fusión RRF (hoy solo el léxico; el semántico se añade en la Fase 4).
-- [ ] La barra busca en todo a la vez: Espacios, comandos y archivos, con secciones.
-- [ ] Resultados con nombre, ruta, fragmento con el término resaltado e icono por tipo.
-- [ ] Acciones: abrir, abrir carpeta contenedora, copiar ruta.
-- [ ] Latencia de búsqueda medida (objetivo < 50 ms).
+- [x] Esquema SQLite con migraciones: `roots`, `ignore_patterns`, `files`, `chunks` (fragmentos, la unidad de la Fase 4) y `opens`.
+- [x] Ajustes → «Carpetas»: añadir y quitar carpetas (selector de Windows), patrones a ignorar y estado del indexado.
+- [x] Recorrido de carpetas y extracción de texto/Markdown/código (con detección de codificación); el resto, por nombre.
+- [x] Troceado en fragmentos con solapamiento.
+- [x] Índice Tantivy con analizador en español; búsqueda con prefijos y erratas, en nombre y contenido.
+- [x] Pipeline de recuperadores + fusión RRF (hoy solo el léxico; el semántico se añade en la Fase 4).
+- [x] La barra busca en todo a la vez: Espacios, comandos y archivos, con secciones.
+- [x] Resultados con nombre, ruta, fragmento con el término resaltado e icono por tipo.
+- [x] Acciones: abrir, abrir carpeta contenedora, copiar ruta.
+- [x] Latencia de búsqueda medida (objetivo < 50 ms).
 
-**Hecho cuando:** buscas una palabra que está dentro de un apunte y aparece en < 50 ms.
+**Hecho cuando:** buscas una palabra que está dentro de un apunte y aparece en < 50 ms. ✅ p50 6,3 ms · p95 12,1 ms con 50.000 fragmentos.
 
 ### Fase 3 — Más formatos e indexado incremental
 - [ ] Extracción de PDF (PDFium) y Word.
