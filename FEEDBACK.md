@@ -16,3 +16,10 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - **Iconos personalizables.** Por Espacio: librería con buscador, emoji, imagen propia (PNG/SVG/ICO) o ninguno. Opción global "solo texto". Icono real de Windows por defecto para apps y archivos. → Fase 1.5.
 - **Más personalidad visual.** Simple pero más bonita, que luzca en un vídeo para LinkedIn. Primero 2–3 direcciones visuales para elegir; después, sistema de diseño con tokens. Animaciones rápidas que no afecten a los < 100 ms y que respeten "reducir movimiento". → Fase 1.5 (adelanta parte de la Fase 7).
 - **Colocar ventanas.** Acciones que abren una app en una zona de la pantalla (p. ej. "VS Code en la mitad derecha"), como FancyZones: esperar a que abra, identificar su ventana, varios monitores. → Fase 6.5 (nueva).
+
+## 2026-11-10 — Tras usar los Espacios (rama `feat/pulido-ajustes`)
+
+- ✅ **Vidrio en todas las ventanas.** Ajustes y sus diálogos también son de vidrio, con la misma alternativa opaca. Como en Fluent, cada superficie lleva su material: Acrylic en la barra; Mica (Windows 11) o blur con tinte (Windows 10) en Ajustes, porque Acrylic va a tirones al arrastrar o redimensionar en Windows 10; y vidrio por CSS en diálogos y barras fijas. Resuelto.
+- ✅ **«Nuevo Espacio» al final de la lista**, donde aparecerá el Espacio creado. Resuelto.
+- ✅ **Icono como avatar.** El icono va a la izquierda, con nombre y alias a su derecha (tarjeta de contacto); clic en el avatar para cambiarlo. Resuelto.
+- ✅ **Reordenar arrastrando** Espacios y acciones, con línea del acento donde caerá; Alt+↑/↓ con teclado. El orden de los Espacios se guarda en SQLite al soltar; el de las acciones, al guardar el Espacio. Resuelto.
