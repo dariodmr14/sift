@@ -7,4 +7,6 @@ pub mod sync;
 
 pub use chunk::{Chunk, chunk_text};
 pub use ignore::{IgnoreRules, PatternError};
-pub use sync::{IndexSink, IndexedFile, SyncError, SyncReport, sync_root};
+pub use sync::{
+    IndexSink, IndexedFile, RootPlan, SyncError, SyncReport, apply_plan, scan_root, sync_root,
+};

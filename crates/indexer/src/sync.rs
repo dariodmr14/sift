@@ -1,5 +1,12 @@
 //! Sincronización incremental de una carpeta con la base de datos y el índice.
 //!
+//! Va en dos fases, para poder decir «Leyendo 32 de 120 archivos»:
+//!
+//! 1. **Buscar cambios** ([`scan_root`]): recorre la carpeta mirando solo tamaño y fecha
+//!    (barato) y apunta qué hay que leer y qué ya no existe. Nada se lee todavía.
+//! 2. **Leer** ([`apply_plan`]): extrae, trocea y guarda lo apuntado, de lo cambiado más
+//!    recientemente a lo más antiguo (lo que acabas de tocar es lo que vas a buscar).
+//!
 //! Por cada archivo:
 //! - Mismo tamaño y fecha que lo guardado → no se toca (ni se lee).
 //! - Cambió la fecha pero el contenido es el mismo (mismo hash) → solo se apunta la fecha.
@@ -15,7 +22,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::UNIX_EPOCH;
 
-use sift_storage::{Database, NewChunk, NewFile, Root, StorageError};
+use sift_storage::{Database, FileState, NewChunk, NewFile, Root, StorageError};
 use walkdir::WalkDir;
 
 use crate::chunk::chunk_text;
@@ -64,20 +71,57 @@ pub enum SyncError {
     Cancelled,
 }
 
-/// Sincroniza una carpeta. `progress` recibe (archivos vistos, ruta actual).
-pub fn sync_root(
+/// Un archivo nuevo o cambiado, pendiente de leer.
+#[derive(Debug, Clone)]
+struct Pending {
+    path: PathBuf,
+    size: i64,
+    mtime: i64,
+    previous: Option<FileState>,
+}
+
+/// Resultado de buscar cambios en una carpeta: qué hay que leer y qué borrar.
+#[derive(Debug)]
+pub struct RootPlan {
+    root: Root,
+    /// De lo más reciente a lo más antiguo.
+    pending: Vec<Pending>,
+    gone: Vec<i64>,
+    unchanged: usize,
+}
+
+impl RootPlan {
+    pub fn root(&self) -> &Root {
+        &self.root
+    }
+
+    /// Archivos que hay que leer (nuevos o cambiados).
+    pub fn to_read(&self) -> usize {
+        self.pending.len()
+    }
+
+    /// Archivos de la carpeta, sin contar los que ya no existen.
+    pub fn files(&self) -> usize {
+        self.pending.len() + self.unchanged
+    }
+}
+
+/// Fase 1: recorre la carpeta mirando solo tamaño y fecha. `progress` recibe los archivos
+/// vistos hasta ahora.
+pub fn scan_root(
     db: &Mutex<Database>,
     root: &Root,
     rules: &IgnoreRules,
-    sink: &mut dyn IndexSink,
     cancel: &AtomicBool,
-    mut progress: impl FnMut(usize, &Path),
-) -> Result<SyncReport, SyncError> {
-    let lock = || db.lock().unwrap_or_else(|p| p.into_inner());
-    let known = lock().file_states(root.id)?;
+    mut progress: impl FnMut(usize),
+) -> Result<RootPlan, SyncError> {
+    let mut known = db
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .file_states(root.id)?;
     let mut seen: HashSet<PathBuf> = HashSet::new();
-    let mut report = SyncReport::default();
-    let mut since_commit = 0;
+    let mut pending = Vec::new();
+    let mut unchanged = 0;
 
     let walker = WalkDir::new(&root.path)
         .follow_links(false)
@@ -90,7 +134,6 @@ pub fn sync_root(
 
     for entry in walker {
         if cancel.load(Ordering::Relaxed) {
-            sink.commit().map_err(SyncError::Index)?;
             return Err(SyncError::Cancelled);
         }
         // Una carpeta sin permiso no para el indexado del resto.
@@ -107,13 +150,70 @@ pub fn sync_root(
             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
             .map_or(0, |d| d.as_millis() as i64);
         seen.insert(path.clone());
-        progress(seen.len(), &path);
+        progress(seen.len());
 
-        let previous = known.get(&path);
-        if previous.is_some_and(|p| p.size == size && p.mtime == mtime) {
-            report.unchanged += 1;
-            continue;
+        let previous = known.remove(&path);
+        if previous
+            .as_ref()
+            .is_some_and(|p| p.size == size && p.mtime == mtime)
+        {
+            unchanged += 1;
+        } else {
+            pending.push(Pending {
+                path,
+                size,
+                mtime,
+                previous,
+            });
         }
+    }
+
+    // Lo cambiado hace menos va primero: es lo que más probablemente vas a buscar.
+    pending.sort_by_key(|p| std::cmp::Reverse(p.mtime));
+    // Lo que queda en `known` estaba guardado y ya no existe (o ahora se ignora).
+    let gone = known.into_values().map(|s| s.id).collect();
+    Ok(RootPlan {
+        root: root.clone(),
+        pending,
+        gone,
+        unchanged,
+    })
+}
+
+/// Fase 2: lee lo apuntado en el plan y lo guarda. `progress` recibe (leídos, ruta) antes
+/// de cada archivo.
+pub fn apply_plan(
+    db: &Mutex<Database>,
+    plan: RootPlan,
+    sink: &mut dyn IndexSink,
+    cancel: &AtomicBool,
+    mut progress: impl FnMut(usize, &Path),
+) -> Result<SyncReport, SyncError> {
+    let lock = || db.lock().unwrap_or_else(|p| p.into_inner());
+    let RootPlan {
+        root,
+        pending,
+        gone,
+        unchanged,
+    } = plan;
+    let mut report = SyncReport {
+        unchanged,
+        ..SyncReport::default()
+    };
+    let mut since_commit = 0;
+
+    for (done, file) in pending.into_iter().enumerate() {
+        if cancel.load(Ordering::Relaxed) {
+            sink.commit().map_err(SyncError::Index)?;
+            return Err(SyncError::Cancelled);
+        }
+        progress(done, &file.path);
+        let Pending {
+            path,
+            size,
+            mtime,
+            previous,
+        } = file;
 
         let ext = sift_extract::extension(&path);
         let name = path
@@ -127,7 +227,7 @@ pub fn sync_root(
         };
 
         // Cambió la fecha pero no el contenido: no hace falta reindexar.
-        if let (Some(p), Some(h)) = (previous, &hash)
+        if let (Some(p), Some(h)) = (&previous, &hash)
             && p.content_hash.as_ref() == Some(h)
         {
             lock().touch_file(p.id, size, mtime)?;
@@ -147,7 +247,7 @@ pub fn sync_root(
                 text: c.text,
             })
             .collect();
-        let file = NewFile {
+        let new_file = NewFile {
             root_id: root.id,
             path: path.clone(),
             name: name.clone(),
@@ -158,7 +258,7 @@ pub fn sync_root(
             error: error.clone(),
         };
         // SQLite primero (fuente de verdad); si el índice fallara, se puede reconstruir.
-        let (file_id, chunk_ids) = lock().upsert_file(&file, &chunks)?;
+        let (file_id, chunk_ids) = lock().upsert_file(&new_file, &chunks)?;
         sink.upsert(&IndexedFile {
             file_id,
             path: path.display().to_string(),
@@ -186,12 +286,6 @@ pub fn sync_root(
         }
     }
 
-    // Lo que estaba guardado y ya no existe (o ahora se ignora).
-    let gone: Vec<i64> = known
-        .iter()
-        .filter(|(p, _)| !seen.contains(*p))
-        .map(|(_, s)| s.id)
-        .collect();
     if !gone.is_empty() {
         lock().delete_files(&gone)?;
         sink.remove(&gone).map_err(SyncError::Index)?;
@@ -200,6 +294,18 @@ pub fn sync_root(
     sink.commit().map_err(SyncError::Index)?;
     lock().mark_root_indexed(root.id)?;
     Ok(report)
+}
+
+/// Las dos fases seguidas, sin informar del progreso.
+pub fn sync_root(
+    db: &Mutex<Database>,
+    root: &Root,
+    rules: &IgnoreRules,
+    sink: &mut dyn IndexSink,
+    cancel: &AtomicBool,
+) -> Result<SyncReport, SyncError> {
+    let plan = scan_root(db, root, rules, cancel, |_| {})?;
+    apply_plan(db, plan, sink, cancel, |_, _| {})
 }
 
 #[cfg(test)]
@@ -254,15 +360,7 @@ mod tests {
     }
 
     fn sync(f: &Fixture, index: &mut FakeIndex) -> SyncReport {
-        sync_root(
-            &f.db,
-            &f.root,
-            &f.rules,
-            index,
-            &AtomicBool::new(false),
-            |_, _| {},
-        )
-        .unwrap()
+        sync_root(&f.db, &f.root, &f.rules, index, &AtomicBool::new(false)).unwrap()
     }
 
     fn write(f: &Fixture, rel: &str, content: &str) -> PathBuf {
@@ -374,8 +472,46 @@ mod tests {
         write(&f, "a.md", "uno");
         let mut index = FakeIndex::default();
         let cancel = AtomicBool::new(true);
-        let r = sync_root(&f.db, &f.root, &f.rules, &mut index, &cancel, |_, _| {});
+        let r = sync_root(&f.db, &f.root, &f.rules, &mut index, &cancel);
         assert!(matches!(r, Err(SyncError::Cancelled)));
-        assert_eq!(index.commits, 1);
+        assert!(index.files.is_empty());
+    }
+
+    #[test]
+    fn scanning_reads_nothing_and_counts_what_to_read() {
+        let f = fixture();
+        write(&f, "a.md", "uno");
+        write(&f, "b.md", "dos");
+        let mut index = FakeIndex::default();
+        sync(&f, &mut index);
+        let c = write(&f, "c.md", "tres");
+        set_mtime(&c, 3_000_000);
+        let plan = scan_root(&f.db, &f.root, &f.rules, &AtomicBool::new(false), |_| {}).unwrap();
+        assert_eq!((plan.to_read(), plan.files()), (1, 3));
+        assert_eq!(index.upserts, 2); // buscar cambios no ha escrito nada
+    }
+
+    #[test]
+    fn most_recently_changed_files_are_read_first() {
+        let f = fixture();
+        for (name, secs) in [
+            ("viejo.md", 1_000),
+            ("nuevo.md", 9_000),
+            ("medio.md", 5_000),
+        ] {
+            let p = write(&f, name, name);
+            set_mtime(&p, secs);
+        }
+        let cancel = AtomicBool::new(false);
+        let plan = scan_root(&f.db, &f.root, &f.rules, &cancel, |_| {}).unwrap();
+        let mut order = Vec::new();
+        let mut index = FakeIndex::default();
+        apply_plan(&f.db, plan, &mut index, &cancel, |done, p| {
+            order.push((done, p.file_name().unwrap().to_string_lossy().into_owned()))
+        })
+        .unwrap();
+        let names: Vec<_> = order.iter().map(|(_, n)| n.as_str()).collect();
+        assert_eq!(names, ["nuevo.md", "medio.md", "viejo.md"]);
+        assert_eq!(order.last().unwrap().0, 2);
     }
 }
