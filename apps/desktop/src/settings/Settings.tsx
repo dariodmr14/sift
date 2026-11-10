@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { commands, type SettingsView, type Status } from "../bindings";
+import { applyWindowMaterial } from "../appearance";
+import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 
 const BACKEND_LABEL = {
@@ -7,10 +9,11 @@ const BACKEND_LABEL = {
   keyboardHook: "Hook de teclado (vía alternativa)",
 } as const;
 
-type Page = "spaces" | "general" | "status";
+type Page = "spaces" | "folders" | "general" | "status";
 
 const PAGES: { id: Page; label: string }[] = [
   { id: "spaces", label: "Espacios" },
+  { id: "folders", label: "Carpetas" },
   { id: "general", label: "General" },
   { id: "status", label: "Estado" },
 ];
@@ -58,6 +61,7 @@ function Settings() {
 
       <main className="min-w-0 flex-1 select-text">
         {page === "spaces" && <SpacesSection />}
+        {page === "folders" && <FoldersSection />}
         {page === "general" && (
           <div className="h-full space-y-8 overflow-y-auto p-6">
             {settings ? (
@@ -65,6 +69,7 @@ function Settings() {
                 <HotkeyForm initial={settings.hotkey} onSaved={refreshStatus} />
                 <StartupToggle initial={settings.launchAtStartup} />
                 <IconsToggle initial={settings.iconsHidden} />
+                <GlassToggle initial={settings.disableGlass} />
               </>
             ) : (
               <p>Cargando…</p>
@@ -80,6 +85,34 @@ function Settings() {
         )}
       </main>
     </div>
+  );
+}
+
+function GlassToggle({ initial }: { initial: boolean }) {
+  const [disabled, setDisabled] = useState(initial);
+  return (
+    <label className="flex items-start gap-3">
+      <input
+        type="checkbox"
+        checked={disabled}
+        onChange={(e) => {
+          const next = e.currentTarget.checked;
+          void commands.setGlassDisabled(next).then((r) => {
+            if (r.status !== "ok") return;
+            setDisabled(r.data);
+            void applyWindowMaterial(); // esta ventana cambia al momento
+          });
+        }}
+        className="mt-1 size-4 accent-accent"
+      />
+      <span>
+        Desactivar vidrio
+        <span className="block text-xs text-muted">
+          La barra, los ajustes y los diálogos pasan a ser opacos: no se ve lo
+          que hay detrás.
+        </span>
+      </span>
+    </label>
   );
 }
 

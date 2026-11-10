@@ -2,6 +2,7 @@ import { useState } from "react";
 import { commands, type InstalledApp } from "../bindings";
 import { ACTION_LABELS, argsFromText, argsToText, type Action } from "./draft";
 import { AppPicker } from "./AppPicker";
+import { useSortableItem } from "./Sortable";
 import { Button, ErrorText, Field, TextInput } from "./ui";
 
 type TestState =
@@ -20,12 +21,8 @@ interface Props {
   onChange: (action: Action) => void;
   onMove: (delta: -1 | 1) => void;
   onRemove: () => void;
-  /** Para medir la tarjeta al arrastrar (de `useDragReorder`). */
-  itemRef: (el: HTMLElement | null) => void;
-  /** Clases del arrastre: atenuada, o con la línea de dónde caerá. */
-  dragClass: string;
-  /** Eventos de puntero del asa (de `useDragReorder`). */
-  handleProps: React.HTMLAttributes<HTMLElement>;
+  /** Id estable de la tarjeta para arrastrarla (dentro de una `SortableList`). */
+  sortableId: string;
 }
 
 export function ActionEditor({
@@ -36,11 +33,10 @@ export function ActionEditor({
   onChange,
   onMove,
   onRemove,
-  itemRef,
-  dragClass,
-  handleProps,
+  sortableId,
 }: Props) {
   const [test, setTest] = useState<TestState>({ kind: "idle" });
+  const { dragging, itemProps, handleProps } = useSortableItem(sortableId);
   const [picking, setPicking] = useState(false);
 
   // Si cambias la acción, el resultado de la prueba anterior ya no vale.
@@ -76,7 +72,7 @@ export function ActionEditor({
 
   return (
     <li
-      ref={itemRef}
+      {...itemProps}
       // Alt+↑/↓ desde cualquier sitio de la tarjeta: la alternativa con teclado a arrastrar.
       onKeyDown={(e) => {
         if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
@@ -86,7 +82,10 @@ export function ActionEditor({
             onMove(delta);
         }
       }}
-      className={`space-y-3 rounded-window border border-line p-3 ${dragClass}`}
+      // La que va en la mano se levanta (vidrio y sombra) y no deja seleccionar nada.
+      className={`space-y-3 rounded-window border border-line p-3 ${
+        dragging ? "relative z-10 bg-glass shadow-window select-none" : ""
+      }`}
     >
       <div className="flex items-center gap-2">
         <button
@@ -94,7 +93,7 @@ export function ActionEditor({
           {...handleProps}
           aria-label={`Mover acción ${index + 1}: arrastra, o Alt+↑/↓`}
           title="Arrastra para reordenar (o Alt+↑/↓)"
-          className="cursor-grab touch-none rounded-item px-1 text-muted outline-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
+          className="cursor-grab touch-none rounded-item px-1 text-muted outline-none select-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
         >
           <span aria-hidden>⠿</span>
         </button>
@@ -151,7 +150,14 @@ export function ActionEditor({
         <div className="flex items-center gap-3">
           {action.appId ? (
             <>
-              {appIcon ? <img src={appIcon} alt="" className="size-6" /> : null}
+              {appIcon ? (
+                <img
+                  src={appIcon}
+                  alt=""
+                  className="size-6"
+                  draggable={false}
+                />
+              ) : null}
               <span className="flex-1 text-sm">{action.name}</span>
             </>
           ) : (

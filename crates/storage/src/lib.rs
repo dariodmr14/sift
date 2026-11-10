@@ -2,9 +2,11 @@
 //! repositorios. Los índices de búsqueda (Fase 2) se podrán reconstruir desde aquí.
 
 mod db;
+mod index;
 mod spaces;
 
 pub use db::Database;
+pub use index::{FileRow, FileState, NewChunk, NewFile, Root, StoredChunk};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
@@ -20,6 +22,8 @@ pub enum StorageError {
     ReorderMismatch,
     #[error("la base de datos es de una versión más nueva de Sift (esquema v{0})")]
     NewerSchema(u32),
+    #[error("{0}")]
+    Conflict(String),
     #[error("no se pudo crear la carpeta de datos: {0}")]
     Io(String),
 }

@@ -9,6 +9,18 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+sift-indexer = { workspace = true }
+tantivy = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+specta = { workspace = true, optional = true }
+
+[features]
+# Deriva `specta::Type` para pasar los resultados por IPC con tipos de TS.
+specta = ["dep:specta"]
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

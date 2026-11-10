@@ -16,6 +16,17 @@ pub struct Settings {
     pub hotkey: Hotkey,
     /// "Solo texto": oculta todos los iconos de la barra.
     pub icons_hidden: bool,
+    /// Apariencia. Bloque propio para que crezca (tema, intensidad del vidrio…) sin
+    /// llenar de campos sueltos el nivel de arriba.
+    pub appearance: AppearanceSettings,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+pub struct AppearanceSettings {
+    /// «Desactivar vidrio»: toda la app opaca (barra, Ajustes y diálogos). Por defecto
+    /// no: Sift entera es de vidrio, con un único aspecto.
+    pub disable_glass: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -68,6 +79,9 @@ mod tests {
         let s = Settings {
             hotkey: "Ctrl+Shift+K".parse().unwrap(),
             icons_hidden: true,
+            appearance: AppearanceSettings {
+                disable_glass: true,
+            },
         };
         s.save(&path).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), s);
@@ -91,6 +105,7 @@ mod tests {
         let s = Settings::load(&path).unwrap();
         assert_eq!(s.hotkey.to_string(), "Ctrl+K");
         assert!(!s.icons_hidden);
+        assert!(!s.appearance.disable_glass); // vidrio por defecto
     }
 
     #[test]

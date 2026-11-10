@@ -9,6 +9,14 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+sift-extract = { workspace = true }
+sift-storage = { workspace = true }
+walkdir = { workspace = true }
+globset = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

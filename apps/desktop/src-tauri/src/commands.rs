@@ -13,6 +13,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::hotkey::Backend;
 use crate::latency::LatencySummary;
+use crate::search_commands as search;
 use crate::spaces_commands as spaces;
 use crate::{HotkeyState, StorageStatus, launcher, settings_window};
 
@@ -41,6 +42,8 @@ pub struct SettingsView {
     pub launch_at_startup: bool,
     /// "Solo texto": la barra no muestra iconos.
     pub icons_hidden: bool,
+    /// «Desactivar vidrio»: toda la app opaca.
+    pub disable_glass: bool,
 }
 
 /// Rust avisa a la UI de que el lanzador acaba de mostrarse: hay que limpiar la búsqueda,
@@ -69,6 +72,8 @@ pub struct Status {
     pub latency: Option<LatencySummary>,
     /// Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán).
     pub storage_error: Option<String>,
+    /// Tiempo de búsqueda de archivos en Rust (objetivo < 50 ms).
+    pub search_latency: Option<LatencySummary>,
 }
 
 #[tauri::command]
@@ -109,10 +114,11 @@ fn get_status(app: AppHandle) -> Status {
         backend: listener.as_ref().map(|l| l.backend()),
         latency: launcher.latency(),
         storage_error: app.state::<StorageStatus>().0.clone(),
+        search_latency: app.state::<search::SearchStats>().summary(),
     }
 }
 
-/// Material de Windows de la ventana que pregunta (Acrylic, Mica, blur o ninguno), para
+/// Material de Windows de la ventana que pregunta (Acrylic, blur o ninguno), para
 /// que su UI elija fondo translúcido u opaco.
 #[tauri::command]
 #[specta::specta]
@@ -136,7 +142,23 @@ fn get_settings(app: AppHandle) -> SettingsView {
         hotkey: crate::load_settings(&app).hotkey.to_string(),
         launch_at_startup: app.autolaunch().is_enabled().unwrap_or(false),
         icons_hidden: crate::load_settings(&app).icons_hidden,
+        disable_glass: crate::load_settings(&app).appearance.disable_glass,
     }
+}
+
+/// «Desactivar vidrio»: lo guarda y lo aplica ya en todas las ventanas abiertas (la
+/// barra y los ajustes). Devuelve si ha quedado desactivado.
+#[tauri::command]
+#[specta::specta]
+fn set_glass_disabled(app: AppHandle, disabled: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.appearance.disable_glass = disabled)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    for label in [crate::launcher::LABEL, settings_window::LABEL] {
+        if let Some(window) = app.get_webview_window(label) {
+            crate::materials::set_glass(&app, &window, !disabled);
+        }
+    }
+    Ok(disabled)
 }
 
 #[tauri::command]
@@ -189,6 +211,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             set_hotkey,
             set_launch_at_startup,
             set_icons_hidden,
+            set_glass_disabled,
             spaces::list_spaces,
             spaces::create_space,
             spaces::update_space,
@@ -202,12 +225,23 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::pick_path,
             spaces::pick_icon_image,
             spaces::export_spaces,
-            spaces::import_spaces
+            spaces::import_spaces,
+            search::search_files,
+            search::list_roots,
+            search::add_root,
+            search::remove_root,
+            search::get_ignore_patterns,
+            search::set_ignore_patterns,
+            search::index_status,
+            search::reindex,
+            search::open_file,
+            search::reveal_file
         ])
         .events(collect_events![
             LauncherShown,
             LauncherHidden,
-            NewSpaceRequested
+            NewSpaceRequested,
+            crate::indexing::IndexProgress
         ])
 }
 

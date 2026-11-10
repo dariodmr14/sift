@@ -11,9 +11,9 @@ import {
   type ActionKind,
   type Draft,
 } from "./draft";
-import { Button, ErrorText, Field, Modal, TextInput } from "./ui";
-import { reorder } from "./reorder";
-import { useDragReorder } from "./useDragReorder";
+import { Button, ErrorText, Modal, TextInput } from "./ui";
+import { arrayMove } from "@dnd-kit/sortable";
+import { SortableList } from "./Sortable";
 import { SpaceIcon } from "../components/SpaceIcon";
 
 /** Ids solo para React: así, al reordenar, cada fila (y su estado) sigue a su acción. */
@@ -106,12 +106,8 @@ export function SpaceEditor({
 
   const [announcement, setAnnouncement] = useState("");
   // Arrastrar acciones: el orden nuevo entra en el borrador y se guarda con «Guardar».
-  const actionDrag = useDragReorder((from, slot) => {
-    setActions(reorder(draft.actions, from, slot), reorder(uids, from, slot));
-    setAnnouncement(
-      `Acción movida a la posición ${slot > from ? slot : slot + 1}`,
-    );
-  });
+  const moveAction = (from: number, to: number) =>
+    setActions(arrayMove(draft.actions, from, to), arrayMove(uids, from, to));
 
   return (
     <form
@@ -128,51 +124,64 @@ export function SpaceEditor({
         }
       }}
     >
-      {/* Tarjeta de contacto: el icono como avatar y, a su derecha, nombre y alias. */}
-      <div className="flex items-start gap-5">
-        <button
-          type="button"
-          onClick={() => setEditingIcon(true)}
-          aria-label="Cambiar icono"
-          title="Cambiar icono"
-          className="group relative flex size-20 shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <SpaceIcon
-            icon={draft.icon}
-            autoIcon={autoIcon}
-            name={draft.name || "?"}
-            size={44}
-          />
-          <span
-            aria-hidden
-            className="absolute inset-x-0 bottom-0 rounded-b-window bg-glass py-0.5 text-center text-[11px] text-muted opacity-0 backdrop-blur-xl group-hover:opacity-100 group-focus-visible:opacity-100"
+      {/*
+        Tarjeta de contacto: avatar a la izquierda y, a su derecha, nombre y alias.
+        El avatar mide exactamente lo que el bloque de campos (40 + 12 + 36 = 88 px, en la
+        rejilla de 4 px), así sus bordes superior e inferior coinciden con los de los
+        campos. La ayuda de los alias va debajo, a lo ancho, para no descuadrarlo.
+      */}
+      <div className="space-y-2">
+        <div className="flex gap-4">
+          <button
+            type="button"
+            onClick={() => setEditingIcon(true)}
+            aria-label="Cambiar icono"
+            title="Cambiar icono"
+            className="group relative flex size-[88px] shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent"
           >
-            Cambiar
-          </span>
-        </button>
-        <div className="min-w-0 flex-1 space-y-3">
-          <TextInput
-            autoFocus={id === null}
-            aria-label="Nombre"
-            placeholder="Nombre del Espacio"
-            value={draft.name}
-            maxLength={80}
-            onChange={(e) =>
-              setDraft({ ...draft, name: e.currentTarget.value })
-            }
-            className="text-lg font-semibold"
-          />
-          <Field
-            label="Alias"
-            hint="Otras palabras que lo encuentran, separadas por comas."
-          >
-            <TextInput
-              placeholder="bd, sql"
-              value={aliasText}
-              onChange={(e) => setAliasText(e.currentTarget.value)}
+            <SpaceIcon
+              icon={draft.icon}
+              autoIcon={autoIcon}
+              name={draft.name || "?"}
+              size={48}
             />
-          </Field>
+            <span
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 rounded-b-window bg-glass py-0.5 text-center text-[11px] text-muted opacity-0 backdrop-blur-xl group-hover:opacity-100 group-focus-visible:opacity-100"
+            >
+              Cambiar
+            </span>
+          </button>
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <TextInput
+              autoFocus={id === null}
+              aria-label="Nombre"
+              placeholder="Nombre del Espacio"
+              value={draft.name}
+              maxLength={80}
+              onChange={(e) =>
+                setDraft({ ...draft, name: e.currentTarget.value })
+              }
+              className="h-10 text-lg font-semibold"
+            />
+            <label className="flex h-9 items-center gap-3">
+              <span className="w-12 shrink-0 text-xs font-medium text-muted">
+                Alias
+              </span>
+              <TextInput
+                placeholder="bd, sql"
+                value={aliasText}
+                aria-describedby="alias-hint"
+                onChange={(e) => setAliasText(e.currentTarget.value)}
+                className="h-9"
+              />
+            </label>
+          </div>
         </div>
+        <p id="alias-hint" className="pl-[104px] text-xs text-muted">
+          Alias: otras palabras que lo encuentran en la barra, separadas por
+          comas.
+        </p>
       </div>
 
       {editingIcon && (
@@ -204,38 +213,43 @@ export function SpaceEditor({
             Aún no hay acciones. Añade lo que quieres que se abra.
           </p>
         )}
-        <ul className="space-y-2">
-          {draft.actions.map((action, i) => (
-            <ActionEditor
-              key={uids[i]}
-              action={action}
-              index={i}
-              count={draft.actions.length}
-              appIcon={
-                action.kind === "openApp" ? appIcons[action.appId] : undefined
-              }
-              onChange={(a) =>
-                setActions(
-                  draft.actions.map((old, j) => (j === i ? a : old)),
-                  uids,
-                )
-              }
-              onMove={(delta) => {
-                setActions(move(draft.actions, i, delta), move(uids, i, delta));
-                setAnnouncement(`Acción movida a la posición ${i + 1 + delta}`);
-              }}
-              itemRef={actionDrag.itemRef(i)}
-              dragClass={actionDrag.itemClass(i, draft.actions.length)}
-              handleProps={actionDrag.handleProps(i)}
-              onRemove={() =>
-                setActions(
-                  draft.actions.filter((_, j) => j !== i),
-                  uids.filter((_, j) => j !== i),
-                )
-              }
-            />
-          ))}
-        </ul>
+        <SortableList ids={uids.map(String)} onMove={moveAction}>
+          <ul className="space-y-2">
+            {draft.actions.map((action, i) => (
+              <ActionEditor
+                key={uids[i]}
+                action={action}
+                index={i}
+                count={draft.actions.length}
+                appIcon={
+                  action.kind === "openApp" ? appIcons[action.appId] : undefined
+                }
+                onChange={(a) =>
+                  setActions(
+                    draft.actions.map((old, j) => (j === i ? a : old)),
+                    uids,
+                  )
+                }
+                onMove={(delta) => {
+                  setActions(
+                    move(draft.actions, i, delta),
+                    move(uids, i, delta),
+                  );
+                  setAnnouncement(
+                    `Acción movida a la posición ${i + 1 + delta}`,
+                  );
+                }}
+                sortableId={String(uids[i])}
+                onRemove={() =>
+                  setActions(
+                    draft.actions.filter((_, j) => j !== i),
+                    uids.filter((_, j) => j !== i),
+                  )
+                }
+              />
+            ))}
+          </ul>
+        </SortableList>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(ACTION_LABELS) as ActionKind[]).map((kind) => (
             <Button
