@@ -1,6 +1,10 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { commands, events } from "./bindings";
-import { applyAppearance, prefersReducedMotion } from "./appearance";
+import {
+  applyAppearance,
+  applyWindowMaterial,
+  prefersReducedMotion,
+} from "./appearance";
 
 /** Reinicia una animación CSS: quita las clases, fuerza un reflow y pone la nueva. */
 function playMotion(
@@ -36,9 +40,7 @@ export function useLauncher(
   });
 
   useEffect(() => {
-    void commands.getStatus().then((status) => {
-      document.documentElement.dataset.acrylic = String(status.acrylic);
-    });
+    void applyWindowMaterial();
     void applyAppearance();
 
     const shown = events.launcherShown.listen(() => {

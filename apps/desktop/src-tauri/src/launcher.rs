@@ -12,21 +12,10 @@ use tauri_specta::Event;
 use crate::appearance::{self, Theme};
 use crate::commands::{LauncherHidden, LauncherShown};
 use crate::latency::{LatencyStats, LatencySummary};
+use crate::materials::{self, Material, Materials, Surface};
 
 /// Etiqueta de la ventana del lanzador en `tauri.conf.json`.
 pub const LABEL: &str = "main";
-
-/// Tinte del Acrylic (RGBA) según el tema de Windows (dirección visual «Vidrio», ver
-/// docs/design-system.md). Bastante opaco, para que el texto se lea sobre cualquier fondo.
-const TINT_DARK: (u8, u8, u8, u8) = (32, 32, 36, 168);
-const TINT_LIGHT: (u8, u8, u8, u8) = (243, 243, 245, 176);
-
-fn tint(theme: Theme) -> (u8, u8, u8, u8) {
-    match theme {
-        Theme::Dark => TINT_DARK,
-        Theme::Light => TINT_LIGHT,
-    }
-}
 
 /// Fracción de la altura del monitor a la que queda el borde superior de la barra.
 /// Como Spotlight o PowerToys Run: algo por encima del centro, donde se mira primero.
@@ -60,21 +49,25 @@ pub fn window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window(LABEL)
 }
 
-/// Aplica el efecto Acrylic y guarda si funcionó. Si el sistema no lo soporta (o falla),
-/// la UI pinta un fondo opaco y la app funciona igual.
+/// Aplica el material de la barra (Acrylic, ver `materials.rs`) y guarda si funcionó.
+/// Si no está disponible, la UI pinta un fondo opaco y la app funciona igual.
 pub fn init_acrylic(app: &AppHandle) {
     let theme = appearance::theme();
-    let ok = window(app).is_some_and(|w| apply_acrylic(&w, theme));
-    *app.state::<LauncherState>()
+    let material = window(app).map_or(Material::None, |w| {
+        materials::apply(&w, Surface::Flyout, theme)
+    });
+    app.state::<Materials>().set(LABEL, material);
+    let state = app.state::<LauncherState>();
+    *state
         .acrylic_theme
         .lock()
         .unwrap_or_else(|p| p.into_inner()) = Some(theme);
-    app.state::<LauncherState>()
+    state
         .acrylic
-        .store(ok, Ordering::Relaxed);
+        .store(material != Material::None, Ordering::Relaxed);
 }
 
-/// Si el tema de Windows cambió desde la última vez, reaplica el Acrylic con el tinte
+/// Si el tema de Windows cambió desde la última vez, reaplica el material con el tinte
 /// nuevo. Leer el tema del registro cuesta microsegundos; reaplicar, algo más, por eso
 /// solo se hace cuando cambia.
 fn refresh_acrylic(app: &AppHandle, window: &WebviewWindow) {
@@ -88,29 +81,8 @@ fn refresh_acrylic(app: &AppHandle, window: &WebviewWindow) {
         .lock()
         .unwrap_or_else(|p| p.into_inner());
     if *current != Some(theme) {
-        apply_acrylic(window, theme);
+        materials::apply(window, Surface::Flyout, theme);
         *current = Some(theme);
-    }
-}
-
-fn apply_acrylic(window: &WebviewWindow, theme: Theme) -> bool {
-    #[cfg(windows)]
-    {
-        match window_vibrancy::apply_acrylic(window, Some(tint(theme))) {
-            Ok(()) => {
-                tracing::info!(?theme, "efecto Acrylic aplicado");
-                true
-            }
-            Err(e) => {
-                tracing::warn!(error = %e, "Acrylic no disponible; se usa fondo opaco");
-                false
-            }
-        }
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = (window, tint(theme));
-        false
     }
 }
 

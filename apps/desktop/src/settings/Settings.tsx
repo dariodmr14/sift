@@ -226,7 +226,9 @@ function StatusList({ status }: { status: Status }) {
       <dt className="text-muted">Mecanismo</dt>
       <dd>{status.backend ? BACKEND_LABEL[status.backend] : "—"}</dd>
       <dt className="text-muted">Acrylic</dt>
-      <dd>{status.acrylic ? "activo" : "no disponible (fondo opaco)"}</dd>
+      <dd>
+        {status.acrylic ? "activo en la barra" : "no disponible (fondo opaco)"}
+      </dd>
       <dt className="text-muted">Base de datos</dt>
       <dd>
         {status.storageError
