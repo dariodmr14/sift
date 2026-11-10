@@ -41,3 +41,17 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Quitar el arrastre para reordenar Espacios.** (se mantiene Alt+↑/↓ hasta el orden por uso de la Fase 5) Solo cambia el orden de la lista y no aporta nada. Valorar si mantener Alt+↑/↓ o quitar también el orden manual (por ejemplo, orden alfabético o por uso).
 - [ ] ⏳ **Arrastre de acciones con animación real** — pendiente para la Fase 7 (pulido): coste medio y necesita afinado visual con ratón real.: al arrastrar, la tarjeta se mueve con el puntero y las demás se desplazan con una animación suave para hacerle hueco (tipo listas de Notion o Linear), no solo una línea que marca dónde cae. Respetar "reducir movimiento" de Windows.
 - [x] ✅ **Avatar y campos desalineados** (avatar de 88 px = bloque de campos 40+12+36, en la rejilla de 4 px): el icono (80 px) es más bajo que el bloque de Nombre + Alias, así que queda a una altura rara. Ajustarlo aplicando buenas prácticas de diseño de interfaces (alineación, ritmo vertical y espaciado del sistema Vidrio): por ejemplo, que el avatar ocupe la altura del bloque o que ambos queden alineados arriba con una relación de tamaños coherente. Decidir y justificar.
+## 2026-11-11 — Tras usar la Fase 2 (búsqueda)
+
+### Vidrio
+- [ ] **Vidrio único.** El de la barra (Alt+Espacio) es el bueno: translúcido, se intuye lo de detrás sin ser transparente. Ajustes y diálogos tienen que verse *exactamente* igual, no parecido. Comparar con capturas una al lado de la otra.
+- [ ] **Por defecto, toda la app con vidrio.** La opción pasa a ser «Desactivar vidrio» (todo opaco).
+
+### Editor de Espacios
+- [ ] **Arrastre de acciones con animación real, ya** (no en la Fase 7): la tarjeta sigue al puntero y las demás se apartan suavemente para hacerle hueco (estilo Notion/Linear). Mejor con una librería probada (p. ej. dnd-kit). Darío lo prueba con ratón real.
+- [ ] **Al arrastrar por el asa ⠿ se selecciona texto o el icono.** Que el asa y la tarjeta no seleccionen mientras se arrastra, sin romper la edición de los campos.
+
+### Ajustes → Carpetas, para cualquiera
+- [ ] Los patrones a ignorar vienen por defecto y van en «Avanzado», plegado, con una explicación en lenguaje normal.
+- [ ] Estado en lenguaje humano: «Al día · 1.240 archivos», «Buscando cambios…», «Leyendo 32 de 120 archivos», con barra de progreso.
+- [ ] Por carpeta: nombre, ruta abreviada, número de archivos y última actualización.
