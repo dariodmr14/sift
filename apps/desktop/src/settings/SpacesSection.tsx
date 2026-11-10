@@ -90,18 +90,9 @@ export function SpacesSection() {
   return (
     <div className="flex h-full min-h-0">
       <aside className="flex w-64 shrink-0 flex-col border-r border-line">
-        <div className="flex gap-2 p-3">
-          <Button
-            variant="primary"
-            className="flex-1"
-            onClick={() => setSelection({ kind: "new" })}
-          >
-            + Nuevo Espacio
-          </Button>
-        </div>
         <ul
           aria-label="Espacios"
-          className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2"
+          className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pt-3"
         >
           {spaces?.length === 0 && (
             <li className="p-2 text-sm text-muted">Aún no hay Espacios.</li>
@@ -162,6 +153,23 @@ export function SpacesSection() {
               </li>
             );
           })}
+          {/* Al final de la lista, donde aparecerá el Espacio nuevo. */}
+          <li className="pt-1">
+            <button
+              type="button"
+              aria-current={selection?.kind === "new"}
+              onClick={() => setSelection({ kind: "new" })}
+              className="sift-option flex w-full items-center gap-2 border border-dashed border-line px-3 py-1.5 text-left text-sm text-muted outline-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <span
+                aria-hidden
+                className="w-5 text-center text-base leading-none"
+              >
+                +
+              </span>
+              Nuevo Espacio
+            </button>
+          </li>
         </ul>
         <div className="space-y-2 border-t border-line p-3">
           <div className="flex gap-2">
