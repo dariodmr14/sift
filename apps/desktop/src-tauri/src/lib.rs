@@ -183,7 +183,7 @@ pub fn run() {
             app.manage(StorageStatus(storage_error));
             let index = open_search_index(handle);
             app.manage(indexing::Indexing::start(handle, index));
-            launcher::init_acrylic(handle);
+            launcher::init_glass(handle);
             tray::create(handle)?;
 
             let settings = load_settings(handle);
@@ -206,6 +206,16 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            // Ajustes se puede mover: mientras se arrastra o redimensiona, el Acrylic
+            // pasa a blur con el mismo tinte (ver `materials::on_moved`).
+            if window.label() == settings_window::LABEL {
+                if let tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) = event
+                    && let Some(w) = window.app_handle().get_webview_window(window.label())
+                {
+                    materials::on_moved(window.app_handle(), &w);
+                }
+                return;
+            }
             if window.label() != launcher::LABEL {
                 return;
             }

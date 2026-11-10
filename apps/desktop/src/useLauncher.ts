@@ -47,6 +47,7 @@ export function useLauncher(
       shownRef.current();
       playMotion(root.current, "sift-enter");
       void applyAppearance();
+      void applyWindowMaterial(); // «Desactivar vidrio» puede haber cambiado
       // Dos requestAnimationFrame: el primero se ejecuta antes de pintar el siguiente
       // fotograma; el segundo, cuando ese fotograma ya se ha pintado.
       requestAnimationFrame(() =>

@@ -12,7 +12,7 @@ use tauri_specta::Event;
 use crate::appearance::{self, Theme};
 use crate::commands::{LauncherHidden, LauncherShown};
 use crate::latency::{LatencyStats, LatencySummary};
-use crate::materials::{self, Material, Materials, Surface};
+use crate::materials::{self, Material, Materials};
 
 /// Etiqueta de la ventana del lanzador en `tauri.conf.json`.
 pub const LABEL: &str = "main";
@@ -49,14 +49,12 @@ pub fn window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window(LABEL)
 }
 
-/// Aplica el material de la barra (Acrylic, ver `materials.rs`) y guarda si funcionó.
-/// Si no está disponible, la UI pinta un fondo opaco y la app funciona igual.
-pub fn init_acrylic(app: &AppHandle) {
+/// Aplica el vidrio de la barra (ver `materials.rs`) salvo con «Desactivar vidrio», y
+/// guarda si funcionó. Si no está disponible, la UI pinta un fondo opaco.
+pub fn init_glass(app: &AppHandle) {
     let theme = appearance::theme();
-    let material = window(app).map_or(Material::None, |w| {
-        materials::apply(&w, Surface::Flyout, theme)
-    });
-    app.state::<Materials>().set(LABEL, material);
+    let enabled = !crate::load_settings(app).appearance.disable_glass;
+    let material = window(app).map_or(Material::None, |w| materials::set_glass(app, &w, enabled));
     let state = app.state::<LauncherState>();
     *state
         .acrylic_theme
@@ -72,7 +70,12 @@ pub fn init_acrylic(app: &AppHandle) {
 /// solo se hace cuando cambia.
 fn refresh_acrylic(app: &AppHandle, window: &WebviewWindow) {
     let state = app.state::<LauncherState>();
-    if !state.acrylic() {
+    // Se mira el material actual (no el del arranque): «Desactivar vidrio» lo cambia.
+    let material = app.state::<Materials>().get(LABEL);
+    state
+        .acrylic
+        .store(material != Material::None, Ordering::Relaxed);
+    if material == Material::None {
         return;
     }
     let theme = appearance::theme();
@@ -81,7 +84,7 @@ fn refresh_acrylic(app: &AppHandle, window: &WebviewWindow) {
         .lock()
         .unwrap_or_else(|p| p.into_inner());
     if *current != Some(theme) {
-        materials::apply(window, Surface::Flyout, theme);
+        materials::apply(window, theme);
         *current = Some(theme);
     }
 }

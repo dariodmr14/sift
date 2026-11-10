@@ -22,15 +22,18 @@ export const commands = {
 	/**  Tema y color de acento de Windows, para que la UI los siga. */
 	getAppearance: () => __TAURI_INVOKE<Appearance>("get_appearance"),
 	/**
-	 *  Material de Windows de la ventana que pregunta (Acrylic, Mica, blur o ninguno), para
+	 *  Material de Windows de la ventana que pregunta (Acrylic, blur o ninguno), para
 	 *  que su UI elija fondo translúcido u opaco.
 	 */
 	getWindowMaterial: () => __TAURI_INVOKE<Material>("get_window_material"),
 	setHotkey: (hotkey: string) => typedError<string, AppError>(__TAURI_INVOKE("set_hotkey", { hotkey })),
 	setLaunchAtStartup: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_launch_at_startup", { enabled })),
 	setIconsHidden: (hidden: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_icons_hidden", { hidden })),
-	/**  «Vidrio en toda la app»: lo guarda y lo aplica ya en la ventana de ajustes abierta. */
-	setGlassEverywhere: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_glass_everywhere", { enabled })),
+	/**
+	 *  «Desactivar vidrio»: lo guarda y lo aplica ya en todas las ventanas abiertas (la
+	 *  barra y los ajustes). Devuelve si ha quedado desactivado.
+	 */
+	setGlassDisabled: (disabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_glass_disabled", { disabled })),
 	listSpaces: () => typedError<SpaceView_Serialize[], AppError>(__TAURI_INVOKE("list_spaces")),
 	createSpace: (draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("create_space", { draft })),
 	updateSpace: (id: number, draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("update_space", { id, draft })),
@@ -299,7 +302,7 @@ export type LauncherHidden = null;
  */
 export type LauncherShown = null;
 
-export type Material = "acrylic" | "mica" | "blur" | 
+export type Material = "acrylic" | "blur" | 
 /**  Sin material: fondo opaco. */
 "none";
 
@@ -392,8 +395,8 @@ export type SettingsView = {
 	launchAtStartup: boolean,
 	/**  "Solo texto": la barra no muestra iconos. */
 	iconsHidden: boolean,
-	/**  Vidrio también en Ajustes y diálogos (si no, opacos). */
-	glassEverywhere: boolean,
+	/**  «Desactivar vidrio»: toda la app opaca. */
+	disableGlass: boolean,
 };
 
 /**  Un Espacio guardado (con su id de la base de datos). */

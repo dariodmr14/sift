@@ -4,7 +4,7 @@ import Settings from "./Settings";
 import "../index.css";
 import { applyAppearance, applyWindowMaterial } from "../appearance";
 
-// Mismo tema, acento y material (Mica o blur) que Windows.
+// Mismo tema, acento y vidrio que la barra.
 void applyAppearance();
 void applyWindowMaterial();
 

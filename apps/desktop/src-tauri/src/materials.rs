@@ -1,64 +1,53 @@
-//! Materiales de ventana de Windows (el "vidrio" del sistema de diseño Vidrio).
+//! Materiales de ventana de Windows: el "vidrio" del sistema de diseño Vidrio.
 //!
-//! Como en Fluent, el material depende del tipo de superficie:
-//! - **Flotante** (la barra): Acrylic. Nunca se arrastra ni se redimensiona.
-//! - **Ventana de app** (Ajustes): Mica en Windows 11; en Windows 10, *blur* con tinte.
-//!   Acrylic no vale aquí: en Windows 10 v1903+ y Windows 11 22000 va a tirones al
-//!   arrastrar o redimensionar (documentado en `window-vibrancy`); el blur, en Windows 10,
-//!   no.
+//! **Un único vidrio para toda la app**: Acrylic con el mismo tinte en la barra, en
+//! Ajustes y en cualquier ventana (ver ADR 0005 y docs/design-system.md).
 //!
-//! Si un material no está disponible, se prueba el siguiente; si ninguno, la ventana
-//! queda opaca y la UI pinta su fondo sólido (CSS: `data-glass="false"`).
+//! El problema: en Windows 10 v1903+ (y Windows 11 22000), Acrylic va a tirones mientras
+//! la ventana se **arrastra o redimensiona** (documentado en `window-vibrancy`). La barra
+//! nunca se mueve, pero Ajustes sí. Solución: mientras una ventana se mueve, se cambia a
+//! *blur* con el mismo tinte (que no da tirones), y 200 ms después de soltarla vuelve el
+//! Acrylic. En reposo, que es lo que se ve, el aspecto es idéntico al de la barra.
+//!
+//! Si Acrylic no está disponible se usa blur; si nada, la ventana queda opaca y la UI
+//! pinta su fondo sólido (`data-glass="false"`). Lo mismo con «Desactivar vidrio».
 
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
-use tauri::WebviewWindow;
+use tauri::{AppHandle, Manager, WebviewWindow};
 
-use crate::appearance::Theme;
+use crate::appearance::{self, Theme};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum Material {
     Acrylic,
-    Mica,
     Blur,
     /// Sin material: fondo opaco.
     None,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Surface {
-    Flyout,
-    AppWindow,
-}
+/// Tiempo sin moverse tras el que una ventana vuelve a Acrylic.
+const SETTLE: Duration = Duration::from_millis(200);
 
-/// Tinte (RGBA) que Windows pone bajo el desenfoque. Bastante opaco: el texto tiene que
-/// leerse sobre cualquier fondo de escritorio. El blur lleva más opacidad que el Acrylic
-/// porque no tiene su capa de luminosidad: así los dos vidrios se ven iguales.
-fn tint(theme: Theme, material: Material) -> (u8, u8, u8, u8) {
-    let alpha = match material {
-        Material::Blur => 222,
-        _ => 200,
-    };
+/// Tinte (RGBA) bajo el desenfoque: **el mismo** en todas las ventanas y materiales.
+/// Bastante opaco: el texto tiene que leerse sobre cualquier fondo de escritorio.
+pub fn tint(theme: Theme) -> (u8, u8, u8, u8) {
     match theme {
-        Theme::Dark => (32, 32, 36, alpha),
-        Theme::Light => (243, 243, 245, alpha),
+        Theme::Dark => (32, 32, 36, 200),
+        Theme::Light => (243, 243, 245, 200),
     }
 }
 
-/// Orden en que se prueban los materiales para cada superficie.
-pub fn candidates(surface: Surface) -> &'static [Material] {
-    match surface {
-        Surface::Flyout => &[Material::Acrylic],
-        Surface::AppWindow => &[Material::Mica, Material::Blur],
-    }
-}
+/// Orden en que se prueban los materiales en reposo.
+pub const CANDIDATES: [Material; 2] = [Material::Acrylic, Material::Blur];
 
-/// Aplica el primer material que funcione y devuelve cuál (o `None`).
-pub fn apply(window: &WebviewWindow, surface: Surface, theme: Theme) -> Material {
-    for &material in candidates(surface) {
+/// Aplica el vidrio (el primer material que funcione) y devuelve cuál, o `None`.
+pub fn apply(window: &WebviewWindow, theme: Theme) -> Material {
+    for material in CANDIDATES {
         match try_apply(window, material, theme) {
             Ok(()) => {
                 tracing::info!(
@@ -84,17 +73,16 @@ pub fn apply(window: &WebviewWindow, surface: Surface, theme: Theme) -> Material
 #[cfg(windows)]
 fn try_apply(window: &WebviewWindow, material: Material, theme: Theme) -> Result<(), String> {
     let result = match material {
-        Material::Acrylic => window_vibrancy::apply_acrylic(window, Some(tint(theme, material))),
-        Material::Mica => window_vibrancy::apply_mica(window, Some(theme == Theme::Dark)),
-        Material::Blur => window_vibrancy::apply_blur(window, Some(tint(theme, material))),
+        Material::Acrylic => window_vibrancy::apply_acrylic(window, Some(tint(theme))),
+        Material::Blur => window_vibrancy::apply_blur(window, Some(tint(theme))),
         Material::None => return Ok(()),
     };
     result.map_err(|e| e.to_string())
 }
 
 #[cfg(not(windows))]
-fn try_apply(_: &WebviewWindow, material: Material, theme: Theme) -> Result<(), String> {
-    let _ = tint(theme, material);
+fn try_apply(_: &WebviewWindow, _: Material, theme: Theme) -> Result<(), String> {
+    let _ = tint(theme);
     Err("solo Windows".into())
 }
 
@@ -104,7 +92,6 @@ pub fn clear(window: &WebviewWindow, material: Material) {
     {
         let result = match material {
             Material::Acrylic => window_vibrancy::clear_acrylic(window),
-            Material::Mica => window_vibrancy::clear_mica(window),
             Material::Blur => window_vibrancy::clear_blur(window),
             Material::None => Ok(()),
         };
@@ -116,26 +103,111 @@ pub fn clear(window: &WebviewWindow, material: Material) {
     let _ = (window, material);
 }
 
-/// Qué material tiene cada ventana (por etiqueta), para que su UI elija fondo.
+#[derive(Debug, Clone, Copy)]
+struct WindowGlass {
+    /// Material en reposo (lo que se ve).
+    material: Material,
+    /// Cuándo se movió por última vez, si ahora lleva blur por estar moviéndose.
+    moving_since: Option<Instant>,
+}
+
+/// Qué material tiene cada ventana (por etiqueta), para que su UI elija fondo y para
+/// el cambio a blur mientras se mueve.
 #[derive(Default)]
-pub struct Materials(Mutex<HashMap<String, Material>>);
+pub struct Materials(Mutex<HashMap<String, WindowGlass>>);
 
 impl Materials {
-    pub fn set(&self, label: &str, material: Material) {
-        self.0
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .insert(label.to_owned(), material);
+    fn lock(&self) -> std::sync::MutexGuard<'_, HashMap<String, WindowGlass>> {
+        self.0.lock().unwrap_or_else(|p| p.into_inner())
     }
 
-    pub fn get(&self, label: &str) -> Material {
-        self.0
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .get(label)
-            .copied()
-            .unwrap_or(Material::None)
+    pub fn set(&self, label: &str, material: Material) {
+        self.lock().insert(
+            label.to_owned(),
+            WindowGlass {
+                material,
+                moving_since: None,
+            },
+        );
     }
+
+    /// Material en reposo de una ventana (`None` si no tiene).
+    pub fn get(&self, label: &str) -> Material {
+        self.lock()
+            .get(label)
+            .map_or(Material::None, |g| g.material)
+    }
+}
+
+/// Pone o quita el vidrio en una ventana y lo apunta. Devuelve el material resultante.
+pub fn set_glass(app: &AppHandle, window: &WebviewWindow, enabled: bool) -> Material {
+    let materials = app.state::<Materials>();
+    let current = materials.get(window.label());
+    let next = match (enabled, current) {
+        (true, Material::None) => apply(window, appearance::theme()),
+        (false, m) if m != Material::None => {
+            clear(window, m);
+            Material::None
+        }
+        (_, m) => m,
+    };
+    materials.set(window.label(), next);
+    next
+}
+
+/// La ventana se está moviendo o redimensionando: Acrylic → blur (mismo tinte) hasta que
+/// pare. Se llama con cada evento `Moved`/`Resized` de las ventanas que se pueden mover.
+pub fn on_moved(app: &AppHandle, window: &WebviewWindow) {
+    let label = window.label().to_owned();
+    let start_watch = {
+        let materials = app.state::<Materials>();
+        let mut map = materials.lock();
+        let Some(glass) = map.get_mut(&label) else {
+            return;
+        };
+        if glass.material != Material::Acrylic {
+            return;
+        }
+        let first = glass.moving_since.is_none();
+        glass.moving_since = Some(Instant::now());
+        first
+    };
+    if !start_watch {
+        return; // ya está en blur y vigilado: solo se ha actualizado la hora
+    }
+    let theme = appearance::theme();
+    if let Err(e) = try_apply(window, Material::Blur, theme) {
+        tracing::debug!(error = %e, "no se pudo pasar a blur al mover");
+        return;
+    }
+    // Un hilo espera a que la ventana lleve `SETTLE` quieta y devuelve el Acrylic.
+    let app = app.clone();
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(SETTLE / 2);
+            let settled = {
+                let materials = app.state::<Materials>();
+                let mut map = materials.lock();
+                match map.get_mut(&label) {
+                    Some(g) if g.moving_since.is_some_and(|t| t.elapsed() >= SETTLE) => {
+                        g.moving_since = None;
+                        g.material == Material::Acrylic
+                    }
+                    Some(g) if g.moving_since.is_some() => continue,
+                    _ => false, // la ventana ya no existe o cambió de material
+                }
+            };
+            if settled {
+                let handle = app.clone();
+                let _ = app.run_on_main_thread(move || {
+                    if let Some(w) = handle.get_webview_window(&label) {
+                        let _ = try_apply(&w, Material::Acrylic, appearance::theme());
+                    }
+                });
+            }
+            break;
+        }
+    });
 }
 
 #[cfg(test)]
@@ -143,31 +215,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flyouts_use_acrylic_and_app_windows_avoid_it() {
-        assert_eq!(candidates(Surface::Flyout), &[Material::Acrylic]);
-        // Acrylic va a tirones al arrastrar en Windows 10: las ventanas de app no lo usan.
-        assert!(!candidates(Surface::AppWindow).contains(&Material::Acrylic));
-        assert_eq!(candidates(Surface::AppWindow)[0], Material::Mica);
+    fn one_glass_for_the_whole_app() {
+        assert_eq!(CANDIDATES[0], Material::Acrylic);
+        // El mismo tinte para todos: la barra y Ajustes se ven idénticos en reposo.
+        for theme in [Theme::Dark, Theme::Light] {
+            assert!(
+                tint(theme).3 >= 160,
+                "el texto tiene que leerse sobre cualquier fondo"
+            );
+        }
     }
 
     #[test]
     fn unknown_windows_have_no_material() {
         let m = Materials::default();
         assert_eq!(m.get("x"), Material::None);
-        m.set("x", Material::Blur);
-        assert_eq!(m.get("x"), Material::Blur);
-    }
-
-    #[test]
-    fn tints_are_mostly_opaque() {
-        for (theme, m) in [
-            (Theme::Dark, Material::Acrylic),
-            (Theme::Light, Material::Blur),
-        ] {
-            assert!(
-                tint(theme, m).3 >= 160,
-                "el texto tiene que leerse sobre cualquier fondo"
-            );
-        }
+        m.set("x", Material::Acrylic);
+        assert_eq!(m.get("x"), Material::Acrylic);
     }
 }
