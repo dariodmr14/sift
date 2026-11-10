@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { commands, events, type IndexStatus, type RootView } from "../bindings";
 import { Button, ErrorText } from "./ui";
+import { duration, files, since } from "../format";
 import {
-  files,
   folderName,
   shortParent,
-  since,
   statusLine,
   type StatusLine,
 } from "./folders";
@@ -187,8 +186,8 @@ function StatusPanel({
       {line.progress !== null && <ProgressBar value={line.progress} />}
       {!running && lastRun !== undefined && (
         <p className="text-xs text-muted">
-          La última revisión tardó {lastRun.toFixed(1).replace(".", ",")} s.
-          Sift solo vuelve a leer lo que ha cambiado.
+          La última revisión tardó {duration(lastRun)}. Sift solo vuelve a leer
+          lo que ha cambiado.
         </p>
       )}
       {error && <ErrorText>{error}</ErrorText>}

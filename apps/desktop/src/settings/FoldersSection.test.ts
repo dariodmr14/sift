@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { IndexStatus } from "../bindings";
-import { files, folderName, shortParent, since, statusLine } from "./folders";
+import { duration, files, since } from "../format";
+import { folderName, shortParent, statusLine } from "./folders";
 
 describe("since", () => {
   const now = Date.parse("2026-11-10T12:00:00Z");
@@ -9,7 +10,20 @@ describe("since", () => {
     expect(since("2026-11-10T11:59:30Z", now)).toBe("hace un momento");
     expect(since("2026-11-10T11:45:00Z", now)).toBe("hace 15 min");
     expect(since("2026-11-10T09:00:00Z", now)).toBe("hace 3 h");
-    expect(since("2026-11-08T12:00:00Z", now)).toBe("hace 2 d");
+    expect(since("2026-11-10T11:00:30Z", now)).toBe("hace 59 min");
+    expect(since("2026-11-09T11:00:00Z", now)).toBe("ayer");
+    expect(since("2026-11-08T12:00:00Z", now)).toBe("hace 2 días");
+  });
+});
+
+describe("duration", () => {
+  it("usa minutos y horas, nunca cientos de segundos", () => {
+    expect(duration(0.4)).toBe("menos de un segundo");
+    expect(duration(35)).toBe("35 s");
+    expect(duration(335)).toBe("5 min 35 s");
+    expect(duration(120)).toBe("2 min");
+    expect(duration(3900)).toBe("1 h 5 min");
+    expect(duration(7200)).toBe("2 h");
   });
 });
 

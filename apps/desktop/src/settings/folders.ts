@@ -1,28 +1,6 @@
 // Textos de Ajustes → Carpetas en lenguaje de persona (sin React, para probarlos).
 import type { IndexStatus } from "../bindings";
-
-/** 1240 → «1.240». (`toLocaleString("es")` no pone el punto con 4 cifras: aquí sí.) */
-export function count(n: number): string {
-  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-/** «1 archivo», «1.240 archivos». */
-export function files(n: number): string {
-  return `${count(n)} ${n === 1 ? "archivo" : "archivos"}`;
-}
-
-/** «hace 3 min», «hace 2 h»… a partir de una fecha ISO de SQLite. */
-export function since(
-  iso: string | null | undefined,
-  now = Date.now(),
-): string {
-  if (!iso) return "aún no";
-  const secs = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
-  if (secs < 60) return "hace un momento";
-  if (secs < 3600) return `hace ${Math.round(secs / 60)} min`;
-  if (secs < 86400) return `hace ${Math.round(secs / 3600)} h`;
-  return `hace ${Math.round(secs / 86400)} d`;
-}
+import { count, files } from "../format";
 
 const parts = (path: string) => path.split(/[\\/]+/).filter(Boolean);
 
