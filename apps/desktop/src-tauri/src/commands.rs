@@ -42,8 +42,8 @@ pub struct SettingsView {
     pub launch_at_startup: bool,
     /// "Solo texto": la barra no muestra iconos.
     pub icons_hidden: bool,
-    /// Vidrio también en Ajustes y diálogos (si no, opacos).
-    pub glass_everywhere: bool,
+    /// «Desactivar vidrio»: toda la app opaca.
+    pub disable_glass: bool,
 }
 
 /// Rust avisa a la UI de que el lanzador acaba de mostrarse: hay que limpiar la búsqueda,
@@ -118,7 +118,7 @@ fn get_status(app: AppHandle) -> Status {
     }
 }
 
-/// Material de Windows de la ventana que pregunta (Acrylic, Mica, blur o ninguno), para
+/// Material de Windows de la ventana que pregunta (Acrylic, blur o ninguno), para
 /// que su UI elija fondo translúcido u opaco.
 #[tauri::command]
 #[specta::specta]
@@ -142,18 +142,23 @@ fn get_settings(app: AppHandle) -> SettingsView {
         hotkey: crate::load_settings(&app).hotkey.to_string(),
         launch_at_startup: app.autolaunch().is_enabled().unwrap_or(false),
         icons_hidden: crate::load_settings(&app).icons_hidden,
-        glass_everywhere: crate::load_settings(&app).appearance.glass_everywhere,
+        disable_glass: crate::load_settings(&app).appearance.disable_glass,
     }
 }
 
-/// «Vidrio en toda la app»: lo guarda y lo aplica ya en la ventana de ajustes abierta.
+/// «Desactivar vidrio»: lo guarda y lo aplica ya en todas las ventanas abiertas (la
+/// barra y los ajustes). Devuelve si ha quedado desactivado.
 #[tauri::command]
 #[specta::specta]
-fn set_glass_everywhere(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
-    crate::update_settings(&app, |s| s.appearance.glass_everywhere = enabled)
+fn set_glass_disabled(app: AppHandle, disabled: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.appearance.disable_glass = disabled)
         .map_err(|e| AppError::System(format!("{e:#}")))?;
-    settings_window::set_glass(&app, enabled);
-    Ok(enabled)
+    for label in [crate::launcher::LABEL, settings_window::LABEL] {
+        if let Some(window) = app.get_webview_window(label) {
+            crate::materials::set_glass(&app, &window, !disabled);
+        }
+    }
+    Ok(disabled)
 }
 
 #[tauri::command]
@@ -206,7 +211,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             set_hotkey,
             set_launch_at_startup,
             set_icons_hidden,
-            set_glass_everywhere,
+            set_glass_disabled,
             spaces::list_spaces,
             spaces::create_space,
             spaces::update_space,

@@ -69,7 +69,7 @@ function Settings() {
                 <HotkeyForm initial={settings.hotkey} onSaved={refreshStatus} />
                 <StartupToggle initial={settings.launchAtStartup} />
                 <IconsToggle initial={settings.iconsHidden} />
-                <GlassToggle initial={settings.glassEverywhere} />
+                <GlassToggle initial={settings.disableGlass} />
               </>
             ) : (
               <p>Cargando…</p>
@@ -89,27 +89,27 @@ function Settings() {
 }
 
 function GlassToggle({ initial }: { initial: boolean }) {
-  const [enabled, setEnabled] = useState(initial);
+  const [disabled, setDisabled] = useState(initial);
   return (
     <label className="flex items-start gap-3">
       <input
         type="checkbox"
-        checked={enabled}
+        checked={disabled}
         onChange={(e) => {
           const next = e.currentTarget.checked;
-          void commands.setGlassEverywhere(next).then((r) => {
+          void commands.setGlassDisabled(next).then((r) => {
             if (r.status !== "ok") return;
-            setEnabled(r.data);
+            setDisabled(r.data);
             void applyWindowMaterial(); // esta ventana cambia al momento
           });
         }}
         className="mt-1 size-4 accent-accent"
       />
       <span>
-        Vidrio en toda la app
+        Desactivar vidrio
         <span className="block text-xs text-muted">
-          Ajustes y diálogos con el mismo vidrio que la barra. Desactivado, son
-          opacos (más cómodos para trabajar).
+          La barra, los ajustes y los diálogos pasan a ser opacos: no se ve lo
+          que hay detrás.
         </span>
       </span>
     </label>

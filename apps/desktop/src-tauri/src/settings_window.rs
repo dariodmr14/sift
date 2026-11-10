@@ -4,29 +4,10 @@
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_specta::Event;
 
-use crate::appearance;
 use crate::commands::NewSpaceRequested;
-use crate::materials::{self, Materials, Surface};
+use crate::materials;
 
 pub const LABEL: &str = "settings";
-
-/// Aplica o quita el vidrio en la ventana de ajustes si está abierta (al cambiar la
-/// opción). Devuelve si ha quedado con material.
-pub fn set_glass(app: &AppHandle, enabled: bool) -> bool {
-    let Some(window) = app.get_webview_window(LABEL) else {
-        return false;
-    };
-    let materials = app.state::<Materials>();
-    let current = materials.get(LABEL);
-    if enabled && current == materials::Material::None {
-        let m = materials::apply(&window, Surface::AppWindow, appearance::theme());
-        materials.set(LABEL, m);
-    } else if !enabled && current != materials::Material::None {
-        materials::clear(&window, current);
-        materials.set(LABEL, materials::Material::None);
-    }
-    materials.get(LABEL) != materials::Material::None
-}
 
 /// Abre los ajustes. Con `new_space`, directamente en "crear Espacio".
 pub fn open(app: &AppHandle, new_space: bool) {
@@ -50,16 +31,14 @@ pub fn open(app: &AppHandle, new_space: bool) {
         .inner_size(920.0, 680.0)
         .min_inner_size(760.0, 520.0)
         .center()
-        // Transparente para que se vea el material de Windows (Mica o blur) detrás.
+        // Transparente para que se vea el material de Windows (el vidrio) detrás.
         .transparent(true)
         .build();
     match built {
         Ok(window) => {
-            // Opaca por defecto; vidrio solo con «Vidrio en toda la app».
-            if crate::load_settings(app).appearance.glass_everywhere {
-                let material = materials::apply(&window, Surface::AppWindow, appearance::theme());
-                app.state::<Materials>().set(LABEL, material);
-            }
+            // El mismo vidrio que la barra, salvo con «Desactivar vidrio».
+            let glass = !crate::load_settings(app).appearance.disable_glass;
+            materials::set_glass(app, &window, glass);
         }
         Err(e) => tracing::error!(error = %e, "no se pudo abrir la ventana de ajustes"),
     }

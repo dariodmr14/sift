@@ -24,9 +24,9 @@ pub struct Settings {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(default, rename_all = "camelCase")]
 pub struct AppearanceSettings {
-    /// Vidrio también en Ajustes y diálogos. Por defecto no: en ventanas de trabajo el
-    /// fondo translúcido puede molestar; la barra siempre es de vidrio.
-    pub glass_everywhere: bool,
+    /// «Desactivar vidrio»: toda la app opaca (barra, Ajustes y diálogos). Por defecto
+    /// no: Sift entera es de vidrio, con un único aspecto.
+    pub disable_glass: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -80,7 +80,7 @@ mod tests {
             hotkey: "Ctrl+Shift+K".parse().unwrap(),
             icons_hidden: true,
             appearance: AppearanceSettings {
-                glass_everywhere: true,
+                disable_glass: true,
             },
         };
         s.save(&path).unwrap();
@@ -105,7 +105,7 @@ mod tests {
         let s = Settings::load(&path).unwrap();
         assert_eq!(s.hotkey.to_string(), "Ctrl+K");
         assert!(!s.icons_hidden);
-        assert!(!s.appearance.glass_everywhere); // opaco por defecto
+        assert!(!s.appearance.disable_glass); // vidrio por defecto
     }
 
     #[test]
