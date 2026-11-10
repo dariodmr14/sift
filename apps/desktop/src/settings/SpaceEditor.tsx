@@ -11,7 +11,8 @@ import {
   type ActionKind,
   type Draft,
 } from "./draft";
-import { Button, ErrorText, Field, TextInput } from "./ui";
+import { Button, ErrorText, Field, Modal, TextInput } from "./ui";
+import { SpaceIcon } from "../components/SpaceIcon";
 
 /** Ids solo para React: así, al reordenar, cada fila (y su estado) sigue a su acción. */
 let nextUid = 0;
@@ -42,6 +43,7 @@ export function SpaceEditor({
   const [aliasText, setAliasText] = useState(initial.aliases.join(", "));
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingIcon, setEditingIcon] = useState(false);
   const [appIcons, setAppIcons] = useState<Record<string, string | null>>({});
   const [uids, setUids] = useState<number[]>(() => initial.actions.map(uid));
 
@@ -115,39 +117,70 @@ export function SpaceEditor({
         }
       }}
     >
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Nombre">
+      {/* Tarjeta de contacto: el icono como avatar y, a su derecha, nombre y alias. */}
+      <div className="flex items-start gap-5">
+        <button
+          type="button"
+          onClick={() => setEditingIcon(true)}
+          aria-label="Cambiar icono"
+          title="Cambiar icono"
+          className="group relative flex size-20 shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <SpaceIcon
+            icon={draft.icon}
+            autoIcon={autoIcon}
+            name={draft.name || "?"}
+            size={44}
+          />
+          <span
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 rounded-b-window bg-glass py-0.5 text-center text-[11px] text-muted opacity-0 backdrop-blur-xl group-hover:opacity-100 group-focus-visible:opacity-100"
+          >
+            Cambiar
+          </span>
+        </button>
+        <div className="min-w-0 flex-1 space-y-3">
           <TextInput
             autoFocus={id === null}
-            placeholder="Bases de datos"
+            aria-label="Nombre"
+            placeholder="Nombre del Espacio"
             value={draft.name}
             maxLength={80}
             onChange={(e) =>
               setDraft({ ...draft, name: e.currentTarget.value })
             }
+            className="text-lg font-semibold"
           />
-        </Field>
-        <Field
-          label="Alias"
-          hint="Otras palabras que lo encuentran, separadas por comas."
-        >
-          <TextInput
-            placeholder="bd, sql"
-            value={aliasText}
-            onChange={(e) => setAliasText(e.currentTarget.value)}
-          />
-        </Field>
+          <Field
+            label="Alias"
+            hint="Otras palabras que lo encuentran, separadas por comas."
+          >
+            <TextInput
+              placeholder="bd, sql"
+              value={aliasText}
+              onChange={(e) => setAliasText(e.currentTarget.value)}
+            />
+          </Field>
+        </div>
       </div>
 
-      <section className="space-y-2">
-        <h3 className="text-xs font-medium text-muted">Icono</h3>
-        <IconPicker
-          icon={draft.icon}
-          autoIcon={autoIcon}
-          name={draft.name}
-          onChange={(icon) => setDraft({ ...draft, icon })}
-        />
-      </section>
+      {editingIcon && (
+        <Modal title="Icono del Espacio" onClose={() => setEditingIcon(false)}>
+          <div className="max-h-[70vh] overflow-y-auto p-4">
+            <IconPicker
+              icon={draft.icon}
+              autoIcon={autoIcon}
+              name={draft.name}
+              onChange={(icon) => setDraft({ ...draft, icon })}
+            />
+          </div>
+          <footer className="flex justify-end border-t border-line px-4 py-3">
+            <Button variant="primary" onClick={() => setEditingIcon(false)}>
+              Listo
+            </Button>
+          </footer>
+        </Modal>
+      )}
 
       <section className="space-y-2">
         <h3 className="text-xs font-medium text-muted">Acciones, en orden</h3>
