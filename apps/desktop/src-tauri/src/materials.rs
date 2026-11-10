@@ -6,8 +6,9 @@
 //! El problema: en Windows 10 v1903+ (y Windows 11 22000), Acrylic va a tirones mientras
 //! la ventana se **arrastra o redimensiona** (documentado en `window-vibrancy`). La barra
 //! nunca se mueve, pero Ajustes sí. Solución: mientras una ventana se mueve, se cambia a
-//! *blur* con el mismo tinte (que no da tirones), y 200 ms después de soltarla vuelve el
-//! Acrylic. En reposo, que es lo que se ve, el aspecto es idéntico al de la barra.
+//! *blur* (que no da tirones) con un tinte algo más opaco, ajustado midiendo capturas para
+//! que el cambio casi no se note, y 200 ms después de soltarla vuelve el Acrylic. En
+//! reposo, que es lo que se ve, el aspecto es idéntico al de la barra.
 //!
 //! Si Acrylic no está disponible se usa blur; si nada, la ventana queda opaca y la UI
 //! pinta su fondo sólido (`data-glass="false"`). Lo mismo con «Desactivar vidrio».
@@ -39,6 +40,16 @@ pub fn tint(theme: Theme) -> (u8, u8, u8, u8) {
     match theme {
         Theme::Dark => (32, 32, 36, 200),
         Theme::Light => (243, 243, 245, 200),
+    }
+}
+
+/// Tinte del *blur* que sustituye al Acrylic mientras la ventana se mueve. El blur de
+/// Windows desenfoca mucho menos y no lleva la capa de luminosidad del Acrylic, así que
+/// con el mismo tinte se ve más transparente: se compensa con más opacidad.
+pub fn moving_tint(theme: Theme) -> (u8, u8, u8, u8) {
+    match theme {
+        Theme::Dark => (36, 36, 40, 212),
+        Theme::Light => (241, 241, 243, 212),
     }
 }
 
@@ -74,7 +85,7 @@ pub fn apply(window: &WebviewWindow, theme: Theme) -> Material {
 fn try_apply(window: &WebviewWindow, material: Material, theme: Theme) -> Result<(), String> {
     let result = match material {
         Material::Acrylic => window_vibrancy::apply_acrylic(window, Some(tint(theme))),
-        Material::Blur => window_vibrancy::apply_blur(window, Some(tint(theme))),
+        Material::Blur => window_vibrancy::apply_blur(window, Some(moving_tint(theme))),
         Material::None => return Ok(()),
     };
     result.map_err(|e| e.to_string())
@@ -82,7 +93,7 @@ fn try_apply(window: &WebviewWindow, material: Material, theme: Theme) -> Result
 
 #[cfg(not(windows))]
 fn try_apply(_: &WebviewWindow, _: Material, theme: Theme) -> Result<(), String> {
-    let _ = tint(theme);
+    let _ = (tint(theme), moving_tint(theme));
     Err("solo Windows".into())
 }
 
@@ -155,7 +166,17 @@ pub fn set_glass(app: &AppHandle, window: &WebviewWindow, enabled: bool) -> Mate
     next
 }
 
-/// La ventana se está moviendo o redimensionando: Acrylic → blur (mismo tinte) hasta que
+/// Reaplica el material que ya tiene la ventana (tras mostrarla o cambiar el tema).
+pub fn refresh(app: &AppHandle, window: &WebviewWindow) {
+    let material = app.state::<Materials>().get(window.label());
+    if material != Material::None
+        && let Err(e) = try_apply(window, material, appearance::theme())
+    {
+        tracing::debug!(error = %e, "no se pudo reaplicar el material");
+    }
+}
+
+/// La ventana se está moviendo o redimensionando: Acrylic → blur (`moving_tint`) hasta que
 /// pare. Se llama con cada evento `Moved`/`Resized` de las ventanas que se pueden mover.
 pub fn on_moved(app: &AppHandle, window: &WebviewWindow) {
     let label = window.label().to_owned();
