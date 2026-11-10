@@ -30,6 +30,9 @@
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-glass: var(--glass); /* barras fijas y diálogos sobre contenido */
+  /* Botón de cerrar de la barra de título al pasar el ratón: el rojo de Windows. */
+  --color-caption-close: rgb(196 43 28);
+  --color-caption-close-fg: rgb(255 255 255);
   --color-scrim: rgb(
     0 0 0 / 0.5
   ); /* fondo detrás de un diálogo, igual en los dos temas */
@@ -141,6 +144,12 @@ body,
 }
 
 @layer components {
+  /* Glifos de minimizar/maximizar/cerrar: la fuente de iconos de Windows (10 y 11). */
+  .sift-caption-glyph {
+    font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+    font-size: 10px;
+  }
+
   /* Superficie flotante de vidrio (diálogos). */
   .sift-glass {
     background: var(--glass);

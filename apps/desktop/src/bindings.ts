@@ -34,6 +34,8 @@ export const commands = {
 	 *  barra y los ajustes). Devuelve si ha quedado desactivado.
 	 */
 	setGlassDisabled: (disabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_glass_disabled", { disabled })),
+	/**  La UI de ajustes ya ha pintado: se puede mostrar su ventana (se crea oculta). */
+	settingsReady: () => __TAURI_INVOKE<void>("settings_ready"),
 	listSpaces: () => typedError<SpaceView_Serialize[], AppError>(__TAURI_INVOKE("list_spaces")),
 	createSpace: (draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("create_space", { draft })),
 	updateSpace: (id: number, draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("update_space", { id, draft })),

@@ -177,7 +177,7 @@ export function SpacesSection() {
         </div>
       </aside>
 
-      <section className="min-w-0 flex-1 overflow-y-auto px-6 pt-6">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
         {selection?.kind === "new" && (
           <SpaceEditor
             key={`new-${version}`}
@@ -216,7 +216,7 @@ export function SpacesSection() {
           />
         )}
         {!selection && spaces?.length === 0 && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="text-lg">Crea tu primer Espacio</p>
             <p className="max-w-sm text-sm text-muted">
               Por ejemplo «Bases de datos»: la carpeta de la asignatura, los

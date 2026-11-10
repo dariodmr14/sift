@@ -265,8 +265,10 @@ function App() {
       shortcut: c.shortcut,
       activate: () => openSettings(c.id === "newSpace"),
     }));
-    // Espacios, luego archivos y, al final, los comandos de la propia app.
-    return [...fromSpaces, ...files, ...builtins];
+    // Espacios, luego los comandos de la propia app y, al final, los archivos. Los
+    // comandos solo salen si lo escrito encaja con su nombre («ajustes»), y son uno o
+    // dos: detrás de cientos de archivos que contienen esa palabra no se encontrarían.
+    return [...fromSpaces, ...builtins, ...files];
   }, [query, spaces, launch, fileHits, fileIcons]);
 
   const starts = useMemo(
