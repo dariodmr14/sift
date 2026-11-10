@@ -2,11 +2,11 @@
 
 Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escribes lo que buscas y encuentra tus archivos por su significado, no solo por sus palabras. Todo en local: ni el índice, ni los archivos, ni el modelo de IA salen del ordenador.
 
-> 🚧 En desarrollo: Fases 1 (el lanzador) y 1.5 (Espacios básicos) terminadas. Plan completo en [PLAN.md](PLAN.md).
+> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos) y 2 (búsqueda por palabras) terminadas. Plan completo en [PLAN.md](PLAN.md).
 
 ## Qué hace ya
 
-- `Alt+Espacio` (configurable) abre una barra flotante con fondo Acrylic, desde cualquier app.
+- `Alt+Espacio` (configurable) abre una barra flotante de vidrio (Acrylic), desde cualquier app.
 - Se maneja solo con teclado: escribir, ↑ ↓, Enter, Esc. Se oculta también al hacer clic fuera.
 - **Espacios**: escribe su nombre o un alias y con Enter se abre todo de golpe (carpetas, archivos, webs, apps y comandos). Se crean, editan, duplican, reordenan, exportan e importan desde Ajustes, y se guardan en SQLite.
 - **Seguro por diseño**: los comandos se ejecutan con programa y argumentos separados, sin shell, y piden confirmación la primera vez (y otra vez si cambian).
@@ -14,7 +14,9 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **Ajustes desde la barra**: `Ctrl+,`, el engranaje o escribiendo «ajustes».
 - **Sistema de diseño «Vidrio»**: sigue el tema y el color de acento de Windows ([guía](docs/design-system.md)).
 - Icono en la bandeja (Abrir, Ajustes, Salir) y opción de arrancar con Windows.
-- La búsqueda en archivos llega en la Fase 2.
+- **Búsqueda en tus archivos**: por nombre y por contenido (texto, Markdown y código; PDF y Word por nombre), sin importar tildes, con prefijos y erratas. La barra busca a la vez en Espacios, comandos y archivos, con el término resaltado. Enter abre, `Ctrl+Enter` abre la carpeta y `Ctrl+Shift+C` copia la ruta.
+- **Ajustes → Carpetas**: eliges dónde busca Sift y ves su estado en palabras («Al día · 1.240 archivos», «Leyendo 32 de 120 archivos»). Solo vuelve a leer lo que ha cambiado.
+- **Un único vidrio** en toda la app (barra, Ajustes y diálogos), con la opción «Desactivar vidrio».
 
 ### Métricas (Windows 10, build de release)
 
@@ -23,7 +25,9 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 | Atajo → ventana pintada (`RegisterHotKey`) | < 100 ms | p50 34 ms · p95 42 ms | p50 37 ms · p95 45 ms |
 | Atajo → ventana pintada (hook de teclado) | < 100 ms | p50 34 ms · p95 40 ms | p50 36 ms · p95 43 ms |
 
-20–22 medidas por fila. Se mide desde que el hilo del atajo detecta la pulsación hasta que la UI ha pintado el primer fotograma. La latencia aparece en el log y en Ajustes → Estado.
+| Búsqueda (50.000 fragmentos, índice Tantivy) | < 50 ms | | Fase 2: p50 6,3 ms · p95 12,1 ms |
+
+20–22 medidas por fila en el atajo. La búsqueda se mide con `cargo test -p sift-search --release -- --ignored`. Se mide desde que el hilo del atajo detecta la pulsación hasta que la UI ha pintado el primer fotograma. La latencia aparece en el log y en Ajustes → Estado.
 
 ## Stack
 - **App**: Tauri 2 (Rust + WebView2), UI en React + TypeScript + Vite.
@@ -57,6 +61,7 @@ cargo test --workspace
 - [ADR 0003](docs/adr/0003-ipc-tipado-tauri-specta.md): IPC tipado con tauri-specta.
 - [ADR 0004](docs/adr/0004-espacios-en-sqlite.md): Espacios en SQLite, migraciones y aprobación de comandos.
 - [ADR 0005](docs/adr/0005-direccion-visual-vidrio.md): dirección visual «Vidrio».
+- [ADR 0006](docs/adr/0006-arquitectura-de-busqueda.md): arquitectura de búsqueda pensada para la Fase 4 (fragmentos, recuperadores y RRF).
 
 ## Lo aprendido
 
@@ -72,6 +77,14 @@ cargo test --workspace
 - En Windows, crear una ventana WebView2 desde un comando IPC síncrono se bloquea y la ventana se queda en blanco: tiene que ser `async`.
 - Un sistema de diseño solo se mantiene si algo lo vigila: un test que falla con colores literales vale más que una guía.
 - Probar sin poder hacer clic: la depuración remota de WebView2 permite manejar la app real por el protocolo de DevTools (teclas, IPC y capturas).
+
+**Fase 2**
+- Un stemmer arregla los plurales pero rompe las erratas: «redundansia» y «redundancia» dan raíces distintas. La solución fue indexar cada campo dos veces, uno con raíces y otro solo sin tildes, y buscar en los dos.
+- Diseñar desde el principio para lo que viene (fragmentos como unidad, un trait `Retriever` y fusión RRF) hace que la Fase 4 sea añadir un recuperador, no rehacer la búsqueda.
+- SQLite es la fuente de verdad y Tantivy se puede reconstruir desde ella: un índice roto o de otro formato no pierde nada.
+- Para decir «Leyendo 32 de 120» hay que separar *buscar cambios* (solo tamaño y fecha, barato) de *leer*. Así, además, se lee primero lo último que has tocado.
+- Acrylic va a tirones al mover una ventana en Windows 10, pero solo mientras se mueve: cambiar a blur durante el arrastre da el mismo vidrio en reposo sin pagar el tirón.
+- Para el arrastre con animación, una librería probada (dnd-kit) gana a un hook propio: medir, animar a los vecinos y la accesibilidad ya vienen resueltos.
 
 ## Licencia
 [MIT](LICENSE)
