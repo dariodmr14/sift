@@ -20,6 +20,19 @@ export default tseslint.config(
     },
   },
   reactHooks.configs.flat.recommended,
+  {
+    rules: {
+      // Prefijo `_` = "no lo uso a propósito" (p. ej. quitar un campo al desestructurar).
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
+  },
   // Los .js de configuración no forman parte del proyecto TS: sin reglas con tipos.
   { files: ["**/*.js"], ...tseslint.configs.disableTypeChecked },
   // Siempre la última: desactiva las reglas de estilo que chocarían con Prettier.

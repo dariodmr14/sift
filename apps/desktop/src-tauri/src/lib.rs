@@ -1,11 +1,14 @@
 //! Punto de entrada de la app Tauri.
 
+mod appearance;
 mod commands;
 mod hotkey;
 mod latency;
 mod launcher;
 mod logging;
 mod settings_window;
+mod shell;
+mod spaces_commands;
 mod tray;
 
 use std::path::PathBuf;
@@ -24,6 +27,10 @@ const FORCE_HOOK_ENV: &str = "SIFT_FORCE_KEYBOARD_HOOK";
 /// Argumento con el que Windows lanza Sift al iniciar sesión (lo registra el plugin de
 /// autostart). En ese caso no se muestra el lanzador: la app arranca en silencio.
 const AUTOSTART_ARG: &str = "--autostart";
+
+/// Si la base de datos no se pudo abrir, el motivo. La app sigue funcionando con una base
+/// de datos en memoria (para que la barra no deje de abrirse), pero avisa en Ajustes.
+pub(crate) struct StorageStatus(pub Option<String>);
 
 /// El atajo activo. En un `Mutex` porque los ajustes pueden cambiarlo en marcha.
 #[derive(Default)]
@@ -56,6 +63,35 @@ fn start_hotkey(app: &AppHandle, hotkey: Hotkey) -> anyhow::Result<HotkeyListene
     })
 }
 
+/// Lee, cambia y guarda los ajustes.
+pub(crate) fn update_settings(
+    app: &AppHandle,
+    change: impl FnOnce(&mut Settings),
+) -> anyhow::Result<()> {
+    let path = settings_path(app)?;
+    let mut settings = Settings::load(&path).unwrap_or_default();
+    change(&mut settings);
+    settings.save(&path)?;
+    Ok(())
+}
+
+fn open_database(app: &AppHandle) -> (sift_storage::Database, Option<String>) {
+    let opened = app
+        .path()
+        .app_data_dir()
+        .map_err(anyhow::Error::from)
+        .and_then(|dir| Ok(sift_storage::Database::open(&dir.join("sift.db"))?));
+    match opened {
+        Ok(db) => (db, None),
+        Err(e) => {
+            tracing::error!(error = %e, "no se pudo abrir la base de datos; se usa una en memoria");
+            let fallback = sift_storage::Database::open_in_memory()
+                .expect("SQLite en memoria no puede fallar salvo sin memoria");
+            (fallback, Some(format!("{e:#}")))
+        }
+    }
+}
+
 /// Cambia el atajo en marcha. Si el nuevo no se puede registrar, se recupera el anterior
 /// y se devuelve el error: nunca te quedas sin atajo por probar uno ocupado.
 pub(crate) fn change_hotkey(app: &AppHandle, new: Hotkey) -> anyhow::Result<()> {
@@ -70,11 +106,7 @@ pub(crate) fn change_hotkey(app: &AppHandle, new: Hotkey) -> anyhow::Result<()> 
     match start_hotkey(app, new) {
         Ok(listener) => {
             *slot = Some(listener);
-            let path = settings_path(app)?;
-            let mut settings = Settings::load(&path).unwrap_or_default();
-            settings.hotkey = new;
-            settings.save(&path)?;
-            Ok(())
+            update_settings(app, |s| s.hotkey = new)
         }
         Err(e) => {
             if let Some(old) = old {
@@ -113,7 +145,9 @@ pub fn run() {
         // además ahorramos CPU. Ojo: en tao `Always` significa "filtrarlos siempre".
         .device_event_filter(tauri::DeviceEventFilter::Always)
         .manage(HotkeyState::default())
+        .plugin(tauri_plugin_dialog::init())
         .manage(launcher::LauncherState::default())
+        .manage(shell::IconCache::default())
         .invoke_handler(specta.invoke_handler())
         .setup(move |app| {
             specta.mount_events(app);
@@ -122,6 +156,9 @@ pub fn run() {
             tracing::info!(version = sift_core::VERSION, "Sift arrancando");
 
             let handle = app.handle();
+            let (db, storage_error) = open_database(handle);
+            app.manage(spaces_commands::Db(Mutex::new(db)));
+            app.manage(StorageStatus(storage_error));
             launcher::init_acrylic(handle);
             tray::create(handle)?;
 

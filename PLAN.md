@@ -139,6 +139,21 @@ sift/
 
 **Hecho cuando:** el atajo abre la barra en < 100 ms desde cualquier app y se maneja sin ratón.
 
+### Fase 1.5 — Espacios básicos y ajustes desde la barra (adelantada)
+> Adelantada de la Fase 6 tras usar la Fase 1 (ver [FEEDBACK.md](FEEDBACK.md)). Incluye lo que **no depende del indexado**.
+- [x] Ajustes accesibles desde la barra: `Ctrl+,`, icono discreto y escribiendo "ajustes".
+- [x] Persistencia en SQLite (`sift-storage`) con migraciones.
+- [x] Modelo de Espacio: nombre, alias, icono y lista ordenada de acciones.
+- [x] Acciones: abrir carpeta, abrir archivo, abrir URL, abrir aplicación (con selector) y ejecutar comando (programa + argumentos + carpeta de trabajo).
+- [x] Seguridad: programa y argumentos por separado, sin shell; confirmación la primera vez que se ejecuta cada comando.
+- [x] Editor en Ajustes: crear, editar, duplicar, borrar y reordenar; botón "probar" por acción.
+- [x] Iconos: librería con buscador, emoji, imagen propia (PNG/SVG/ICO) o ninguno; icono real de Windows por defecto para apps y archivos; opción global "solo texto".
+- [x] Exportar e importar los Espacios a JSON.
+- [x] Sin datos de ejemplo: estado vacío con atajo para crear el primer Espacio.
+- [x] Dirección visual elegida («Vidrio», [ADR 0005](docs/adr/0005-direccion-visual-vidrio.md)) y aplicada como sistema de diseño ([tokens](docs/design-system.md)), respetando "reducir movimiento".
+
+**Hecho cuando:** creas un Espacio "bases de datos" desde Ajustes y, desde la barra, "bases" + Enter abre todas sus acciones (con confirmación la primera vez que hay un comando).
+
 ### Fase 2 — Indexado y búsqueda por palabras
 - [ ] Esquema SQLite con migraciones: `roots`, `files`, `chunks`, `opens`.
 - [ ] Ajustes: elegir carpetas a indexar y patrones a ignorar (`node_modules`, `.git`…).
@@ -176,14 +191,24 @@ sift/
 
 **Hecho cuando:** hay números en el README (recall y latencia) y mejoran frente a usar cada búsqueda por separado.
 
-### Fase 6 — Espacios
-- [ ] Modelo: nombre, alias, icono y lista de acciones.
-- [ ] Acciones: abrir archivo/carpeta, abrir URL, abrir app, ejecutar comando (p. ej. `docker compose up` en una ruta).
-- [ ] Editor de Espacios en Ajustes.
-- [ ] Los Espacios aparecen en los resultados al escribir su nombre o alias; Enter lanza todo.
-- [ ] Confirmación la primera vez que un Espacio ejecuta un comando.
+### Fase 6 — Espacios completos
+> La versión básica (modelo, acciones, editor, confirmación) se adelantó a la Fase 1.5. Aquí queda lo que se apoya en el indexado.
+- [ ] Los Espacios se mezclan con los resultados de búsqueda y suben con la frecencia.
+- [ ] Sugerir archivos y carpetas del índice al añadir acciones.
+- [ ] Acciones condicionales o con espera (p. ej. abrir la web cuando el contenedor esté listo).
 
 **Hecho cuando:** "bases de datos" + Enter abre todo tu entorno de la asignatura.
+
+### Fase 6.5 — Colocar ventanas (zonas)
+Acciones que, además de abrir una app, colocan su ventana en una posición o zona de la pantalla (p. ej. "abrir VS Code en la mitad derecha"), como hacen los FancyZones de PowerToys.
+- [ ] Zonas predefinidas (mitades, tercios, cuartos, maximizada) y personalizadas por monitor.
+- [ ] Esperar a que la app abra: seguir el proceso lanzado y esperar a su ventana principal, con tiempo límite.
+- [ ] Identificar la ventana correcta: por proceso, y si la app reutiliza un proceso existente (VS Code, navegadores), por título o clase de ventana.
+- [ ] Varios monitores: elegir monitor por nombre o posición; respetar el área de trabajo (sin la barra de tareas) y el DPI de cada pantalla.
+- [ ] Ventanas ya abiertas: moverlas en lugar de abrir otra instancia (opcional por acción).
+- [ ] Colocar con `SetWindowPos`, teniendo en cuenta los bordes invisibles de Windows 10 (`DwmGetWindowAttribute`).
+
+**Hecho cuando:** un Espacio abre VS Code en la mitad derecha y el navegador en la izquierda del monitor elegido, aunque alguna de las dos ya estuviera abierta.
 
 ### Fase 7 — Pulido
 - [ ] Diseño final: tipografía, espaciado, tema claro/oscuro según Windows.
