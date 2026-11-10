@@ -50,6 +50,15 @@ pub struct NewChunk {
     pub text: String,
 }
 
+/// Un archivo indexado (lo justo para reconstruir el índice).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileRow {
+    pub id: i64,
+    pub path: String,
+    pub name: String,
+    pub ext: String,
+}
+
 /// Un fragmento guardado, con lo necesario para (re)construir el índice de búsqueda.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredChunk {
@@ -293,10 +302,53 @@ impl Database {
         Ok(n)
     }
 
+    /// Recorre cada archivo con sus fragmentos en orden (también los que no tienen
+    /// fragmentos: se indexan por nombre). Para reconstruir el índice de búsqueda.
+    pub fn for_each_file_with_chunks(
+        &self,
+        mut f: impl FnMut(&FileRow, Vec<(i64, String)>),
+    ) -> Result<usize, StorageError> {
+        let files: Vec<FileRow> = self
+            .conn
+            .prepare("SELECT id, path, name, ext FROM files ORDER BY id")?
+            .query_map([], |r| {
+                Ok(FileRow {
+                    id: r.get(0)?,
+                    path: r.get(1)?,
+                    name: r.get(2)?,
+                    ext: r.get(3)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, text FROM chunks WHERE file_id = ?1 ORDER BY ordinal")?;
+        for file in &files {
+            let chunks = stmt
+                .query_map([file.id], |r| Ok((r.get(0)?, r.get(1)?)))?
+                .collect::<Result<Vec<(i64, String)>, _>>()?;
+            f(file, chunks);
+        }
+        Ok(files.len())
+    }
+
     pub fn count_chunks(&self) -> Result<i64, StorageError> {
         Ok(self
             .conn
             .query_row("SELECT COUNT(*) FROM chunks", [], |r| r.get(0))?)
+    }
+
+    /// ¿Está esta ruta en el índice?
+    pub fn is_indexed(&self, path: &Path) -> Result<bool, StorageError> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT 1 FROM files WHERE path = ?1",
+                [path.display().to_string()],
+                |_| Ok(()),
+            )
+            .optional()?
+            .is_some())
     }
 
     /// Apunta que has abierto un archivo (para la frecuencia de uso de la Fase 5).
@@ -458,6 +510,36 @@ mod tests {
             .unwrap();
         assert_eq!(saved, vec!["*.log", "secreto"]);
         assert_eq!(db.ignore_patterns().unwrap(), saved);
+    }
+
+    #[test]
+    fn walks_files_with_their_chunks_for_rebuilding() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        db.upsert_file(
+            &file(root, r"C:\Uni\a.md"),
+            &[chunk(0, "uno"), chunk(1, "dos")],
+        )
+        .unwrap();
+        db.upsert_file(&file(root, r"C:\Uni\b.pdf"), &[]).unwrap();
+        let mut seen = vec![];
+        let n = db
+            .for_each_file_with_chunks(|f, chunks| {
+                seen.push((
+                    f.name.clone(),
+                    chunks.into_iter().map(|c| c.1).collect::<Vec<_>>(),
+                ))
+            })
+            .unwrap();
+        assert_eq!(n, 2);
+        assert_eq!(
+            seen[0],
+            (
+                "a.md".to_string(),
+                vec!["uno".to_string(), "dos".to_string()]
+            )
+        );
+        assert_eq!(seen[1], ("b.pdf".to_string(), vec![]));
     }
 
     #[test]

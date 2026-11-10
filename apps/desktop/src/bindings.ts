@@ -57,10 +57,33 @@ export const commands = {
 	exportSpaces: () => typedError<string | null, AppError>(__TAURI_INVOKE("export_spaces")),
 	/**  Importa Espacios de un JSON (se añaden al final). Devuelve cuántos. */
 	importSpaces: () => typedError<number | null, AppError>(__TAURI_INVOKE("import_spaces")),
+	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
+	searchFiles: (query: string, seq: number) => typedError<SearchResponse, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
+	listRoots: () => typedError<RootView_Serialize[], AppError>(__TAURI_INVOKE("list_roots")),
+	/**  Elige una carpeta con el diálogo de Windows y empieza a indexarla. */
+	addRoot: () => typedError<string | null, AppError>(__TAURI_INVOKE("add_root")),
+	/**  Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan). */
+	removeRoot: (id: number) => typedError<null, AppError>(__TAURI_INVOKE("remove_root", { id })),
+	getIgnorePatterns: () => typedError<string[], AppError>(__TAURI_INVOKE("get_ignore_patterns")),
+	/**
+	 *  Guarda los patrones (si son válidos) y resincroniza: lo que ahora se ignora sale del
+	 *  índice y lo que ya no, entra.
+	 */
+	setIgnorePatterns: (patterns: string[]) => typedError<string[], AppError>(__TAURI_INVOKE("set_ignore_patterns", { patterns })),
+	indexStatus: () => __TAURI_INVOKE<IndexStatus_Serialize>("index_status"),
+	reindex: () => __TAURI_INVOKE<void>("reindex"),
+	/**
+	 *  Abre un archivo encontrado. Solo rutas que estén en el índice: la UI no puede pedir
+	 *  abrir cualquier cosa (abrir un .exe sería ejecutarlo).
+	 */
+	openFile: (path: string) => typedError<null, AppError>(__TAURI_INVOKE("open_file", { path })),
+	/**  Abre la carpeta que contiene el archivo, con él seleccionado (como «Abrir ubicación»). */
+	revealFile: (path: string) => typedError<null, AppError>(__TAURI_INVOKE("reveal_file", { path })),
 };
 
 /** Events */
 export const events = {
+	indexProgress: makeEvent<IndexProgress_Serialize, IndexProgress_Deserialize>("index-progress"),
 	launcherHidden: makeEvent<LauncherHidden, LauncherHidden>("launcher-hidden"),
 	launcherShown: makeEvent<LauncherShown, LauncherShown>("launcher-shown"),
 	newSpaceRequested: makeEvent<NewSpaceRequested, NewSpaceRequested>("new-space-requested"),
@@ -171,6 +194,20 @@ export type CommandSpec_Serialize = {
 	cwd: string | null,
 };
 
+/**  Un archivo encontrado, con su mejor fragmento. */
+export type FileHit = {
+	/**  Id de SQLite. En TypeScript es un `number` normal: nunca pasará de 2³¹. */
+	fileId: number,
+	path: string,
+	name: string,
+	ext: string,
+	/**  Nombre con lo que encaja resaltado. */
+	nameSegments: Segment[],
+	/**  Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre). */
+	snippet: Segment[],
+	score: number | null,
+};
+
 /**  Icono de un Espacio. */
 export type Icon = 
 /**  El icono real de Windows de la primera app, archivo o carpeta del Espacio. */
@@ -188,11 +225,56 @@ export type Icon =
  */
 { kind: "image"; mime: string; data: string };
 
+/**  Evento: el estado del indexado ha cambiado. */
+export type IndexProgress = IndexProgress_Serialize | IndexProgress_Deserialize;
+
+/**  Evento: el estado del indexado ha cambiado. */
+export type IndexProgress_Deserialize = IndexStatus_Deserialize;
+
+/**  Evento: el estado del indexado ha cambiado. */
+export type IndexProgress_Serialize = IndexStatus_Serialize;
+
+/**  Estado del indexado, para Ajustes → Carpetas. */
+export type IndexStatus = IndexStatus_Serialize | IndexStatus_Deserialize;
+
+/**  Estado del indexado, para Ajustes → Carpetas. */
+export type IndexStatus_Deserialize = {
+	running: boolean,
+	/**  Carpeta que se está recorriendo. */
+	currentRoot?: string | null,
+	/**  Archivos vistos en la pasada actual. */
+	processed: number,
+	/**  Resumen de la última pasada completa. */
+	last?: LastRun | null,
+	error?: string | null,
+};
+
+/**  Estado del indexado, para Ajustes → Carpetas. */
+export type IndexStatus_Serialize = {
+	running: boolean,
+	/**  Carpeta que se está recorriendo. */
+	currentRoot: string | null,
+	/**  Archivos vistos en la pasada actual. */
+	processed: number,
+	/**  Resumen de la última pasada completa. */
+	last: LastRun | null,
+	error: string | null,
+};
+
 /**  Una app instalada, para el selector. */
 export type InstalledApp = {
 	/**  Identificador en `shell:AppsFolder` (un AUMID o una ruta). */
 	id: string,
 	name: string,
+};
+
+export type LastRun = {
+	added: number,
+	updated: number,
+	unchanged: number,
+	removed: number,
+	errors: number,
+	seconds: number | null,
 };
 
 /**  Resumen que se manda a la UI y se escribe en el log. */
@@ -239,6 +321,28 @@ export type PendingCommand_Serialize = {
 	display: string,
 };
 
+export type RootView = RootView_Serialize | RootView_Deserialize;
+
+export type RootView_Deserialize = {
+	id: number,
+	path: string,
+	files: number,
+	errors: number,
+	lastIndexedAt?: string | null,
+	/**  La carpeta ya no existe (o el disco no está conectado). */
+	missing: boolean,
+};
+
+export type RootView_Serialize = {
+	id: number,
+	path: string,
+	files: number,
+	errors: number,
+	lastIndexedAt: string | null,
+	/**  La carpeta ya no existe (o el disco no está conectado). */
+	missing: boolean,
+};
+
 export type RunReport = RunReport_Serialize | RunReport_Deserialize;
 
 export type RunReport_Deserialize = 
@@ -258,6 +362,23 @@ export type RunReport_Serialize =
 { status: "needsApproval"; commands: PendingCommand_Serialize[] } | 
 /**  Se lanzaron las acciones; cada una con su resultado. */
 { status: "done"; outcomes: ActionOutcome_Serialize[] };
+
+export type SearchResponse = {
+	/**  El número que mandó la UI: si llega una respuesta vieja, la descarta. */
+	seq: number,
+	results: SearchResults,
+};
+
+export type SearchResults = {
+	hits: FileHit[],
+	/**  Tiempo de la búsqueda en Rust (sin la IPC), en milisegundos. */
+	tookMs: number | null,
+};
+
+export type Segment = {
+	text: string,
+	hit: boolean,
+};
 
 /**  Ajustes editables desde la ventana de ajustes. */
 export type SettingsView = {
@@ -344,6 +465,8 @@ export type Status_Deserialize = {
 	latency?: LatencySummary | null,
 	/**  Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán). */
 	storageError?: string | null,
+	/**  Tiempo de búsqueda de archivos en Rust (objetivo < 50 ms). */
+	searchLatency?: LatencySummary | null,
 };
 
 /**  Estado de la app para la UI (y para la pantalla de ajustes). */
@@ -356,6 +479,8 @@ export type Status_Serialize = {
 	latency: LatencySummary | null,
 	/**  Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán). */
 	storageError: string | null,
+	/**  Tiempo de búsqueda de archivos en Rust (objetivo < 50 ms). */
+	searchLatency: LatencySummary | null,
 };
 
 export type Theme = "light" | "dark";

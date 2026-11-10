@@ -6,7 +6,7 @@ mod index;
 mod spaces;
 
 pub use db::Database;
-pub use index::{FileState, NewChunk, NewFile, Root, StoredChunk};
+pub use index::{FileRow, FileState, NewChunk, NewFile, Root, StoredChunk};
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {

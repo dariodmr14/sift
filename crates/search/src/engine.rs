@@ -38,8 +38,11 @@ impl Retriever for Lexical<'_> {
 
 /// Un archivo encontrado, con su mejor fragmento.
 #[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct FileHit {
+    /// Id de SQLite. En TypeScript es un `number` normal: nunca pasará de 2³¹.
+    #[cfg_attr(feature = "specta", specta(type = i32))]
     pub file_id: i64,
     pub path: String,
     pub name: String,
@@ -52,6 +55,7 @@ pub struct FileHit {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResults {
     pub hits: Vec<FileHit>,

@@ -21,6 +21,8 @@ tauri-build = { workspace = true }
 sift-core = { workspace = true }
 sift-spaces = { workspace = true, features = ["specta"] }
 sift-storage = { workspace = true }
+sift-indexer = { workspace = true }
+sift-search = { workspace = true, features = ["specta"] }
 tauri = { workspace = true }
 tauri-plugin-autostart = { workspace = true }
 tauri-plugin-single-instance = { workspace = true }

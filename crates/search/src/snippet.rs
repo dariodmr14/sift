@@ -14,6 +14,7 @@ use crate::analyzer::{fold, spanish, tokens};
 use crate::query::ParsedQuery;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Segment {
     pub text: String,
     pub hit: bool,

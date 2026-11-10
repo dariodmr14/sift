@@ -3,10 +3,12 @@
 mod appearance;
 mod commands;
 mod hotkey;
+mod indexing;
 mod latency;
 mod launcher;
 mod logging;
 mod materials;
+mod search_commands;
 mod settings_window;
 mod shell;
 mod spaces_commands;
@@ -93,6 +95,23 @@ fn open_database(app: &AppHandle) -> (sift_storage::Database, Option<String>) {
     }
 }
 
+/// Abre el índice de búsqueda (derivado: si falla, uno en memoria que se rellena desde
+/// SQLite, para que la búsqueda funcione igual aunque no se guarde en disco).
+fn open_search_index(app: &AppHandle) -> std::sync::Arc<sift_search::TextIndex> {
+    let opened = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())
+        .and_then(|dir| {
+            sift_search::TextIndex::open(&dir.join("index").join("text")).map_err(|e| e.to_string())
+        });
+    let index = opened.unwrap_or_else(|e| {
+        tracing::error!(error = %e, "no se pudo abrir el índice en disco; se usa uno en memoria");
+        sift_search::TextIndex::in_memory().expect("un índice en memoria no puede fallar")
+    });
+    std::sync::Arc::new(index)
+}
+
 /// Cambia el atajo en marcha. Si el nuevo no se puede registrar, se recupera el anterior
 /// y se devuelve el error: nunca te quedas sin atajo por probar uno ocupado.
 pub(crate) fn change_hotkey(app: &AppHandle, new: Hotkey) -> anyhow::Result<()> {
@@ -150,6 +169,7 @@ pub fn run() {
         .manage(launcher::LauncherState::default())
         .manage(shell::IconCache::default())
         .manage(materials::Materials::default())
+        .manage(search_commands::SearchStats::default())
         .invoke_handler(specta.invoke_handler())
         .setup(move |app| {
             specta.mount_events(app);
@@ -161,6 +181,8 @@ pub fn run() {
             let (db, storage_error) = open_database(handle);
             app.manage(spaces_commands::Db(Mutex::new(db)));
             app.manage(StorageStatus(storage_error));
+            let index = open_search_index(handle);
+            app.manage(indexing::Indexing::start(handle, index));
             launcher::init_acrylic(handle);
             tray::create(handle)?;
 
