@@ -155,12 +155,17 @@ sift/
 **Hecho cuando:** creas un Espacio "bases de datos" desde Ajustes y, desde la barra, "bases" + Enter abre todas sus acciones (con confirmación la primera vez que hay un comando).
 
 ### Fase 2 — Indexado y búsqueda por palabras
-- [ ] Esquema SQLite con migraciones: `roots`, `files`, `chunks`, `opens`.
-- [ ] Ajustes: elegir carpetas a indexar y patrones a ignorar (`node_modules`, `.git`…).
-- [ ] Recorrido de carpetas y extracción de texto/Markdown/código.
-- [ ] Índice Tantivy con analizador en español; búsqueda con prefijos y erratas.
+> Arquitectura pensada para la Fase 4: ver [ADR 0006](docs/adr/0006-arquitectura-de-busqueda.md).
+- [ ] Esquema SQLite con migraciones: `roots`, `ignore_patterns`, `files`, `chunks` (fragmentos, la unidad de la Fase 4) y `opens`.
+- [ ] Ajustes → «Carpetas»: añadir y quitar carpetas (selector de Windows), patrones a ignorar y estado del indexado.
+- [ ] Recorrido de carpetas y extracción de texto/Markdown/código (con detección de codificación); el resto, por nombre.
+- [ ] Troceado en fragmentos con solapamiento.
+- [ ] Índice Tantivy con analizador en español; búsqueda con prefijos y erratas, en nombre y contenido.
+- [ ] Pipeline de recuperadores + fusión RRF (hoy solo el léxico; el semántico se añade en la Fase 4).
+- [ ] La barra busca en todo a la vez: Espacios, comandos y archivos, con secciones.
 - [ ] Resultados con nombre, ruta, fragmento con el término resaltado e icono por tipo.
 - [ ] Acciones: abrir, abrir carpeta contenedora, copiar ruta.
+- [ ] Latencia de búsqueda medida (objetivo < 50 ms).
 
 **Hecho cuando:** buscas una palabra que está dentro de un apunte y aparece en < 50 ms.
 
