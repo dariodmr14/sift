@@ -14,6 +14,8 @@ use crate::hotkey::Hotkey;
 pub struct Settings {
     /// Atajo global que muestra u oculta el lanzador.
     pub hotkey: Hotkey,
+    /// "Solo texto": oculta todos los iconos de la barra.
+    pub icons_hidden: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -65,6 +67,7 @@ mod tests {
         let path = dir.path().join("sub").join("settings.json");
         let s = Settings {
             hotkey: "Ctrl+Shift+K".parse().unwrap(),
+            icons_hidden: true,
         };
         s.save(&path).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), s);
@@ -77,6 +80,17 @@ mod tests {
         let path = dir.path().join("settings.json");
         std::fs::write(&path, r#"{ "campoDelFuturo": 1 }"#).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), Settings::default());
+    }
+
+    #[test]
+    fn files_from_phase_1_still_load() {
+        // Un settings.json de la Fase 1 no tenía `iconsHidden`: toma su valor por defecto.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        std::fs::write(&path, r#"{ "hotkey": "Ctrl+K" }"#).unwrap();
+        let s = Settings::load(&path).unwrap();
+        assert_eq!(s.hotkey.to_string(), "Ctrl+K");
+        assert!(!s.icons_hidden);
     }
 
     #[test]

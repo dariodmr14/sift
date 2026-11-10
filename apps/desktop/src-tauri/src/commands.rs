@@ -13,7 +13,8 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::hotkey::Backend;
 use crate::latency::LatencySummary;
-use crate::{HotkeyState, launcher};
+use crate::spaces_commands as spaces;
+use crate::{HotkeyState, StorageStatus, launcher, settings_window};
 
 /// Errores que la UI puede mostrar. En TypeScript llega como `{ kind, message }`.
 #[derive(Debug, Clone, Serialize, specta::Type)]
@@ -23,6 +24,9 @@ pub enum AppError {
     InvalidHotkey(String),
     /// El atajo es válido pero no se pudo activar.
     HotkeyUnavailable(String),
+    /// Datos que no pasan la validación (un Espacio sin nombre, una URL no web…).
+    Invalid(String),
+    NotFound(String),
     /// Fallo del sistema (registro de Windows, disco…).
     System(String),
 }
@@ -35,12 +39,23 @@ pub struct SettingsView {
     /// Fuente de verdad: el registro de Windows (no el JSON), para no desincronizarse
     /// si el usuario lo desactiva desde el Administrador de tareas.
     pub launch_at_startup: bool,
+    /// "Solo texto": la barra no muestra iconos.
+    pub icons_hidden: bool,
 }
 
 /// Rust avisa a la UI de que el lanzador acaba de mostrarse: hay que limpiar la búsqueda,
 /// poner el foco en la caja y avisar de vuelta cuando se haya pintado.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct LauncherShown;
+
+/// Rust avisa de que ha ocultado el lanzador (Esc, clic fuera, el atajo…): la UI se
+/// reinicia mientras está invisible, así al volver a mostrarse no enseña el estado viejo.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+pub struct LauncherHidden;
+
+/// Se pidió "crear Espacio" desde la barra con la ventana de ajustes ya abierta.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+pub struct NewSpaceRequested;
 
 /// Estado de la app para la UI (y para la pantalla de ajustes).
 #[derive(Debug, Clone, Serialize, specta::Type)]
@@ -52,12 +67,27 @@ pub struct Status {
     pub hotkey: Option<String>,
     pub backend: Option<Backend>,
     pub latency: Option<LatencySummary>,
+    /// Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán).
+    pub storage_error: Option<String>,
 }
 
 #[tauri::command]
 #[specta::specta]
 fn hide_launcher(app: AppHandle) {
     launcher::hide(&app);
+}
+
+/// Abre la ventana de ajustes desde la barra (`Ctrl+,`, el engranaje o "ajustes").
+/// Con `new_space`, la abre directamente en "crear Espacio".
+///
+/// Tiene que ser `async`: los comandos síncronos se ejecutan en el hilo principal, y en
+/// Windows crear una ventana WebView2 desde ahí se bloquea (la ventana se queda en
+/// blanco). Documentado por Tauri en `WebviewWindowBuilder::new`.
+#[tauri::command]
+#[specta::specta]
+async fn open_settings(app: AppHandle, new_space: bool) {
+    launcher::hide(&app);
+    settings_window::open(&app, new_space);
 }
 
 /// La UI lo llama tras pintar el primer fotograma con el lanzador visible.
@@ -78,7 +108,15 @@ fn get_status(app: AppHandle) -> Status {
         hotkey: listener.as_ref().map(|l| l.hotkey().to_string()),
         backend: listener.as_ref().map(|l| l.backend()),
         latency: launcher.latency(),
+        storage_error: app.state::<StorageStatus>().0.clone(),
     }
+}
+
+/// Tema y color de acento de Windows, para que la UI los siga.
+#[tauri::command]
+#[specta::specta]
+fn get_appearance() -> crate::appearance::Appearance {
+    crate::appearance::current()
 }
 
 #[tauri::command]
@@ -87,7 +125,16 @@ fn get_settings(app: AppHandle) -> SettingsView {
     SettingsView {
         hotkey: crate::load_settings(&app).hotkey.to_string(),
         launch_at_startup: app.autolaunch().is_enabled().unwrap_or(false),
+        icons_hidden: crate::load_settings(&app).icons_hidden,
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+fn set_icons_hidden(app: AppHandle, hidden: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.icons_hidden = hidden)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    Ok(hidden)
 }
 
 #[tauri::command]
@@ -123,13 +170,34 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
         .commands(collect_commands![
             hide_launcher,
+            open_settings,
             launcher_painted,
             get_status,
             get_settings,
+            get_appearance,
             set_hotkey,
-            set_launch_at_startup
+            set_launch_at_startup,
+            set_icons_hidden,
+            spaces::list_spaces,
+            spaces::create_space,
+            spaces::update_space,
+            spaces::duplicate_space,
+            spaces::delete_space,
+            spaces::reorder_spaces,
+            spaces::run_space,
+            spaces::test_action,
+            spaces::list_apps,
+            spaces::get_icons,
+            spaces::pick_path,
+            spaces::pick_icon_image,
+            spaces::export_spaces,
+            spaces::import_spaces
         ])
-        .events(collect_events![LauncherShown])
+        .events(collect_events![
+            LauncherShown,
+            LauncherHidden,
+            NewSpaceRequested
+        ])
 }
 
 /// Ruta de los tipos generados, relativa a este crate (`src-tauri/`).

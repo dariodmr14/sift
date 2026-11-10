@@ -1,27 +1,90 @@
 @import "tailwindcss";
 
 /*
- * Colores como variables: el fondo depende de si Rust pudo aplicar Acrylic.
- * - data-acrylic="true": fondo casi transparente; el desenfoque lo pone Windows.
- * - cualquier otro caso (por defecto): fondo opaco, para que nunca se vea el escritorio
- *   "a pelo" a través de la ventana si el efecto no está disponible.
+ * Sistema de diseño «Vidrio» (ver docs/design-system.md).
+ *
+ * Tres capas:
+ * 1. Tokens semánticos como variables CSS (--fg, --muted, --line…), con un juego para
+ *    tema oscuro y otro para claro. El tema y el acento los dicta Windows: Rust los lee
+ *    y la UI pone `data-theme` y `--accent` en <html> (src/appearance.ts).
+ * 2. `@theme inline` los convierte en utilidades de Tailwind: `bg-surface`, `text-muted`,
+ *    `border-line`, `bg-accent`, `rounded-item`, `shadow-window`…
+ *    Regla: los componentes solo usan estas utilidades, nunca colores literales
+ *    (lo comprueba src/design-tokens.test.ts).
+ * 3. Unas pocas clases de componente (`.sift-option`, animaciones) para lo que se repite.
  */
-:root {
-  --surface: rgb(28 28 34);
-  --surface-hover: rgb(255 255 255 / 0.06);
-  --surface-selected: rgb(255 255 255 / 0.11);
-  --text: rgb(240 240 245);
-  --text-muted: rgb(160 160 172);
-  --border: rgb(255 255 255 / 0.08);
-  --accent: rgb(122 162 255);
 
-  color-scheme: dark;
-  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-  color: var(--text);
+@theme inline {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, ui-monospace, monospace;
+
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-hover: var(--hover);
+  --color-selected: var(--selected);
+  --color-field: var(--field);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-scrim: rgb(
+    0 0 0 / 0.5
+  ); /* fondo detrás de un diálogo, igual en los dos temas */
+
+  --radius-window: 8px; /* ventanas y diálogos */
+  --radius-item: 4px; /* filas, botones, campos */
+
+  --shadow-window:
+    0 16px 48px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
+/* Tema oscuro: el de partida. */
+:root {
+  --surface: rgb(32 32 36); /* fondo opaco (ajustes, o sin Acrylic) */
+  --fg: rgb(243 244 246);
+  --muted: rgb(166 173 187);
+  --line: rgb(255 255 255 / 0.08);
+  --hover: rgb(255 255 255 / 0.05);
+  --selected: rgb(255 255 255 / 0.08);
+  --field: rgb(255 255 255 / 0.06);
+  --danger: rgb(255 153 164);
+  --success: rgb(108 203 95);
+  /* Acento por defecto (azul de Windows). Se sustituye por el del usuario al arrancar. */
+  --accent: rgb(96 205 255);
+  --accent-fg: rgb(0 0 0);
+
+  --dur-enter: 120ms;
+  --dur-exit: 80ms;
+  --ease-enter: cubic-bezier(0, 0, 0, 1); /* "decelerate" de Fluent */
+
+  color-scheme: dark;
+  font-family: var(--font-sans);
+  color: var(--fg);
+}
+
+:root[data-theme="light"] {
+  --surface: rgb(243 243 245);
+  --fg: rgb(27 27 31);
+  --muted: rgb(92 99 112);
+  --line: rgb(0 0 0 / 0.08);
+  --hover: rgb(0 0 0 / 0.04);
+  --selected: rgb(0 0 0 / 0.06);
+  --field: rgb(255 255 255 / 0.7);
+  --danger: rgb(196 43 28);
+  --success: rgb(15 123 15);
+  --accent: rgb(0 95 184);
+  --accent-fg: rgb(255 255 255);
+  color-scheme: light;
+}
+
+/* Con Acrylic, el fondo lo pinta Windows (desenfoque + tinte): la UI casi no añade. */
 :root[data-acrylic="true"] {
-  --surface: rgb(20 20 26 / 0.35);
+  --surface: rgb(32 32 36 / 0.22);
+}
+:root[data-acrylic="true"][data-theme="light"] {
+  --surface: rgb(243 243 245 / 0.28);
 }
 
 html,
@@ -33,4 +96,82 @@ body,
   background: transparent;
   user-select: none;
   cursor: default;
+}
+
+@layer components {
+  /*
+   * Opción de una lista (resultados, apps, Espacios). Seleccionada: fondo un poco más
+   * claro y la píldora de 3 px del acento a la izquierda, como las listas de Windows.
+   */
+  .sift-option {
+    position: relative;
+    border-radius: var(--radius-item);
+  }
+  .sift-option:is(
+    [aria-selected="true"],
+    [aria-current="true"],
+    [aria-current="page"]
+  ) {
+    background: var(--selected);
+  }
+  .sift-option:is(
+      [aria-selected="true"],
+      [aria-current="true"],
+      [aria-current="page"]
+    )::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 3px;
+    height: 16px;
+    margin-top: -8px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+
+  /*
+   * Entrada y salida de la barra. Solo opacidad y escala: el compositor las anima sin
+   * recalcular el diseño. La entrada arranca en 0,5 de opacidad, no en 0: el primer
+   * fotograma ya enseña el contenido, así la animación no retrasa la apertura.
+   */
+  .sift-from {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  .sift-enter {
+    animation: sift-enter var(--dur-enter) var(--ease-enter) both;
+  }
+  .sift-exit {
+    animation: sift-exit var(--dur-exit) linear both;
+  }
+}
+
+@keyframes sift-enter {
+  from {
+    opacity: 0.5;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sift-exit {
+  to {
+    opacity: 0;
+  }
+}
+
+/* «Reducir movimiento» (en Windows: «Mostrar animaciones en Windows» desactivado). */
+@media (prefers-reduced-motion: reduce) {
+  .sift-from {
+    opacity: 1;
+    transform: none;
+  }
+  .sift-enter,
+  .sift-exit {
+    animation: none;
+  }
 }

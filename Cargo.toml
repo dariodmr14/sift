@@ -29,12 +29,17 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tempfile = "3"
+rusqlite = { version = "0.41", features = ["bundled"] }
+base64 = "0.23"
+png = "0.18"
+tauri-plugin-dialog = "2.8"
 anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 window-vibrancy = "0.8"
 windows-sys = "0.61"
+windows = "0.62"
 
 # IPC tipado. tauri-specta para Tauri 2 sigue en RC y exige versiones exactas de specta:
 # se fijan con "=" para que un `cargo update` no las mueva sin querer (ver ADR 0003).

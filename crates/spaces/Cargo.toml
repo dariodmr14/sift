@@ -9,6 +9,17 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+specta = { workspace = true, optional = true }
+
+[features]
+# Deriva `specta::Type` para que la app pueda pasar estos tipos por IPC con tipos de TS.
+specta = ["dep:specta"]
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true
