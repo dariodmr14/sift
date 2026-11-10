@@ -122,6 +122,13 @@
   }
 }
 
+/* Mientras se arrastra una tarjeta (Sortable.tsx): agarre y nada seleccionable. */
+:root.sift-sorting,
+:root.sift-sorting * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
 html,
 body,
 #root {
@@ -173,35 +180,6 @@ body,
     margin-top: -8px;
     border-radius: 2px;
     background: var(--accent);
-  }
-
-  /*
-   * Reordenar arrastrando: el elemento que se arrastra se atenúa y una línea del acento
-   * marca dónde caerá (antes de un elemento, o después del último).
-   */
-  .sift-dragging {
-    opacity: 0.45;
-  }
-  .sift-drop-before,
-  .sift-drop-after {
-    position: relative;
-  }
-  .sift-drop-before::after,
-  .sift-drop-after::after {
-    content: "";
-    position: absolute;
-    left: 4px;
-    right: 4px;
-    height: 2px;
-    border-radius: 1px;
-    background: var(--accent);
-    pointer-events: none;
-  }
-  .sift-drop-before::after {
-    top: -2px;
-  }
-  .sift-drop-after::after {
-    bottom: -2px;
   }
 
   /* Progreso indeterminado (el total no se conoce hasta terminar de recorrer). */

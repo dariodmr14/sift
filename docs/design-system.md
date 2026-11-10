@@ -78,7 +78,7 @@ Cuando la barra se oculta (por cualquier vía), Rust emite `LauncherHidden` y la
 - **`.sift-option`** (`index.css`): opción de lista con la selección de Windows. Se marca con `aria-selected="true"` o `aria-current`.
 - **`Button`, `TextInput`, `Field`, `Modal`, `ErrorText`** (`src/settings/ui.tsx`): controles de los ajustes, ya con los tokens. Variantes de botón: `primary` (acento), `secondary`, `ghost`, `danger`.
 - **`.sift-glass`** (`index.css`): superficie flotante de vidrio para diálogos (`Modal` ya la usa).
-- **Reordenar arrastrando**: `useDragReorder` (`src/settings/useDragReorder.ts`) con eventos de puntero, más `.sift-dragging` (lo que se arrastra, atenuado) y `.sift-drop-before`/`.sift-drop-after` (línea del acento donde caerá). Siempre con la alternativa de teclado Alt+↑/↓ y un `aria-live` que anuncie el cambio.
+- **Reordenar arrastrando**: `SortableList` y `useSortableItem` (`src/settings/Sortable.tsx`), sobre [dnd-kit](https://dndkit.com). La tarjeta sigue al puntero, se levanta (`bg-glass` + `shadow-window`) y las demás se apartan con una transición de 180 ms solo de `transform` (ninguna con «reducir movimiento»). Mientras se arrastra, `<html class="sift-sorting">` impide seleccionar texto. El asa lleva `select-none touch-none` y las imágenes `draggable={false}`. Siempre con la alternativa de teclado Alt+↑/↓ y anuncios en español para lectores de pantalla.
 - **`SpaceIcon`** (`src/components/SpaceIcon.tsx`): icono de un Espacio. Los SVG se pintan con `<img>` o máscara CSS, nunca como HTML.
 
 ## Cómo añadir algo nuevo

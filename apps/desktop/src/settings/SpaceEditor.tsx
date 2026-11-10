@@ -12,8 +12,8 @@ import {
   type Draft,
 } from "./draft";
 import { Button, ErrorText, Modal, TextInput } from "./ui";
-import { reorder } from "./reorder";
-import { useDragReorder } from "./useDragReorder";
+import { arrayMove } from "@dnd-kit/sortable";
+import { SortableList } from "./Sortable";
 import { SpaceIcon } from "../components/SpaceIcon";
 
 /** Ids solo para React: así, al reordenar, cada fila (y su estado) sigue a su acción. */
@@ -106,12 +106,8 @@ export function SpaceEditor({
 
   const [announcement, setAnnouncement] = useState("");
   // Arrastrar acciones: el orden nuevo entra en el borrador y se guarda con «Guardar».
-  const actionDrag = useDragReorder((from, slot) => {
-    setActions(reorder(draft.actions, from, slot), reorder(uids, from, slot));
-    setAnnouncement(
-      `Acción movida a la posición ${slot > from ? slot : slot + 1}`,
-    );
-  });
+  const moveAction = (from: number, to: number) =>
+    setActions(arrayMove(draft.actions, from, to), arrayMove(uids, from, to));
 
   return (
     <form
@@ -217,38 +213,43 @@ export function SpaceEditor({
             Aún no hay acciones. Añade lo que quieres que se abra.
           </p>
         )}
-        <ul className="space-y-2">
-          {draft.actions.map((action, i) => (
-            <ActionEditor
-              key={uids[i]}
-              action={action}
-              index={i}
-              count={draft.actions.length}
-              appIcon={
-                action.kind === "openApp" ? appIcons[action.appId] : undefined
-              }
-              onChange={(a) =>
-                setActions(
-                  draft.actions.map((old, j) => (j === i ? a : old)),
-                  uids,
-                )
-              }
-              onMove={(delta) => {
-                setActions(move(draft.actions, i, delta), move(uids, i, delta));
-                setAnnouncement(`Acción movida a la posición ${i + 1 + delta}`);
-              }}
-              itemRef={actionDrag.itemRef(i)}
-              dragClass={actionDrag.itemClass(i, draft.actions.length)}
-              handleProps={actionDrag.handleProps(i)}
-              onRemove={() =>
-                setActions(
-                  draft.actions.filter((_, j) => j !== i),
-                  uids.filter((_, j) => j !== i),
-                )
-              }
-            />
-          ))}
-        </ul>
+        <SortableList ids={uids.map(String)} onMove={moveAction}>
+          <ul className="space-y-2">
+            {draft.actions.map((action, i) => (
+              <ActionEditor
+                key={uids[i]}
+                action={action}
+                index={i}
+                count={draft.actions.length}
+                appIcon={
+                  action.kind === "openApp" ? appIcons[action.appId] : undefined
+                }
+                onChange={(a) =>
+                  setActions(
+                    draft.actions.map((old, j) => (j === i ? a : old)),
+                    uids,
+                  )
+                }
+                onMove={(delta) => {
+                  setActions(
+                    move(draft.actions, i, delta),
+                    move(uids, i, delta),
+                  );
+                  setAnnouncement(
+                    `Acción movida a la posición ${i + 1 + delta}`,
+                  );
+                }}
+                sortableId={String(uids[i])}
+                onRemove={() =>
+                  setActions(
+                    draft.actions.filter((_, j) => j !== i),
+                    uids.filter((_, j) => j !== i),
+                  )
+                }
+              />
+            ))}
+          </ul>
+        </SortableList>
         <div className="flex flex-wrap gap-2">
           {(Object.keys(ACTION_LABELS) as ActionKind[]).map((kind) => (
             <Button
