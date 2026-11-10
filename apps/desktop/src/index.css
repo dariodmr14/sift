@@ -197,6 +197,11 @@ body,
     bottom: -2px;
   }
 
+  /* Progreso indeterminado (el total no se conoce hasta terminar de recorrer). */
+  .sift-progress {
+    animation: sift-progress 1.2s ease-in-out infinite;
+  }
+
   /*
    * Entrada y salida de la barra. Solo opacidad y escala: el compositor las anima sin
    * recalcular el diseño. La entrada arranca en 0,5 de opacidad, no en 0: el primer
@@ -231,6 +236,15 @@ body,
   }
 }
 
+@keyframes sift-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
 /* «Reducir movimiento» (en Windows: «Mostrar animaciones en Windows» desactivado). */
 @media (prefers-reduced-motion: reduce) {
   .sift-from {
@@ -238,7 +252,8 @@ body,
     transform: none;
   }
   .sift-enter,
-  .sift-exit {
+  .sift-exit,
+  .sift-progress {
     animation: none;
   }
 }
