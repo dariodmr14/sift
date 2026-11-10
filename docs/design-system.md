@@ -87,6 +87,10 @@ Cuando la barra se oculta (por cualquier vía), Rust emite `LauncherHidden` y la
 - **Reordenar arrastrando**: `SortableList` y `useSortableItem` (`src/settings/Sortable.tsx`), sobre [dnd-kit](https://dndkit.com). La tarjeta sigue al puntero, se levanta (`bg-glass` + `shadow-window`) y las demás se apartan con una transición de 180 ms solo de `transform` (ninguna con «reducir movimiento»). Mientras se arrastra, `<html class="sift-sorting">` impide seleccionar texto. El asa lleva `select-none touch-none` y las imágenes `draggable={false}`. Siempre con la alternativa de teclado Alt+↑/↓ y anuncios en español para lectores de pantalla.
 - **`SpaceIcon`** (`src/components/SpaceIcon.tsx`): icono de un Espacio. Los SVG se pintan con `<img>` o máscara CSS, nunca como HTML.
 
+## Textos
+
+Números y tiempos se escriben como los diría una persona, siempre con `src/format.ts`: `count` («1.240»), `files` («1 archivo»), `duration` («5 min 35 s», nunca «335 s») y `since` («hace 3 h», «ayer»). Los milisegundos solo aparecen en Ajustes → Estado, que es diagnóstico.
+
 ## Cómo añadir algo nuevo
 
 1. Busca un token que encaje. Si no lo hay, añádelo en `index.css` con su valor oscuro **y** claro, expónlo en `@theme inline` y apúntalo en la tabla de arriba.
