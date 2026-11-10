@@ -3637,6 +3637,8 @@ dependencies = [
  "serde",
  "serde_json",
  "sift-core",
+ "sift-indexer",
+ "sift-search",
  "sift-spaces",
  "sift-storage",
  "specta",
@@ -3688,6 +3690,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "sift-indexer",
+ "specta",
  "tantivy",
  "tempfile",
  "thiserror 2.0.21",

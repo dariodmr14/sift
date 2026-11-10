@@ -274,22 +274,50 @@ impl TextIndex {
     }
 }
 
-impl IndexSink for TextIndex {
+impl TextIndex {
+    pub fn remove_files(&self, file_ids: &[i64]) {
+        let writer = self.writer();
+        for id in file_ids {
+            writer.delete_term(Term::from_field_i64(self.fields.file_id, *id));
+        }
+    }
+
+    pub fn commit_and_reload(&self) -> Result<(), IndexError> {
+        self.writer().commit()?;
+        // Recargar el lector para que las búsquedas vean lo recién indexado.
+        self.reader.reload()?;
+        Ok(())
+    }
+}
+
+/// El índice compartido (`&TextIndex`) también sirve de destino del indexado: el escritor
+/// va dentro de un `Mutex`, así que el hilo del indexado escribe mientras las búsquedas
+/// leen, sin bloquearse entre ellos.
+impl IndexSink for &TextIndex {
     fn upsert(&mut self, file: &IndexedFile) -> Result<(), String> {
         self.add_file(file).map_err(|e| e.to_string())
     }
 
     fn remove(&mut self, file_ids: &[i64]) -> Result<(), String> {
-        let writer = self.writer();
-        for id in file_ids {
-            writer.delete_term(Term::from_field_i64(self.fields.file_id, *id));
-        }
+        self.remove_files(file_ids);
         Ok(())
     }
 
     fn commit(&mut self) -> Result<(), String> {
-        self.writer().commit().map_err(|e| e.to_string())?;
-        // Recargar el lector para que las búsquedas vean lo recién indexado.
-        self.reader.reload().map_err(|e| e.to_string())
+        self.commit_and_reload().map_err(|e| e.to_string())
+    }
+}
+
+impl IndexSink for TextIndex {
+    fn upsert(&mut self, file: &IndexedFile) -> Result<(), String> {
+        (&*self).upsert(file)
+    }
+
+    fn remove(&mut self, file_ids: &[i64]) -> Result<(), String> {
+        (&*self).remove(file_ids)
+    }
+
+    fn commit(&mut self) -> Result<(), String> {
+        (&*self).commit()
     }
 }

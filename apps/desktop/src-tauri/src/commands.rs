@@ -13,6 +13,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::hotkey::Backend;
 use crate::latency::LatencySummary;
+use crate::search_commands as search;
 use crate::spaces_commands as spaces;
 use crate::{HotkeyState, StorageStatus, launcher, settings_window};
 
@@ -69,6 +70,8 @@ pub struct Status {
     pub latency: Option<LatencySummary>,
     /// Si la base de datos no se pudo abrir, el motivo (los cambios no se guardarán).
     pub storage_error: Option<String>,
+    /// Tiempo de búsqueda de archivos en Rust (objetivo < 50 ms).
+    pub search_latency: Option<LatencySummary>,
 }
 
 #[tauri::command]
@@ -109,6 +112,7 @@ fn get_status(app: AppHandle) -> Status {
         backend: listener.as_ref().map(|l| l.backend()),
         latency: launcher.latency(),
         storage_error: app.state::<StorageStatus>().0.clone(),
+        search_latency: app.state::<search::SearchStats>().summary(),
     }
 }
 
@@ -202,12 +206,23 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::pick_path,
             spaces::pick_icon_image,
             spaces::export_spaces,
-            spaces::import_spaces
+            spaces::import_spaces,
+            search::search_files,
+            search::list_roots,
+            search::add_root,
+            search::remove_root,
+            search::get_ignore_patterns,
+            search::set_ignore_patterns,
+            search::index_status,
+            search::reindex,
+            search::open_file,
+            search::reveal_file
         ])
         .events(collect_events![
             LauncherShown,
             LauncherHidden,
-            NewSpaceRequested
+            NewSpaceRequested,
+            crate::indexing::IndexProgress
         ])
 }
 
