@@ -81,7 +81,7 @@ export function Modal({
         role="dialog"
         aria-modal
         aria-label={title}
-        className="flex max-h-full w-full max-w-lg flex-col rounded-window border border-line bg-surface shadow-window"
+        className="flex max-h-full w-full max-w-lg flex-col sift-glass"
       >
         <header className="flex items-center justify-between border-b border-line px-4 py-3">
           <h3 className="font-medium">{title}</h3>

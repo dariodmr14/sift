@@ -29,6 +29,7 @@
   --color-accent-fg: var(--accent-fg);
   --color-danger: var(--danger);
   --color-success: var(--success);
+  --color-glass: var(--glass); /* barras fijas y diálogos sobre contenido */
   --color-scrim: rgb(
     0 0 0 / 0.5
   ); /* fondo detrás de un diálogo, igual en los dos temas */
@@ -79,12 +80,39 @@
   color-scheme: light;
 }
 
-/* Con Acrylic, el fondo lo pinta Windows (desenfoque + tinte): la UI casi no añade. */
-:root[data-acrylic="true"] {
+/*
+ * Con un material de Windows detrás (Acrylic en la barra, Mica o blur en Ajustes), el
+ * fondo lo pinta Windows: la UI casi no añade. Lo marca `data-glass="true"` en <html>.
+ */
+:root[data-glass="true"] {
   --surface: rgb(32 32 36 / 0.22);
 }
-:root[data-acrylic="true"][data-theme="light"] {
+:root[data-glass="true"][data-theme="light"] {
   --surface: rgb(243 243 245 / 0.28);
+}
+
+/*
+ * Vidrio por CSS para lo que flota *dentro* de una ventana (diálogos, menús): desenfoca
+ * lo que hay detrás en la propia página. Más opaco que la ventana, para separarse de ella.
+ */
+:root {
+  --glass: rgb(44 44 50 / 0.72);
+}
+:root[data-theme="light"] {
+  --glass: rgb(250 250 252 / 0.74);
+}
+
+/* «Efectos de transparencia» desactivados en Windows: todo opaco. */
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-glass="true"] {
+    --surface: rgb(32 32 36);
+  }
+  :root[data-glass="true"][data-theme="light"] {
+    --surface: rgb(243 243 245);
+  }
+  :root {
+    --glass: var(--surface);
+  }
 }
 
 html,
@@ -99,6 +127,16 @@ body,
 }
 
 @layer components {
+  /* Superficie flotante de vidrio (diálogos). */
+  .sift-glass {
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-window);
+    box-shadow: var(--shadow-window);
+  }
+
   /*
    * Opción de una lista (resultados, apps, Espacios). Seleccionada: fondo un poco más
    * claro y la píldora de 3 px del acento a la izquierda, como las listas de Windows.
@@ -128,6 +166,35 @@ body,
     margin-top: -8px;
     border-radius: 2px;
     background: var(--accent);
+  }
+
+  /*
+   * Reordenar arrastrando: el elemento que se arrastra se atenúa y una línea del acento
+   * marca dónde caerá (antes de un elemento, o después del último).
+   */
+  .sift-dragging {
+    opacity: 0.45;
+  }
+  .sift-drop-before,
+  .sift-drop-after {
+    position: relative;
+  }
+  .sift-drop-before::after,
+  .sift-drop-after::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--accent);
+    pointer-events: none;
+  }
+  .sift-drop-before::after {
+    top: -2px;
+  }
+  .sift-drop-after::after {
+    bottom: -2px;
   }
 
   /*
