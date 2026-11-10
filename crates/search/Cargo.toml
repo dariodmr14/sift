@@ -9,6 +9,13 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+sift-indexer = { workspace = true }
+tantivy = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true
