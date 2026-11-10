@@ -35,11 +35,16 @@ pub enum Surface {
 }
 
 /// Tinte (RGBA) que Windows pone bajo el desenfoque. Bastante opaco: el texto tiene que
-/// leerse sobre cualquier fondo de escritorio.
-fn tint(theme: Theme) -> (u8, u8, u8, u8) {
+/// leerse sobre cualquier fondo de escritorio. El blur lleva más opacidad que el Acrylic
+/// porque no tiene su capa de luminosidad: así los dos vidrios se ven iguales.
+fn tint(theme: Theme, material: Material) -> (u8, u8, u8, u8) {
+    let alpha = match material {
+        Material::Blur => 222,
+        _ => 200,
+    };
     match theme {
-        Theme::Dark => (32, 32, 36, 168),
-        Theme::Light => (243, 243, 245, 176),
+        Theme::Dark => (32, 32, 36, alpha),
+        Theme::Light => (243, 243, 245, alpha),
     }
 }
 
@@ -79,18 +84,36 @@ pub fn apply(window: &WebviewWindow, surface: Surface, theme: Theme) -> Material
 #[cfg(windows)]
 fn try_apply(window: &WebviewWindow, material: Material, theme: Theme) -> Result<(), String> {
     let result = match material {
-        Material::Acrylic => window_vibrancy::apply_acrylic(window, Some(tint(theme))),
+        Material::Acrylic => window_vibrancy::apply_acrylic(window, Some(tint(theme, material))),
         Material::Mica => window_vibrancy::apply_mica(window, Some(theme == Theme::Dark)),
-        Material::Blur => window_vibrancy::apply_blur(window, Some(tint(theme))),
+        Material::Blur => window_vibrancy::apply_blur(window, Some(tint(theme, material))),
         Material::None => return Ok(()),
     };
     result.map_err(|e| e.to_string())
 }
 
 #[cfg(not(windows))]
-fn try_apply(_: &WebviewWindow, _: Material, theme: Theme) -> Result<(), String> {
-    let _ = tint(theme);
+fn try_apply(_: &WebviewWindow, material: Material, theme: Theme) -> Result<(), String> {
+    let _ = tint(theme, material);
     Err("solo Windows".into())
+}
+
+/// Quita el material de una ventana (vuelve a opaca).
+pub fn clear(window: &WebviewWindow, material: Material) {
+    #[cfg(windows)]
+    {
+        let result = match material {
+            Material::Acrylic => window_vibrancy::clear_acrylic(window),
+            Material::Mica => window_vibrancy::clear_mica(window),
+            Material::Blur => window_vibrancy::clear_blur(window),
+            Material::None => Ok(()),
+        };
+        if let Err(e) = result {
+            tracing::warn!(window = window.label(), error = %e, "no se pudo quitar el material");
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = (window, material);
 }
 
 /// Qué material tiene cada ventana (por etiqueta), para que su UI elija fondo.
@@ -137,9 +160,12 @@ mod tests {
 
     #[test]
     fn tints_are_mostly_opaque() {
-        for theme in [Theme::Dark, Theme::Light] {
+        for (theme, m) in [
+            (Theme::Dark, Material::Acrylic),
+            (Theme::Light, Material::Blur),
+        ] {
             assert!(
-                tint(theme).3 >= 160,
+                tint(theme, m).3 >= 160,
                 "el texto tiene que leerse sobre cualquier fondo"
             );
         }

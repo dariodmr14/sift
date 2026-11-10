@@ -4,8 +4,6 @@ import { SpaceIcon } from "../components/SpaceIcon";
 import { SpaceEditor } from "./SpaceEditor";
 import { emptyDraft, move, toDraft, type SpaceView } from "./draft";
 import { Button, ErrorText } from "./ui";
-import { reorder as reorderList } from "./reorder";
-import { useDragReorder } from "./useDragReorder";
 
 /** Qué se está editando: un Espacio guardado (su id) o uno nuevo. */
 type Selection = { kind: "space"; id: number } | { kind: "new" } | null;
@@ -72,11 +70,6 @@ export function SpacesSection() {
     void saveOrder(move(spaces, index, delta), spaces[index]);
   }
 
-  const spaceDrag = useDragReorder((from, slot) => {
-    if (!spaces) return;
-    void saveOrder(reorderList(spaces, from, slot), spaces[from]);
-  });
-
   async function exportAll() {
     const r = await commands.exportSpaces();
     if (r.status === "error") setMessage({ ok: false, text: r.error.message });
@@ -120,15 +113,10 @@ export function SpacesSection() {
             const active =
               selection?.kind === "space" && selection.id === view.space.id;
             return (
-              <li
-                key={view.space.id}
-                ref={spaceDrag.itemRef(i)}
-                className={`flex items-center ${spaceDrag.itemClass(i, spaces.length)}`}
-              >
+              <li key={view.space.id} className="flex items-center">
                 <button
                   type="button"
-                  {...spaceDrag.handleProps(i)}
-                  title="Arrastra para reordenar (o Alt+↑/↓)"
+                  title="Alt+↑/↓ para cambiar el orden"
                   aria-current={active}
                   onClick={() =>
                     setSelection({ kind: "space", id: view.space.id })
@@ -143,7 +131,7 @@ export function SpacesSection() {
                       void reorder(i, e.key === "ArrowUp" ? -1 : 1);
                     }
                   }}
-                  className="sift-option flex min-w-0 flex-1 touch-none items-center gap-2 px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+                  className="sift-option flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <SpaceIcon
                     icon={view.space.icon}
@@ -156,25 +144,16 @@ export function SpacesSection() {
               </li>
             );
           })}
-          {/* Al final de la lista, donde aparecerá el Espacio nuevo. */}
-          <li className="pt-1">
-            <button
-              type="button"
-              aria-current={selection?.kind === "new"}
-              onClick={() => setSelection({ kind: "new" })}
-              className="sift-option flex w-full items-center gap-2 border border-dashed border-line px-3 py-1.5 text-left text-sm text-muted outline-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <span
-                aria-hidden
-                className="w-5 text-center text-base leading-none"
-              >
-                +
-              </span>
-              Nuevo Espacio
-            </button>
-          </li>
         </ul>
         <div className="space-y-2 border-t border-line p-3">
+          {/* Fijo encima de Importar/Exportar: con muchos Espacios, siempre a mano. */}
+          <Button
+            className="w-full"
+            aria-current={selection?.kind === "new"}
+            onClick={() => setSelection({ kind: "new" })}
+          >
+            + Nuevo Espacio
+          </Button>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => void importFile()}>
               Importar…

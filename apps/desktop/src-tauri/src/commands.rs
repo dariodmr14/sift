@@ -42,6 +42,8 @@ pub struct SettingsView {
     pub launch_at_startup: bool,
     /// "Solo texto": la barra no muestra iconos.
     pub icons_hidden: bool,
+    /// Vidrio también en Ajustes y diálogos (si no, opacos).
+    pub glass_everywhere: bool,
 }
 
 /// Rust avisa a la UI de que el lanzador acaba de mostrarse: hay que limpiar la búsqueda,
@@ -140,7 +142,18 @@ fn get_settings(app: AppHandle) -> SettingsView {
         hotkey: crate::load_settings(&app).hotkey.to_string(),
         launch_at_startup: app.autolaunch().is_enabled().unwrap_or(false),
         icons_hidden: crate::load_settings(&app).icons_hidden,
+        glass_everywhere: crate::load_settings(&app).appearance.glass_everywhere,
     }
+}
+
+/// «Vidrio en toda la app»: lo guarda y lo aplica ya en la ventana de ajustes abierta.
+#[tauri::command]
+#[specta::specta]
+fn set_glass_everywhere(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.appearance.glass_everywhere = enabled)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    settings_window::set_glass(&app, enabled);
+    Ok(enabled)
 }
 
 #[tauri::command]
@@ -193,6 +206,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             set_hotkey,
             set_launch_at_startup,
             set_icons_hidden,
+            set_glass_everywhere,
             spaces::list_spaces,
             spaces::create_space,
             spaces::update_space,

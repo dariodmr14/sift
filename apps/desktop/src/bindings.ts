@@ -29,6 +29,8 @@ export const commands = {
 	setHotkey: (hotkey: string) => typedError<string, AppError>(__TAURI_INVOKE("set_hotkey", { hotkey })),
 	setLaunchAtStartup: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_launch_at_startup", { enabled })),
 	setIconsHidden: (hidden: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_icons_hidden", { hidden })),
+	/**  «Vidrio en toda la app»: lo guarda y lo aplica ya en la ventana de ajustes abierta. */
+	setGlassEverywhere: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_glass_everywhere", { enabled })),
 	listSpaces: () => typedError<SpaceView_Serialize[], AppError>(__TAURI_INVOKE("list_spaces")),
 	createSpace: (draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("create_space", { draft })),
 	updateSpace: (id: number, draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("update_space", { id, draft })),
@@ -390,6 +392,8 @@ export type SettingsView = {
 	launchAtStartup: boolean,
 	/**  "Solo texto": la barra no muestra iconos. */
 	iconsHidden: boolean,
+	/**  Vidrio también en Ajustes y diálogos (si no, opacos). */
+	glassEverywhere: boolean,
 };
 
 /**  Un Espacio guardado (con su id de la base de datos). */
