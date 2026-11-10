@@ -12,6 +12,8 @@ import {
   type Draft,
 } from "./draft";
 import { Button, ErrorText, Field, Modal, TextInput } from "./ui";
+import { reorder } from "./reorder";
+import { useDragReorder } from "./useDragReorder";
 import { SpaceIcon } from "../components/SpaceIcon";
 
 /** Ids solo para React: así, al reordenar, cada fila (y su estado) sigue a su acción. */
@@ -102,6 +104,15 @@ export function SpaceEditor({
     setUids(ids);
   };
 
+  const [announcement, setAnnouncement] = useState("");
+  // Arrastrar acciones: el orden nuevo entra en el borrador y se guarda con «Guardar».
+  const actionDrag = useDragReorder((from, slot) => {
+    setActions(reorder(draft.actions, from, slot), reorder(uids, from, slot));
+    setAnnouncement(
+      `Acción movida a la posición ${slot > from ? slot : slot + 1}`,
+    );
+  });
+
   return (
     <form
       className="space-y-6"
@@ -184,6 +195,10 @@ export function SpaceEditor({
 
       <section className="space-y-2">
         <h3 className="text-xs font-medium text-muted">Acciones, en orden</h3>
+        {/* Anuncia a los lectores de pantalla los cambios de orden. */}
+        <p aria-live="polite" className="sr-only">
+          {announcement}
+        </p>
         {draft.actions.length === 0 && (
           <p className="text-sm text-muted">
             Aún no hay acciones. Añade lo que quieres que se abra.
@@ -205,9 +220,13 @@ export function SpaceEditor({
                   uids,
                 )
               }
-              onMove={(delta) =>
-                setActions(move(draft.actions, i, delta), move(uids, i, delta))
-              }
+              onMove={(delta) => {
+                setActions(move(draft.actions, i, delta), move(uids, i, delta));
+                setAnnouncement(`Acción movida a la posición ${i + 1 + delta}`);
+              }}
+              itemRef={actionDrag.itemRef(i)}
+              dragClass={actionDrag.itemClass(i, draft.actions.length)}
+              handleProps={actionDrag.handleProps(i)}
               onRemove={() =>
                 setActions(
                   draft.actions.filter((_, j) => j !== i),
