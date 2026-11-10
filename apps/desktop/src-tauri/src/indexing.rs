@@ -5,6 +5,9 @@
 //!   desde SQLite; después se sincronizan las carpetas.
 //! - Se le piden sincronizaciones por un canal. Si llega una mientras ya sincroniza, se
 //!   apunta y se repite una vez al acabar (no se encolan diez).
+//! - Cada pasada va en dos fases: primero **busca cambios** en todas las carpetas (solo
+//!   tamaño y fecha) y después **lee** lo nuevo o cambiado, de lo más reciente a lo más
+//!   antiguo. Así la UI puede decir «Leyendo 32 de 120 archivos».
 //! - El progreso se publica como evento para la UI, como mucho cada 120 ms.
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -13,22 +16,40 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
-use sift_indexer::{IgnoreRules, IndexedFile, SyncError, sync_root};
+use sift_indexer::{IgnoreRules, IndexedFile, RootPlan, SyncError, apply_plan, scan_root};
 use sift_search::TextIndex;
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
 
 use crate::spaces_commands::Db;
 
+/// En qué está el indexado.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum IndexPhase {
+    /// Sin trabajo: todo al día.
+    #[default]
+    Idle,
+    /// Recorriendo las carpetas para ver qué ha cambiado («Buscando cambios…»).
+    Scanning,
+    /// Leyendo lo nuevo o cambiado («Leyendo `done` de `total` archivos»).
+    Reading,
+}
+
 /// Estado del indexado, para Ajustes → Carpetas.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct IndexStatus {
     pub running: bool,
-    /// Carpeta que se está recorriendo.
+    pub phase: IndexPhase,
+    /// Carpeta que se está recorriendo o leyendo.
     pub current_root: Option<String>,
-    /// Archivos vistos en la pasada actual.
-    pub processed: u32,
+    /// Buscando cambios: archivos vistos hasta ahora.
+    pub scanned: u32,
+    /// Leyendo: archivos ya leídos de `total`.
+    pub done: u32,
+    /// Leyendo: archivos nuevos o cambiados que hay que leer en esta pasada.
+    pub total: u32,
     /// Resumen de la última pasada completa.
     pub last: Option<LastRun>,
     pub error: Option<String>,
@@ -37,6 +58,8 @@ pub struct IndexStatus {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct LastRun {
+    /// Archivos en todas las carpetas al acabar.
+    pub files: u32,
     pub added: u32,
     pub updated: u32,
     pub unchanged: u32,
@@ -197,11 +220,59 @@ impl Worker {
             }
         };
         self.update(|s| {
-            s.running = true;
-            s.processed = 0;
-            s.error = None;
+            *s = IndexStatus {
+                running: true,
+                phase: IndexPhase::Scanning,
+                last: s.last.clone(),
+                ..IndexStatus::default()
+            };
         });
-        let mut total = LastRun {
+        let mut last_emit = Instant::now();
+        let mut throttle = |f: &dyn Fn(&mut IndexStatus)| {
+            if last_emit.elapsed() >= Duration::from_millis(120) {
+                last_emit = Instant::now();
+                self.update(f);
+            }
+        };
+
+        // Fase 1: buscar cambios en todas las carpetas (barato: solo tamaño y fecha).
+        let mut plans: Vec<RootPlan> = Vec::new();
+        let mut scanned = 0;
+        for root in &roots {
+            if !root.path.is_dir() {
+                tracing::warn!(root = %root.path.display(), "la carpeta no existe (¿disco desconectado?); se salta");
+                continue;
+            }
+            let shown = root.path.display().to_string();
+            let result = scan_root(&self.db().0, root, &rules, &self.cancel, |n| {
+                throttle(&|s| {
+                    s.scanned = (scanned + n) as u32;
+                    s.current_root = Some(shown.clone());
+                })
+            });
+            match result {
+                Ok(plan) => {
+                    scanned += plan.files();
+                    plans.push(plan);
+                }
+                Err(SyncError::Cancelled) => return self.cancelled(),
+                Err(e) => {
+                    tracing::error!(root = %root.path.display(), error = %e, "fallo al buscar cambios");
+                    self.update(|s| s.error = Some(e.to_string()));
+                }
+            }
+        }
+
+        // Fase 2: leer lo nuevo o cambiado, con el total ya conocido.
+        let total: usize = plans.iter().map(RootPlan::to_read).sum();
+        self.update(|s| {
+            s.phase = IndexPhase::Reading;
+            s.scanned = scanned as u32;
+            s.total = total as u32;
+            s.done = 0;
+        });
+        let mut summary = LastRun {
+            files: scanned as u32,
             added: 0,
             updated: 0,
             unchanged: 0,
@@ -210,57 +281,49 @@ impl Worker {
             seconds: 0.0,
         };
         let mut offset = 0;
-        let mut last_emit = Instant::now();
-        for root in &roots {
-            if !root.path.is_dir() {
-                tracing::warn!(root = %root.path.display(), "la carpeta no existe (¿disco desconectado?); se salta");
-                continue;
-            }
-            self.update(|s| s.current_root = Some(root.path.display().to_string()));
+        for plan in plans {
+            let to_read = plan.to_read();
+            let shown = plan.root().path.display().to_string();
             let mut sink: &TextIndex = &self.index;
-            let result = sync_root(
-                &self.db().0,
-                root,
-                &rules,
-                &mut sink,
-                &self.cancel,
-                |n, _| {
-                    if last_emit.elapsed() >= Duration::from_millis(120) {
-                        last_emit = Instant::now();
-                        self.update(|s| s.processed = (offset + n) as u32);
-                    }
-                },
-            );
+            let result = apply_plan(&self.db().0, plan, &mut sink, &self.cancel, |done, _| {
+                throttle(&|s| {
+                    s.done = (offset + done) as u32;
+                    s.current_root = Some(shown.clone());
+                })
+            });
+            offset += to_read;
             match result {
                 Ok(r) => {
-                    offset += r.added + r.updated + r.unchanged;
-                    total.added += r.added as u32;
-                    total.updated += r.updated as u32;
-                    total.unchanged += r.unchanged as u32;
-                    total.removed += r.removed as u32;
-                    total.errors += r.errors as u32;
+                    summary.added += r.added as u32;
+                    summary.updated += r.updated as u32;
+                    summary.unchanged += r.unchanged as u32;
+                    summary.removed += r.removed as u32;
+                    summary.errors += r.errors as u32;
                 }
-                Err(SyncError::Cancelled) => {
-                    tracing::info!("indexado cancelado");
-                    self.update(|s| {
-                        s.running = false;
-                        s.current_root = None;
-                    });
-                    return;
-                }
+                Err(SyncError::Cancelled) => return self.cancelled(),
                 Err(e) => {
-                    tracing::error!(root = %root.path.display(), error = %e, "fallo al indexar");
+                    tracing::error!(error = %e, "fallo al indexar");
                     self.update(|s| s.error = Some(e.to_string()));
                 }
             }
         }
-        total.seconds = started.elapsed().as_secs_f64();
-        tracing::info!(?total.added, ?total.updated, ?total.unchanged, ?total.removed, ?total.errors, secs = total.seconds, "indexado terminado");
+        summary.seconds = started.elapsed().as_secs_f64();
+        tracing::info!(?summary.files, ?summary.added, ?summary.updated, ?summary.unchanged, ?summary.removed, ?summary.errors, secs = summary.seconds, "indexado terminado");
         self.update(|s| {
             s.running = false;
+            s.phase = IndexPhase::Idle;
             s.current_root = None;
-            s.processed = offset as u32;
-            s.last = Some(total);
+            s.done = total as u32;
+            s.last = Some(summary);
+        });
+    }
+
+    fn cancelled(&self) {
+        tracing::info!("indexado cancelado");
+        self.update(|s| {
+            s.running = false;
+            s.phase = IndexPhase::Idle;
+            s.current_root = None;
         });
     }
 }

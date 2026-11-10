@@ -230,6 +230,15 @@ export type Icon =
  */
 { kind: "image"; mime: string; data: string };
 
+/**  En qué está el indexado. */
+export type IndexPhase = 
+/**  Sin trabajo: todo al día. */
+"idle" | 
+/**  Recorriendo las carpetas para ver qué ha cambiado («Buscando cambios…»). */
+"scanning" | 
+/**  Leyendo lo nuevo o cambiado («Leyendo `done` de `total` archivos»). */
+"reading";
+
 /**  Evento: el estado del indexado ha cambiado. */
 export type IndexProgress = IndexProgress_Serialize | IndexProgress_Deserialize;
 
@@ -245,10 +254,15 @@ export type IndexStatus = IndexStatus_Serialize | IndexStatus_Deserialize;
 /**  Estado del indexado, para Ajustes → Carpetas. */
 export type IndexStatus_Deserialize = {
 	running: boolean,
-	/**  Carpeta que se está recorriendo. */
+	phase: IndexPhase,
+	/**  Carpeta que se está recorriendo o leyendo. */
 	currentRoot?: string | null,
-	/**  Archivos vistos en la pasada actual. */
-	processed: number,
+	/**  Buscando cambios: archivos vistos hasta ahora. */
+	scanned: number,
+	/**  Leyendo: archivos ya leídos de `total`. */
+	done: number,
+	/**  Leyendo: archivos nuevos o cambiados que hay que leer en esta pasada. */
+	total: number,
 	/**  Resumen de la última pasada completa. */
 	last?: LastRun | null,
 	error?: string | null,
@@ -257,10 +271,15 @@ export type IndexStatus_Deserialize = {
 /**  Estado del indexado, para Ajustes → Carpetas. */
 export type IndexStatus_Serialize = {
 	running: boolean,
-	/**  Carpeta que se está recorriendo. */
+	phase: IndexPhase,
+	/**  Carpeta que se está recorriendo o leyendo. */
 	currentRoot: string | null,
-	/**  Archivos vistos en la pasada actual. */
-	processed: number,
+	/**  Buscando cambios: archivos vistos hasta ahora. */
+	scanned: number,
+	/**  Leyendo: archivos ya leídos de `total`. */
+	done: number,
+	/**  Leyendo: archivos nuevos o cambiados que hay que leer en esta pasada. */
+	total: number,
 	/**  Resumen de la última pasada completa. */
 	last: LastRun | null,
 	error: string | null,
@@ -274,6 +293,8 @@ export type InstalledApp = {
 };
 
 export type LastRun = {
+	/**  Archivos en todas las carpetas al acabar. */
+	files: number,
 	added: number,
 	updated: number,
 	unchanged: number,
