@@ -27,7 +27,8 @@ use serde::Deserialize;
 use sift_embeddings::{Embedder, ModelCard, OnnxEmbedder, Purpose};
 use sift_indexer::{IndexSink, IndexedFile};
 use sift_search::{
-    Intent, Lexical, ParsedQuery, Retriever, Semantic, TextIndex, VectorIndex, search,
+    Frecency, Intent, Lexical, ParsedQuery, Retriever, Semantic, TextIndex, VectorIndex, search,
+    search_with,
 };
 use sift_storage::{Database, EmbedPolicy};
 
@@ -859,4 +860,87 @@ fn hnsw_recall() {
         "| exacta (comparar con todos) | 1.00 | {:.2} ms |",
         started.elapsed().as_secs_f64() * 1000.0 / qs.len() as f64
     );
+}
+
+/// Calibra el peso de la frecencia. No hay aperturas reales suficientes para medirla (la
+/// app lleva pocos días apuntándolas), así que se **simula** sobre `eval/`, con dos casos
+/// que tiran en sentidos opuestos:
+///
+/// - **ayuda**: abriste hace poco uno de los archivos esperados (3 veces en la última
+///   semana). Debería subir: mejora el MRR.
+/// - **ruido**: abriste mucho otros archivos que salen en la búsqueda pero no son los
+///   que buscas (los 5 primeros no esperados entre los puestos 6 y 30, 5 veces cada uno
+///   esta semana). No debería echar a los buenos del top 10: baja el recall.
+///
+/// Se elige el peso que más ayuda sin que el ruido quite recall.
+/// `cargo test -p sift-search --release --test eval -- --ignored calibrate_frecency --nocapture`
+#[test]
+#[ignore = "necesita la base de datos real y los modelos: ejecutar a mano en release"]
+fn calibrate_frecency() {
+    let queries: QuerySet =
+        serde_json::from_str(&std::fs::read_to_string(repo().join("eval/queries.json")).unwrap())
+            .unwrap();
+    let m = matchers(&queries.queries);
+    let db = snapshot();
+    let root = db.list_roots().unwrap()[0].path.display().to_string();
+    let text = lexical_index(&db);
+    let card = sift_embeddings::MODELS[0];
+    let embedder = OnnxEmbedder::load(card, &app_data().join("models").join(card.id), 4).unwrap();
+    let vectors = vector_index(&db, card);
+    let semantic = Semantic {
+        vectors: &vectors,
+        text: &text,
+        embedder: &embedder,
+        min_similarity: card.min_similarity,
+    };
+    let lexical = Lexical(&text);
+    let retrievers: [&dyn Retriever; 2] = [&lexical, &semantic];
+    let relative = |p: &str| {
+        p.strip_prefix(root.as_str())
+            .unwrap_or(p)
+            .trim_start_matches('\\')
+            .replace('\\', "/")
+    };
+    // Lo que sale sin frecencia (30 puestos) y qué se «abre» en cada caso.
+    let mut cases = Vec::new();
+    for (q, globs) in &m.0 {
+        let base = search(&text, &retrievers, &q.query, 30).unwrap().hits;
+        let expected =
+            |h: &sift_search::FileHit| globs.iter().any(|g| g.is_match(relative(&h.path)));
+        let helps: Vec<(i64, f64)> = base
+            .iter()
+            .find(|h| expected(h))
+            .map(|h| [1.0, 3.0, 7.0].map(|age| (h.file_id, age)).to_vec())
+            .unwrap_or_default();
+        let noise: Vec<(i64, f64)> = base
+            .iter()
+            .skip(5)
+            .filter(|h| !expected(h))
+            .take(5)
+            .flat_map(|h| [0.5, 1.0, 2.0, 4.0, 6.0].map(|age| (h.file_id, age)))
+            .collect();
+        cases.push((q, globs, helps, noise));
+    }
+    eprintln!("\n| peso | sin aperturas | ayuda | ruido |");
+    eprintln!("|---|---|---|---|");
+    for weight in [0.0, 0.25, 0.5, 0.75, 1.0, 2.0] {
+        let mut out = [Score::default(); 3];
+        for (q, globs, helps, noise) in &cases {
+            for (i, opens) in [&Vec::new(), helps, noise].into_iter().enumerate() {
+                let f = Frecency::from_opens(opens.iter().copied()).with_weight(weight);
+                let hits = search_with(&text, &retrievers, &q.query, 10, &f)
+                    .unwrap()
+                    .hits;
+                let found: Vec<String> = hits.iter().map(|h| relative(&h.path)).collect();
+                let (recall, mrr) = grade(&found, globs);
+                out[i].add(recall, mrr);
+            }
+        }
+        eprintln!(
+            "| {weight} | {} | {} | {} |",
+            out[0].show(),
+            out[1].show(),
+            out[2].show()
+        );
+    }
 }

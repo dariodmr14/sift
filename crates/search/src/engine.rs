@@ -1,4 +1,5 @@
-//! El motor de búsqueda: recuperadores → fusión RRF → agrupar por archivo → fragmento.
+//! El motor de búsqueda: recuperadores → fusión RRF → agrupar por archivo → frecencia →
+//! fragmento.
 //!
 //! Recuperadores: el léxico (Tantivy) y el semántico (vectores, Fase 4). Cada uno pesa
 //! en la fusión según el tipo de búsqueda ([`Intent`]): en una búsqueda exacta («shell-v4.3»)
@@ -9,6 +10,7 @@ use std::time::Instant;
 
 use serde::Serialize;
 
+use crate::frecency::Frecency;
 use crate::fusion::rrf_weighted;
 use crate::index::{Candidate, IndexError, TextIndex};
 use crate::intent::Intent;
@@ -93,6 +95,18 @@ pub fn search(
     raw: &str,
     limit: usize,
 ) -> Result<SearchResults, IndexError> {
+    search_with(text, retrievers, raw, limit, &Frecency::default())
+}
+
+/// Como [`search`], y además sube lo que abres a menudo y hace poco ([`Frecency`]): solo
+/// reordena lo encontrado, nunca añade.
+pub fn search_with(
+    text: &TextIndex,
+    retrievers: &[&dyn Retriever],
+    raw: &str,
+    limit: usize,
+    frecency: &Frecency,
+) -> Result<SearchResults, IndexError> {
     let started = Instant::now();
     let q = ParsedQuery::parse(raw);
     if q.is_empty() {
@@ -157,7 +171,7 @@ pub fn search(
     }
     let mut ranked: Vec<(usize, (i64, i64), f64)> = files
         .into_values()
-        .map(|(order, key, score, _)| (order, key, score))
+        .map(|(order, key, score, _)| (order, key, score * frecency.boost(key.0)))
         .collect();
     ranked.sort_by(|a, b| b.2.total_cmp(&a.2).then(a.0.cmp(&b.0)));
     let best: Vec<((i64, i64), f64)> = ranked
@@ -363,6 +377,30 @@ mod tests {
         let r = search(&idx, &[&Lexical(&idx)], "redes ", 10).unwrap();
         assert_eq!(r.hits[0].name, "b.md");
         assert!(r.hits[0].score > r.hits[1].score);
+    }
+
+    #[test]
+    fn frecency_reorders_but_never_adds() {
+        let idx = index_with(&[
+            (1, "a.md", &["redes y más redes"]),
+            (2, "b.md", &["redes"]),
+            (3, "c.md", &["otra cosa"]),
+        ]);
+        let ranked = |f: &Frecency| -> Vec<String> {
+            search_with(&idx, &[&Lexical(&idx)], "redes ", 10, f)
+                .unwrap()
+                .hits
+                .into_iter()
+                .map(|h| h.name)
+                .collect()
+        };
+        assert_eq!(ranked(&Frecency::default()), vec!["a.md", "b.md"]);
+        // b.md abierto a menudo y hace poco: sube.
+        let often = Frecency::from_opens((0..5).map(|_| (2, 1.0)));
+        assert_eq!(ranked(&often), vec!["b.md", "a.md"]);
+        // c.md no encaja: por mucho que lo abras, no aparece.
+        let unrelated = Frecency::from_opens((0..50).map(|_| (3, 0.0)));
+        assert_eq!(ranked(&unrelated), vec!["a.md", "b.md"]);
     }
 
     /// Un recuperador que devuelve una lista fija (para probar la fusión en paralelo).
