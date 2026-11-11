@@ -156,6 +156,21 @@ const MIGRATIONS: &[&str] = &[
         file_id INTEGER PRIMARY KEY
     );
     "#,
+    // v5: búsqueda por significado (Fase 4, ADR 0009). Cada fragmento lleva el hash de su
+    // texto; los vectores son de un texto (no de un fragmento), así que las copias del
+    // mismo texto comparten vector y reindexar un archivo no los invalida. Los hashes de
+    // los fragmentos ya guardados los rellena Rust al abrir (`backfill_text_hashes`).
+    r#"
+    ALTER TABLE chunks ADD COLUMN text_hash INTEGER;
+    CREATE INDEX chunks_text_hash ON chunks(text_hash);
+
+    CREATE TABLE embeddings (
+        model      TEXT    NOT NULL,      -- id de la ficha del modelo (`ModelCard::id`)
+        text_hash  INTEGER NOT NULL,
+        vector     BLOB    NOT NULL,      -- valores f16 en little-endian
+        PRIMARY KEY (model, text_hash)
+    ) WITHOUT ROWID;
+    "#,
 ];
 
 pub struct Database {
@@ -185,6 +200,10 @@ impl Database {
         conn.pragma_update(None, "foreign_keys", "ON")?;
         let mut db = Database { conn };
         db.migrate()?;
+        let filled = db.backfill_text_hashes()?;
+        if filled > 0 {
+            tracing::info!(chunks = filled, "hashes de texto calculados");
+        }
         Ok(db)
     }
 
