@@ -23,7 +23,10 @@ fn err(e: impl std::fmt::Display) -> VectorError {
 /// de vectores.
 const CONNECTIVITY: usize = 16;
 const EXPANSION_ADD: usize = 128;
-const EXPANSION_SEARCH: usize = 64;
+/// Nodos que explora cada búsqueda. Medido con `eval/` (Fase 5): con 64, HNSW perdía el 12 %
+/// de los 40 vecinos de verdad (recall@40 0,88) porque los parecidos de e5 están muy juntos;
+/// con 512 pierde el 1 % y cuesta ~1,3 ms por búsqueda.
+const EXPANSION_SEARCH: usize = 512;
 
 pub struct VectorIndex {
     index: RwLock<Index>,
@@ -66,6 +69,8 @@ impl VectorIndex {
         let bytes = std::fs::read(path).ok()?;
         let index = Index::new(&options(dims)).ok()?;
         index.load_from_buffer(&bytes).ok()?;
+        // El archivo guarda sus opciones: se fija el esfuerzo de búsqueda de ahora.
+        index.change_expansion_search(EXPANSION_SEARCH);
         (index.dimensions() == dims).then(|| VectorIndex {
             index: RwLock::new(index),
             dims,
@@ -104,6 +109,11 @@ impl VectorIndex {
 
     pub fn dims(&self) -> usize {
         self.dims
+    }
+
+    /// Cuántos nodos explora HNSW en cada búsqueda (más = más preciso y más lento).
+    pub fn set_expansion_search(&self, n: usize) {
+        self.read().change_expansion_search(n);
     }
 
     pub fn contains(&self, hash: i64) -> bool {
