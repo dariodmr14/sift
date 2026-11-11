@@ -49,3 +49,36 @@ export function statusLine(
     return { text: "Buscando cambios…", progress: "indeterminate" };
   return { text: `Al día · ${files(totalFiles)}`, progress: null };
 }
+
+/** Por qué no se pudo leer un archivo, dicho para cualquiera (códigos de Rust). */
+export const UNREAD_REASON: Record<string, { label: string; hint: string }> = {
+  unsupported: {
+    label: "Formato no compatible",
+    hint: "Por dentro no son texto, aunque la extensión lo parezca.",
+  },
+  tooLarge: {
+    label: "Demasiado grandes",
+    hint: "Ocupan más de 5 MB. Se encuentran por su nombre.",
+  },
+  noPermission: {
+    label: "Sin permiso",
+    hint: "Windows no deja abrirlos con tu usuario.",
+  },
+  protected: {
+    label: "Protegidos con contraseña",
+    hint: "Se encuentran por su nombre.",
+  },
+  damaged: {
+    label: "Dañados",
+    hint: "Están incompletos o no se pueden abrir.",
+  },
+  other: {
+    label: "Otros problemas",
+    hint: "No se pudieron abrir al leerlos.",
+  },
+};
+
+/** Texto de un motivo; uno desconocido cuenta como «otros». */
+export function unreadReason(kind: string): { label: string; hint: string } {
+  return UNREAD_REASON[kind] ?? UNREAD_REASON.other;
+}

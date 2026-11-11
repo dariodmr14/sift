@@ -72,6 +72,9 @@ pub struct LastRun {
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct IndexProgress(pub IndexStatus);
 
+/// A partir de cuántos archivos quitados en una pasada se compacta la base de datos.
+const COMPACT_AFTER_REMOVING: u32 = 5_000;
+
 enum Job {
     Sync,
 }
@@ -305,6 +308,20 @@ impl Worker {
                     tracing::error!(error = %e, "fallo al indexar");
                     self.update(|s| s.error = Some(e.to_string()));
                 }
+            }
+        }
+        // Tras una limpieza grande (p. ej. al dejar de indexar binarios e imágenes), se
+        // devuelve el espacio al disco: SQLite no encoge el fichero por sí solo.
+        if summary.removed >= COMPACT_AFTER_REMOVING {
+            let compacting = Instant::now();
+            let db = self.db();
+            match db.0.lock().unwrap_or_else(|p| p.into_inner()).compact() {
+                Ok(()) => tracing::info!(
+                    removed = summary.removed,
+                    secs = compacting.elapsed().as_secs_f64(),
+                    "base de datos compactada"
+                ),
+                Err(e) => tracing::warn!(error = %e, "no se pudo compactar la base de datos"),
             }
         }
         summary.seconds = started.elapsed().as_secs_f64();

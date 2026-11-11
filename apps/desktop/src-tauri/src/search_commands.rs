@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sift_indexer::IgnoreRules;
 use sift_search::{Lexical, SearchResults};
 use sift_spaces::Opener;
@@ -92,6 +92,37 @@ pub fn list_roots(app: AppHandle) -> Result<Vec<RootView>, AppError> {
             files: r.files as u32,
             errors: r.errors as u32,
             last_indexed_at: r.last_indexed_at,
+        })
+        .collect())
+}
+
+/// Archivos que no se pudieron leer por un mismo motivo, con unos pocos ejemplos.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct UnreadGroupView {
+    /// `unsupported`, `tooLarge`, `noPermission`, `protected`, `damaged` u `other`.
+    pub kind: String,
+    pub count: u32,
+    pub examples: Vec<String>,
+}
+
+/// Cuántos ejemplos se enseñan por motivo: los justos para hacerse una idea.
+const UNREAD_EXAMPLES: usize = 3;
+
+/// Los archivos que no se pudieron leer, agrupados por motivo (no se listan todos).
+#[tauri::command]
+#[specta::specta]
+pub fn unread_files(app: AppHandle) -> Result<Vec<UnreadGroupView>, AppError> {
+    Ok(db(&app)
+        .unread_summary(UNREAD_EXAMPLES)?
+        .into_iter()
+        .map(|g| UnreadGroupView {
+            // Un código que esta versión no conozca cuenta como «otros».
+            kind: sift_extract::UnreadReason::from_code(&g.kind)
+                .code()
+                .to_owned(),
+            count: g.count as u32,
+            examples: g.examples,
         })
         .collect())
 }

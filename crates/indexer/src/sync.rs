@@ -7,6 +7,10 @@
 //! 2. **Leer** ([`apply_plan`]): extrae, trocea y guarda lo apuntado, de lo cambiado más
 //!    recientemente a lo más antiguo (lo que acabas de tocar es lo que vas a buscar).
 //!
+//! Solo entran los **formatos útiles** (textos, código y documentos: `sift_extract`), y
+//! se saltan las carpetas generadas por herramientas aunque no estén en los patrones
+//! ([`is_generated_dir`]): la `Library` de Unity, los entornos virtuales de Python…
+//!
 //! Por cada archivo:
 //! - Mismo tamaño y fecha que lo guardado → no se toca (ni se lee).
 //! - Cambió la fecha pero el contenido es el mismo (mismo hash) → solo se apunta la fecha.
@@ -71,6 +75,30 @@ pub enum SyncError {
     Cancelled,
 }
 
+/// ¿Es una carpeta que genera una herramienta (y se puede regenerar)? Se reconoce por lo
+/// que la rodea, no por el nombre: «Library» o «Temp» a secas podrían ser tuyas.
+///
+/// - **Unity**: `Library`, `Temp`, `Obj`, `Logs` y `UserSettings` junto a `Assets` y
+///   `ProjectSettings`. En un proyecto real, `Library` tenía 35.000 archivos de caché.
+/// - **Entorno virtual de Python**: cualquier carpeta con `pyvenv.cfg` (se llame como se
+///   llame: `venv`, `.venv`, `env`…).
+/// - **Cachés**: cualquier carpeta con `CACHEDIR.TAG` (el estándar que usan Cargo y otros).
+pub fn is_generated_dir(dir: &Path) -> bool {
+    if dir.join("pyvenv.cfg").is_file() || dir.join("CACHEDIR.TAG").is_file() {
+        return true;
+    }
+    const UNITY: [&str; 5] = ["library", "temp", "obj", "logs", "usersettings"];
+    let name = dir
+        .file_name()
+        .map(|n| n.to_string_lossy().to_ascii_lowercase());
+    match (name, dir.parent()) {
+        (Some(name), Some(parent)) if UNITY.contains(&name.as_str()) => {
+            parent.join("Assets").is_dir() && parent.join("ProjectSettings").is_dir()
+        }
+        _ => false,
+    }
+}
+
 /// Un archivo nuevo o cambiado, pendiente de leer.
 #[derive(Debug, Clone)]
 struct Pending {
@@ -129,7 +157,10 @@ pub fn scan_root(
         .filter_entry(|e| {
             // Las carpetas ignoradas ni se recorren (node_modules puede tener 100.000 archivos).
             let rel = e.path().strip_prefix(&root.path).unwrap_or(e.path());
-            rel.as_os_str().is_empty() || !rules.is_ignored(rel)
+            if rel.as_os_str().is_empty() {
+                return true; // la propia carpeta indexada
+            }
+            !rules.is_ignored(rel) && !(e.file_type().is_dir() && is_generated_dir(e.path()))
         });
 
     for entry in walker {
@@ -138,7 +169,8 @@ pub fn scan_root(
         }
         // Una carpeta sin permiso no para el indexado del resto.
         let Ok(entry) = entry else { continue };
-        if !entry.file_type().is_file() {
+        // Solo formatos útiles para buscar: ni binarios, ni imágenes, ni compilados.
+        if !entry.file_type().is_file() || !sift_extract::is_indexable(entry.path()) {
             continue;
         }
         let path = entry.path().to_path_buf();
@@ -223,7 +255,11 @@ pub fn apply_plan(
         let (text, hash, error) = match sift_extract::extract(&path, MAX_CONTENT_BYTES) {
             Ok(Some(e)) => (Some(e.text), Some(e.hash), None),
             Ok(None) => (None, None, None),
-            Err(e) => (None, None, Some(e.to_string())),
+            Err(e) => (
+                None,
+                None,
+                Some((e.to_string(), e.reason().code().to_owned())),
+            ),
         };
 
         // Cambió la fecha pero no el contenido: no hace falta reindexar.
@@ -255,7 +291,8 @@ pub fn apply_plan(
             size,
             mtime,
             content_hash: hash,
-            error: error.clone(),
+            error: error.as_ref().map(|(message, _)| message.clone()),
+            error_kind: error.as_ref().map(|(_, kind)| kind.clone()),
         };
         // SQLite primero (fuente de verdad); si el índice fallara, se puede reconstruir.
         let (file_id, chunk_ids) = lock().upsert_file(&new_file, &chunks)?;
@@ -453,6 +490,87 @@ mod tests {
         sync(&f, &mut index);
         let names: Vec<_> = index.files.values().map(|x| x.name.as_str()).collect();
         assert_eq!(names, vec!["app.js"]);
+    }
+
+    #[test]
+    fn only_useful_formats_are_indexed() {
+        let f = fixture();
+        write(&f, "apuntes.md", "sí");
+        write(&f, "Tema 1.pdf", "%PDF");
+        for noise in [
+            "foto.png",
+            "lib.dll",
+            "Main.class",
+            "datos.bin",
+            "sin_extension",
+        ] {
+            write(&f, noise, "ruido");
+        }
+        let mut index = FakeIndex::default();
+        let r = sync(&f, &mut index);
+        assert_eq!(r.added, 2);
+        let mut names: Vec<_> = index.files.values().map(|x| x.name.as_str()).collect();
+        names.sort_unstable();
+        assert_eq!(names, ["Tema 1.pdf", "apuntes.md"]);
+    }
+
+    #[test]
+    fn files_indexed_before_that_are_no_longer_useful_are_removed() {
+        // Lo que indexó una versión anterior (imágenes, binarios) desaparece solo.
+        let f = fixture();
+        let png = write(&f, "foto.png", "x");
+        f.db.lock()
+            .unwrap()
+            .upsert_file(
+                &NewFile {
+                    root_id: f.root.id,
+                    path: png,
+                    name: "foto.png".into(),
+                    ext: "png".into(),
+                    size: 1,
+                    mtime: 1,
+                    content_hash: None,
+                    error: None,
+                    error_kind: None,
+                },
+                &[],
+            )
+            .unwrap();
+        let mut index = FakeIndex::default();
+        let r = sync(&f, &mut index);
+        assert_eq!(r.removed, 1);
+        assert_eq!(f.db.lock().unwrap().list_roots().unwrap()[0].files, 0);
+    }
+
+    #[test]
+    fn generated_folders_are_recognised_by_their_surroundings() {
+        let f = fixture();
+        // Proyecto de Unity: `Library` es caché; `Assets` es lo tuyo.
+        write(&f, "Juego/Assets/Player.cs", "class Player {}");
+        write(
+            &f,
+            "Juego/ProjectSettings/ProjectVersion.txt",
+            "m_EditorVersion",
+        );
+        write(
+            &f,
+            "Juego/Library/PackageCache/com.unity.x/Runtime/X.cs",
+            "caché",
+        );
+        // Entorno virtual de Python con un nombre cualquiera.
+        write(&f, "practica/entorno/pyvenv.cfg", "home = C:\\Python312");
+        write(&f, "practica/entorno/Lib/os.py", "import sys");
+        write(&f, "practica/main.py", "print('hola')");
+        // Una carpeta «Library» normal (sin Unity alrededor) sí se indexa.
+        write(&f, "Library/libro.md", "apuntes");
+        let mut index = FakeIndex::default();
+        sync(&f, &mut index);
+        let mut names: Vec<_> = index.files.values().map(|x| x.name.as_str()).collect();
+        names.sort_unstable();
+        assert_eq!(
+            names,
+            ["Player.cs", "ProjectVersion.txt", "libro.md", "main.py"]
+        );
     }
 
     #[test]

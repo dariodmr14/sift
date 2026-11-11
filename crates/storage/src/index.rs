@@ -39,6 +39,18 @@ pub struct NewFile {
     pub mtime: i64,
     pub content_hash: Option<String>,
     pub error: Option<String>,
+    /// Categoría del error (código de `sift_extract::UnreadReason`), si lo hubo.
+    pub error_kind: Option<String>,
+}
+
+/// Archivos que no se pudieron leer por un mismo motivo.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnreadGroup {
+    /// Código del motivo (`unsupported`, `tooLarge`…).
+    pub kind: String,
+    pub count: i64,
+    /// Unas pocas rutas de ejemplo.
+    pub examples: Vec<String>,
 }
 
 /// Un fragmento de texto de un archivo.
@@ -214,9 +226,9 @@ impl Database {
             Some(id) => {
                 tx.execute(
                     "UPDATE files SET root_id = ?1, name = ?2, ext = ?3, size = ?4, mtime = ?5,
-                            content_hash = ?6, error = ?7,
+                            content_hash = ?6, error = ?7, error_kind = ?8,
                             indexed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
-                     WHERE id = ?8",
+                     WHERE id = ?9",
                     params![
                         file.root_id,
                         file.name,
@@ -225,6 +237,7 @@ impl Database {
                         file.mtime,
                         file.content_hash,
                         file.error,
+                        file.error_kind,
                         id
                     ],
                 )?;
@@ -233,8 +246,9 @@ impl Database {
             }
             None => {
                 tx.execute(
-                    "INSERT INTO files (root_id, path, name, ext, size, mtime, content_hash, error)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                    "INSERT INTO files
+                        (root_id, path, name, ext, size, mtime, content_hash, error, error_kind)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                     params![
                         file.root_id,
                         path,
@@ -243,7 +257,8 @@ impl Database {
                         file.size,
                         file.mtime,
                         file.content_hash,
-                        file.error
+                        file.error,
+                        file.error_kind
                     ],
                 )?;
                 tx.last_insert_rowid()
@@ -277,6 +292,34 @@ impl Database {
         }
         tx.commit()?;
         Ok(())
+    }
+
+    /// Los archivos que no se pudieron leer, agrupados por motivo (de más a menos), con
+    /// hasta `examples` rutas de ejemplo por grupo. No los lista todos: pueden ser miles.
+    pub fn unread_summary(&self, examples: usize) -> Result<Vec<UnreadGroup>, StorageError> {
+        let mut groups: Vec<UnreadGroup> = self
+            .conn
+            .prepare(
+                "SELECT error_kind, COUNT(*) FROM files WHERE error_kind IS NOT NULL
+                 GROUP BY error_kind ORDER BY COUNT(*) DESC, error_kind",
+            )?
+            .query_map([], |r| {
+                Ok(UnreadGroup {
+                    kind: r.get(0)?,
+                    count: r.get(1)?,
+                    examples: Vec::new(),
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT path FROM files WHERE error_kind = ?1 ORDER BY mtime DESC LIMIT ?2")?;
+        for group in &mut groups {
+            group.examples = stmt
+                .query_map(params![group.kind, examples as i64], |r| r.get(0))?
+                .collect::<Result<_, _>>()?;
+        }
+        Ok(groups)
     }
 
     /// Recorre todos los fragmentos (para reconstruir el índice de búsqueda desde cero).
@@ -389,6 +432,7 @@ mod tests {
             mtime: 1,
             content_hash: Some("h1".into()),
             error: None,
+            error_kind: None,
         }
     }
 
@@ -495,6 +539,36 @@ mod tests {
         let r = &db.list_roots().unwrap()[0];
         assert_eq!((r.files, r.errors), (2, 1));
         assert!(r.last_indexed_at.is_some());
+    }
+
+    #[test]
+    fn unread_files_are_grouped_by_reason_with_a_few_examples() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap();
+        for i in 0..5 {
+            let mut f = file(root.id, &format!(r"C:\Uni\raro{i}.txt"));
+            f.error = Some("parece un archivo binario".into());
+            f.error_kind = Some("unsupported".into());
+            f.mtime = i;
+            db.upsert_file(&f, &[]).unwrap();
+        }
+        let mut big = file(root.id, r"C:\Uni\enorme.txt");
+        big.error = Some("demasiado grande".into());
+        big.error_kind = Some("tooLarge".into());
+        db.upsert_file(&big, &[]).unwrap();
+        db.upsert_file(&file(root.id, r"C:\Uni\bien.md"), &[])
+            .unwrap();
+
+        let groups = db.unread_summary(3).unwrap();
+        assert_eq!(groups.len(), 2);
+        assert_eq!(
+            (groups[0].kind.as_str(), groups[0].count),
+            ("unsupported", 5)
+        );
+        // Solo 3 ejemplos, los más recientes primero.
+        assert_eq!(groups[0].examples.len(), 3);
+        assert!(groups[0].examples[0].ends_with("raro4.txt"));
+        assert_eq!((groups[1].kind.as_str(), groups[1].count), ("tooLarge", 1));
     }
 
     #[test]

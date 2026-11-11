@@ -236,6 +236,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::import_spaces,
             search::search_files,
             search::list_roots,
+            search::unread_files,
             search::add_root,
             search::remove_root,
             search::get_ignore_patterns,
