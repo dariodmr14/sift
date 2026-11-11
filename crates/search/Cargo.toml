@@ -10,6 +10,9 @@ authors.workspace = true
 
 [dependencies]
 sift-indexer = { workspace = true }
+sift-storage = { workspace = true }
+sift-embeddings = { workspace = true }
+usearch = { workspace = true }
 tantivy = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }

@@ -226,6 +226,11 @@ export type FileHit = {
 	/**  Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre). */
 	snippet: Segment[],
 	score: number | null,
+	/**
+	 *  Encontrado solo por significado (no comparte palabras con la búsqueda): la UI lo
+	 *  marca para que se entienda por qué está ahí.
+	 */
+	byMeaning: boolean,
 };
 
 /**

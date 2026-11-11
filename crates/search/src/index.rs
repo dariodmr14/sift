@@ -23,7 +23,8 @@ use crate::snippet::max_typos;
 
 /// Versión del formato del índice. Si cambia (campos, analizador), el índice se borra y
 /// se reconstruye desde SQLite al arrancar.
-pub const SCHEMA_VERSION: u32 = 2;
+/// v3: cada fragmento lleva el hash de su texto (la clave de su vector, Fase 4).
+pub const SCHEMA_VERSION: u32 = 3;
 const VERSION_FILE: &str = "sift-schema-version";
 /// Memoria del escritor de Tantivy (lo mínimo razonable; el indexado no tiene prisa).
 const WRITER_MEMORY: usize = 50_000_000;
@@ -41,6 +42,9 @@ pub struct Fields {
     /// Nombre y contenido sin raíz (minúsculas, sin tildes): erratas y prefijos.
     pub name_fold: Field,
     pub body_fold: Field,
+    /// Hash del texto del fragmento (`sift_storage::text_hash`): une el fragmento con su
+    /// vector. 0 en los documentos sin texto.
+    pub text_hash: Field,
 }
 
 /// Un fragmento encontrado por el recuperador léxico.
@@ -97,6 +101,7 @@ fn schema() -> (Schema, Fields) {
         body: b.add_text_field("body", text(analyzer::NAME, true)),
         name_fold: b.add_text_field("name_fold", text(analyzer::FOLD_NAME, false)),
         body_fold: b.add_text_field("body_fold", text(analyzer::FOLD_NAME, false)),
+        text_hash: b.add_i64_field("text_hash", INDEXED | STORED),
     };
     (b.build(), fields)
 }
@@ -173,7 +178,13 @@ impl TextIndex {
         let writer = self.writer();
         writer.delete_term(Term::from_field_i64(f.file_id, file.file_id));
         let base = |chunk_id: i64, body: &str| {
+            let hash = if body.is_empty() {
+                0
+            } else {
+                sift_storage::text_hash(body)
+            };
             doc!(
+                f.text_hash => hash,
                 f.chunk_id => chunk_id,
                 f.file_id => file.file_id,
                 f.path => file.path.as_str(),
@@ -245,9 +256,63 @@ impl TextIndex {
         let searcher = self.reader.searcher();
         let query = self.build_query(q);
         let top = searcher.search(&*query, &TopDocs::with_limit(k).order_by_score())?;
+        top.into_iter()
+            .map(|(score, address)| self.hit(&searcher, address, score))
+            .collect()
+    }
+
+    /// Los fragmentos cuyos textos son estos (hash, parecido), en ese orden. Un texto
+    /// repetido en varios archivos da un fragmento por archivo. Como mucho `k`.
+    pub fn chunks_by_hashes(
+        &self,
+        hashes: &[(i64, f32)],
+        k: usize,
+    ) -> Result<Vec<ChunkHit>, IndexError> {
+        if hashes.is_empty() {
+            return Ok(Vec::new());
+        }
         let f = self.fields;
-        let mut hits = Vec::with_capacity(top.len());
-        for (score, address) in top {
+        let searcher = self.reader.searcher();
+        let query = BooleanQuery::new(
+            hashes
+                .iter()
+                .map(|(hash, _)| {
+                    let t = Term::from_field_i64(f.text_hash, *hash);
+                    let q: Box<dyn Query> = Box::new(TermQuery::new(t, IndexRecordOption::Basic));
+                    (Occur::Should, q)
+                })
+                .collect(),
+        );
+        // Sin orden propio: las copias se ordenan después por el parecido de su texto.
+        let found = searcher.search(&query, &TopDocs::with_limit(k * 4).order_by_score())?;
+        let rank: std::collections::HashMap<i64, (usize, f32)> = hashes
+            .iter()
+            .enumerate()
+            .map(|(i, (h, s))| (*h, (i, *s)))
+            .collect();
+        let mut hits = Vec::with_capacity(found.len());
+        for (_, address) in found {
+            let d: TantivyDocument = searcher.doc(address)?;
+            let hash = d
+                .get_first(f.text_hash)
+                .and_then(|v| v.as_i64())
+                .unwrap_or_default();
+            if let Some((position, similarity)) = rank.get(&hash) {
+                hits.push((*position, self.hit(&searcher, address, *similarity)?));
+            }
+        }
+        hits.sort_by_key(|(position, _)| *position);
+        Ok(hits.into_iter().map(|(_, h)| h).take(k).collect())
+    }
+
+    fn hit(
+        &self,
+        searcher: &tantivy::Searcher,
+        address: tantivy::DocAddress,
+        score: f32,
+    ) -> Result<ChunkHit, IndexError> {
+        let f = self.fields;
+        {
             let d: TantivyDocument = searcher.doc(address)?;
             let i64_of = |field| {
                 d.get_first(field)
@@ -260,7 +325,7 @@ impl TextIndex {
                     .unwrap_or_default()
                     .to_owned()
             };
-            hits.push(ChunkHit {
+            Ok(ChunkHit {
                 chunk_id: i64_of(f.chunk_id),
                 file_id: i64_of(f.file_id),
                 path: str_of(f.path),
@@ -268,9 +333,8 @@ impl TextIndex {
                 ext: str_of(f.ext),
                 body: str_of(f.body),
                 score,
-            });
+            })
         }
-        Ok(hits)
     }
 }
 
