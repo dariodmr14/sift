@@ -107,11 +107,12 @@ export function FoldersSection() {
           ))}
         </ul>
         <p className="text-xs text-muted">
-          Sift solo mira lo que sirve para buscar: documentos, textos y código.
-          Se salta programas, imágenes, vídeos y archivos internos de otras
-          herramientas. Por ahora lee el contenido de textos, Markdown y código;
-          los PDF y Word se encuentran por su nombre. Quitar una carpeta solo
-          hace que Sift deje de buscar en ella: tus archivos no se tocan.
+          Sift solo mira lo que sirve para buscar: documentos, textos, código y,
+          por su nombre, imágenes y vídeos. Se salta programas y archivos
+          internos de otras herramientas. Por ahora lee el contenido de textos,
+          Markdown y código; los PDF y Word se encuentran por su nombre. Quitar
+          una carpeta solo hace que Sift deje de buscar en ella: tus archivos no
+          se tocan.
         </p>
       </section>
 
@@ -318,6 +319,36 @@ function ProgressBar({ value }: { value: number | "indeterminate" }) {
   );
 }
 
+/** «Buscar también imágenes y vídeos por su nombre» (activado por defecto). */
+function MediaToggle() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    void commands.getIndexMedia().then(setEnabled);
+  }, []);
+  return (
+    <label className="flex items-start gap-3 text-sm">
+      <input
+        type="checkbox"
+        checked={enabled ?? true}
+        disabled={enabled === null}
+        onChange={(e) => {
+          void commands.setIndexMedia(e.currentTarget.checked).then((r) => {
+            if (r.status === "ok") setEnabled(r.data);
+          });
+        }}
+        className="mt-1 size-4 accent-accent"
+      />
+      <span>
+        Buscar también imágenes y vídeos por su nombre
+        <span className="block text-xs text-muted">
+          Su contenido no se lee. Los que están en carpetas que Sift se salta
+          (dependencias, compilados, cachés) no aparecen.
+        </span>
+      </span>
+    </label>
+  );
+}
+
 /** Patrones a ignorar: vienen bien de serie, así que se esconden en «Avanzado». */
 function Advanced() {
   const [text, setText] = useState("");
@@ -356,6 +387,7 @@ function Advanced() {
         Avanzado
       </summary>
       <div className="space-y-3 pt-3">
+        <MediaToggle />
         <p className="text-sm text-muted">
           Además, Sift se salta por su cuenta las carpetas que crean las
           herramientas y no tú: dependencias (

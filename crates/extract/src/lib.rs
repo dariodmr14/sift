@@ -23,7 +23,9 @@ pub enum Kind {
     Code,
     /// Documento que se indexa por nombre, sin contenido (por ahora: PDF, Word…).
     Document,
-    /// No se indexa: binarios, compilados, imágenes, vídeos, cachés…
+    /// Imagen o vídeo: se puede buscar por nombre (opcional), nunca por contenido.
+    Media,
+    /// No se indexa: binarios, compilados, cachés…
     Other,
 }
 
@@ -31,6 +33,11 @@ const TEXT: &[&str] = &["txt", "text", "csv", "tsv", "ini", "cfg", "conf", "rtf"
 /// Documentos: por nombre hasta que la Fase 3 lea su contenido.
 const DOCUMENT: &[&str] = &[
     "pdf", "doc", "docx", "odt", "ppt", "pptx", "odp", "xls", "xlsx", "ods", "epub",
+];
+/// Imágenes y vídeos: solo por nombre, y solo si el usuario no lo desactiva.
+const MEDIA: &[&str] = &[
+    "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "tif", "tiff", "heic", "heif", "mp4", "mkv",
+    "mov", "avi", "webm", "wmv", "m4v", "mpg", "mpeg",
 ];
 const MARKDOWN: &[&str] = &["md", "markdown", "mdx", "rst", "adoc", "org", "tex"];
 const CODE: &[&str] = &[
@@ -103,14 +110,21 @@ pub fn kind_for(ext: &str) -> Kind {
         Kind::Text
     } else if DOCUMENT.contains(&ext) {
         Kind::Document
+    } else if MEDIA.contains(&ext) {
+        Kind::Media
     } else {
         Kind::Other
     }
 }
 
-/// ¿Merece la pena indexar este archivo? Solo textos, código y documentos.
-pub fn is_indexable(path: &Path) -> bool {
-    kind_for(&extension(path)) != Kind::Other
+/// ¿Merece la pena indexar este archivo? Textos, código y documentos siempre; imágenes
+/// y vídeos (por nombre) solo con `media`.
+pub fn is_indexable(path: &Path, media: bool) -> bool {
+    match kind_for(&extension(path)) {
+        Kind::Other => false,
+        Kind::Media => media,
+        _ => true,
+    }
 }
 
 /// Extensión de un archivo en minúsculas y sin punto. Archivos sin extensión con nombre
@@ -211,7 +225,10 @@ impl ExtractError {
 
 /// Lee el texto de un archivo si su tipo lo permite. `Ok(None)` = solo nombre.
 pub fn extract(path: &Path, max_bytes: u64) -> Result<Option<Extracted>, ExtractError> {
-    if matches!(kind_for(&extension(path)), Kind::Document | Kind::Other) {
+    if matches!(
+        kind_for(&extension(path)),
+        Kind::Document | Kind::Media | Kind::Other
+    ) {
         return Ok(None);
     }
     let file = std::fs::File::open(path)?;
@@ -269,7 +286,7 @@ mod tests {
             "README",
             "Makefile",
         ] {
-            assert!(is_indexable(Path::new(yes)), "{yes}");
+            assert!(is_indexable(Path::new(yes), false), "{yes}");
         }
         for no in [
             "foto.png",
@@ -284,8 +301,13 @@ mod tests {
             "debug.log",
             "sin_extension",
         ] {
-            assert!(!is_indexable(Path::new(no)), "{no}");
+            assert!(!is_indexable(Path::new(no), false), "{no}");
         }
+        // Imágenes y vídeos, solo si se pide (y nunca se lee su contenido).
+        assert!(is_indexable(Path::new("foto.png"), true));
+        assert!(is_indexable(Path::new("clase.MP4"), true));
+        assert!(!is_indexable(Path::new("app.exe"), true));
+        assert_eq!(kind_for("jpg"), Kind::Media);
     }
 
     #[test]

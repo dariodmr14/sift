@@ -170,7 +170,7 @@ pub fn scan_root(
         // Una carpeta sin permiso no para el indexado del resto.
         let Ok(entry) = entry else { continue };
         // Solo formatos útiles para buscar: ni binarios, ni imágenes, ni compilados.
-        if !entry.file_type().is_file() || !sift_extract::is_indexable(entry.path()) {
+        if !entry.file_type().is_file() || !rules.indexes(entry.path()) {
             continue;
         }
         let path = entry.path().to_path_buf();
@@ -497,13 +497,7 @@ mod tests {
         let f = fixture();
         write(&f, "apuntes.md", "sí");
         write(&f, "Tema 1.pdf", "%PDF");
-        for noise in [
-            "foto.png",
-            "lib.dll",
-            "Main.class",
-            "datos.bin",
-            "sin_extension",
-        ] {
+        for noise in ["lib.dll", "Main.class", "datos.bin", "sin_extension"] {
             write(&f, noise, "ruido");
         }
         let mut index = FakeIndex::default();
@@ -515,18 +509,41 @@ mod tests {
     }
 
     #[test]
+    fn images_and_videos_are_found_by_name_unless_turned_off() {
+        let mut f = fixture();
+        write(&f, "viaje/playa.jpg", "no es texto");
+        write(&f, "clase.mp4", "tampoco");
+        write(
+            &f,
+            "web/node_modules/pkg/logo.png",
+            "en una carpeta ignorada",
+        );
+        let mut index = FakeIndex::default();
+        sync(&f, &mut index);
+        let mut names: Vec<_> = index.files.values().map(|x| x.name.as_str()).collect();
+        names.sort_unstable();
+        assert_eq!(names, ["clase.mp4", "playa.jpg"]);
+        assert!(index.files.values().all(|x| x.chunks.is_empty())); // solo el nombre
+
+        // Con la opción desactivada, desaparecen del índice en la siguiente pasada.
+        f.rules = f.rules.clone().with_media(false);
+        let r = sync(&f, &mut index);
+        assert_eq!(r.removed, 2);
+        assert!(index.files.is_empty());
+    }
+    #[test]
     fn files_indexed_before_that_are_no_longer_useful_are_removed() {
         // Lo que indexó una versión anterior (imágenes, binarios) desaparece solo.
         let f = fixture();
-        let png = write(&f, "foto.png", "x");
+        let png = write(&f, "datos.bin", "x");
         f.db.lock()
             .unwrap()
             .upsert_file(
                 &NewFile {
                     root_id: f.root.id,
                     path: png,
-                    name: "foto.png".into(),
-                    ext: "png".into(),
+                    name: "datos.bin".into(),
+                    ext: "bin".into(),
                     size: 1,
                     mtime: 1,
                     content_hash: None,

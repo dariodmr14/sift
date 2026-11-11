@@ -185,6 +185,26 @@ pub fn set_ignore_patterns(app: AppHandle, patterns: Vec<String>) -> Result<Vec<
     Ok(saved)
 }
 
+/// ¿Se buscan imágenes y vídeos por su nombre? (Ajustes → Carpetas → Avanzado)
+#[tauri::command]
+#[specta::specta]
+pub fn get_index_media(app: AppHandle) -> bool {
+    !crate::load_settings(&app).indexing.skip_media
+}
+
+/// Activa o desactiva buscar imágenes y vídeos por nombre, y revisa las carpetas: los
+/// que sobran salen del índice y los que faltan entran.
+#[tauri::command]
+#[specta::specta]
+pub fn set_index_media(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.indexing.skip_media = !enabled)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    let indexing = app.state::<Indexing>();
+    indexing.cancel_current();
+    indexing.sync();
+    Ok(enabled)
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn index_status(app: AppHandle) -> IndexStatus {

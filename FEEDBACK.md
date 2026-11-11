@@ -77,7 +77,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 
 ## 2026-11-12 (2) — Tras probar los ajustes de la ventana y del indexado
 
-- [ ] **El cambio entre blur y Acrylic al mover Ajustes se nota demasiado**, sobre todo al volver al Acrylic al soltar. Suavizarlo (p. ej. una capa de tinte con un fundido de ~200 ms que tape el cambio de material) o explicar por qué no se puede más.
-- [ ] **Volver a reordenar los Espacios arrastrando**, con la misma animación y librería (dnd-kit) que las acciones. Alt+↑/↓ se mantiene. A la gente le puede gustar tener su orden.
-- [ ] **El desplegable de «no se pudieron leer» va dentro de cada carpeta**: debajo de su fila, con su flechita y solo lo de esa carpeta. Fuera el bloque general del medio; arriba basta el estado global.
-- [ ] **Imágenes y vídeos por nombre** (sin leer el contenido), siempre que no estén en carpetas generadas. Opción en Avanzado para desactivarlo.
+- [x] ✅ **El cambio entre blur y Acrylic al mover Ajustes se nota demasiado** (un velo del color del fondo tapa los dos cambios de material), sobre todo al volver al Acrylic al soltar. Suavizarlo (p. ej. una capa de tinte con un fundido de ~200 ms que tape el cambio de material) o explicar por qué no se puede más.
+- [x] ✅ **Volver a reordenar los Espacios arrastrando**, con la misma animación y librería (dnd-kit) que las acciones. Alt+↑/↓ se mantiene. A la gente le puede gustar tener su orden.
+- [x] ✅ **El desplegable de «no se pudieron leer» va dentro de cada carpeta**: debajo de su fila, con su flechita y solo lo de esa carpeta. Fuera el bloque general del medio; arriba basta el estado global.
+- [x] ✅ **Imágenes y vídeos por nombre** (sin leer el contenido), siempre que no estén en carpetas generadas. Opción en Avanzado para desactivarlo.
