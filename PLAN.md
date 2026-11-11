@@ -177,7 +177,7 @@ sift/
 - [x] Progreso del indexado visible en la UI, en lenguaje humano.
 - [x] Recuperación ante fallos: si la app se cierra a mitad, retoma donde iba.
 
-**Hecho cuando:** guardas un PDF nuevo en una carpeta y en segundos aparece en la búsqueda, sin reindexar todo. ⏳ Comprobado con documentos Word y con el vigilante sobre el disco real; con PDF falta probarlo en la app tras `scripts/fetch-pdfium.ps1`.
+**Hecho cuando:** guardas un PDF nuevo en una carpeta y en segundos aparece en la búsqueda, sin reindexar todo. ⏳ Comprobado en la app con datos reales: 542 de 543 PDF y 750 Word leídos (el que falta, dañado), y el vigilante probado sobre el disco real. Falta la prueba a mano de guardar un PDF nuevo y verlo en la barra.
 
 ### Fase 4 — Búsqueda semántica
 - [ ] Troceado de documentos (por párrafos/secciones, con solapamiento).

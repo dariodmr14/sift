@@ -265,6 +265,21 @@ impl Extractor {
         self.pdf.is_some()
     }
 
+    /// ¿Sabe este extractor leer el contenido de `path`? (No, para imágenes, hojas de
+    /// cálculo, o PDF sin PDFium: esos van por nombre.)
+    pub fn reads_content(&self, path: &Path) -> bool {
+        let ext = extension(path);
+        match kind_for(&ext) {
+            Kind::Text | Kind::Markdown | Kind::Code => true,
+            Kind::Document => match ext.as_str() {
+                "pdf" => self.pdf.is_some(),
+                "docx" | "pptx" | "odt" => true,
+                _ => false,
+            },
+            Kind::Media | Kind::Other => false,
+        }
+    }
+
     /// Lee el texto de un archivo si su tipo lo permite. `Ok(None)` = solo nombre.
     /// `max_bytes` es el tope para archivos de texto; los documentos tienen el suyo
     /// ([`MAX_DOCUMENT_BYTES`]) y su texto se recorta a `max_bytes`.
@@ -427,6 +442,16 @@ mod tests {
                 .to_hex()
                 .to_string()
         );
+    }
+
+    #[test]
+    fn knows_which_contents_it_can_read() {
+        let e = Extractor::new();
+        assert!(e.reads_content(Path::new("a.md")));
+        assert!(e.reads_content(Path::new("a.docx")));
+        assert!(!e.reads_content(Path::new("a.pdf"))); // sin PDFium
+        assert!(!e.reads_content(Path::new("a.xlsx")));
+        assert!(!e.reads_content(Path::new("a.png")));
     }
 
     #[test]
