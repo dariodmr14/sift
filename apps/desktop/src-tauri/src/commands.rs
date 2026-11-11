@@ -250,6 +250,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             LauncherShown,
             LauncherHidden,
             NewSpaceRequested,
+            crate::materials::GlassMoving,
             crate::indexing::IndexProgress
         ])
 }
