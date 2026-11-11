@@ -26,6 +26,8 @@ pub struct FileState {
     pub size: i64,
     pub mtime: i64,
     pub content_hash: Option<String>,
+    /// ¿Se intentó leer y falló? (protegido, dañado…): no se reintenta si no cambia.
+    pub unreadable: bool,
 }
 
 /// Un archivo listo para guardar.
@@ -196,7 +198,7 @@ impl Database {
     pub fn file_states(&self, root_id: i64) -> Result<HashMap<PathBuf, FileState>, StorageError> {
         let mut stmt = self
             .conn
-            .prepare("SELECT path, id, size, mtime, content_hash FROM files WHERE root_id = ?1")?;
+            .prepare("SELECT path, id, size, mtime, content_hash, error IS NOT NULL FROM files WHERE root_id = ?1")?;
         let rows = stmt.query_map([root_id], |r| {
             Ok((
                 PathBuf::from(r.get::<_, String>(0)?),
@@ -205,6 +207,7 @@ impl Database {
                     size: r.get(2)?,
                     mtime: r.get(3)?,
                     content_hash: r.get(4)?,
+                    unreadable: r.get(5)?,
                 },
             ))
         })?;
@@ -309,7 +312,7 @@ impl Database {
         Ok(self
             .conn
             .query_row(
-                "SELECT id, size, mtime, content_hash FROM files WHERE path = ?1",
+                "SELECT id, size, mtime, content_hash, error IS NOT NULL FROM files WHERE path = ?1",
                 [path.display().to_string()],
                 |r| {
                     Ok(FileState {
@@ -317,6 +320,7 @@ impl Database {
                         size: r.get(1)?,
                         mtime: r.get(2)?,
                         content_hash: r.get(3)?,
+                        unreadable: r.get(4)?,
                     })
                 },
             )
@@ -334,7 +338,7 @@ impl Database {
             std::path::MAIN_SEPARATOR
         );
         let mut stmt = self.conn.prepare(
-            "SELECT path, id, size, mtime, content_hash FROM files
+            "SELECT path, id, size, mtime, content_hash, error IS NOT NULL FROM files
              WHERE path = ?1 OR substr(path, 1, ?3) = ?2",
         )?;
         let rows = stmt.query_map(params![exact, inside, inside.chars().count() as i64], |r| {
@@ -345,6 +349,7 @@ impl Database {
                     size: r.get(2)?,
                     mtime: r.get(3)?,
                     content_hash: r.get(4)?,
+                    unreadable: r.get(5)?,
                 },
             ))
         })?;

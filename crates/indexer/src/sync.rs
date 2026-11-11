@@ -160,6 +160,24 @@ fn is_skipped(rules: &IgnoreRules, root: &Path, path: &Path) -> bool {
         .any(is_generated_dir)
 }
 
+/// ¿Está ya al día lo guardado de este archivo? Lo está si no ha cambiado de tamaño ni
+/// de fecha… salvo que se guardara **solo por nombre** y ahora se sepa leer su contenido
+/// (p. ej. los PDF de antes de tener PDFium, o los Word de la Fase 2): entonces se lee una
+/// vez. Lo que se intentó leer y falló (protegido, dañado) no se reintenta si no cambia.
+fn up_to_date(
+    previous: Option<&FileState>,
+    size: i64,
+    mtime: i64,
+    path: &Path,
+    extractor: &Extractor,
+) -> bool {
+    previous.is_some_and(|p| {
+        let same = p.size == size && p.mtime == mtime;
+        let name_only = p.content_hash.is_none() && !p.unreadable;
+        same && !(name_only && extractor.reads_content(path))
+    })
+}
+
 /// Un archivo nuevo o cambiado, pendiente de leer.
 #[derive(Debug, Clone)]
 struct Pending {
@@ -256,10 +274,7 @@ pub fn scan_root(
         seen += 1;
         progress(seen);
         let previous = known.remove(&path);
-        if previous
-            .as_ref()
-            .is_some_and(|p| p.size == size && p.mtime == mtime)
-        {
+        if up_to_date(previous.as_ref(), size, mtime, &path, ctx.extractor) {
             unchanged += 1;
         } else {
             pending.push(Pending {
@@ -540,10 +555,7 @@ pub fn sync_paths(
             Ok(meta) if meta.is_file() && !skipped && ctx.rules.indexes(path) => {
                 let (size, mtime) = size_and_mtime(&meta);
                 let previous = ctx.db().file_state(path)?;
-                if previous
-                    .as_ref()
-                    .is_some_and(|p| p.size == size && p.mtime == mtime)
-                {
+                if up_to_date(previous.as_ref(), size, mtime, path, ctx.extractor) {
                     report.unchanged += 1;
                 } else {
                     pending.push((
@@ -561,10 +573,7 @@ pub fn sync_paths(
                 let mut known = ctx.db().files_under(path)?;
                 walk(ctx, &root.path, path, |file, size, mtime| {
                     let previous = known.remove(&file);
-                    if previous
-                        .as_ref()
-                        .is_some_and(|p| p.size == size && p.mtime == mtime)
-                    {
+                    if up_to_date(previous.as_ref(), size, mtime, &file, ctx.extractor) {
                         report.unchanged += 1;
                     } else {
                         pending.push((
@@ -1258,6 +1267,62 @@ mod tests {
         assert_eq!(recover(&f.db, &mut index).unwrap(), (0, 1));
         let left: Vec<_> = index.committed.values().map(|x| x.name.as_str()).collect();
         assert_eq!(left, ["a.md"]);
+    }
+
+    #[test]
+    fn documents_saved_by_name_are_read_once_a_reader_exists() {
+        // Un .docx guardado solo por nombre (como en la Fase 2), sin cambiar desde entonces.
+        let f = fixture();
+        let path = f.dir.path().join("Tema 2.docx");
+        let xml = r#"<w:document xmlns:w="x"><w:body><w:p><w:r><w:t>Álgebra relacional</w:t></w:r></w:p></w:body></w:document>"#;
+        let mut zip = zip::ZipWriter::new(std::fs::File::create(&path).unwrap());
+        zip.start_file(
+            "word/document.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        std::io::Write::write_all(&mut zip, xml.as_bytes()).unwrap();
+        zip.finish().unwrap();
+        let meta = std::fs::metadata(&path).unwrap();
+        let (size, mtime) = size_and_mtime(&meta);
+        f.db.lock()
+            .unwrap()
+            .upsert_file(
+                &NewFile {
+                    root_id: f.root.id,
+                    path: path.clone(),
+                    name: "Tema 2.docx".into(),
+                    ext: "docx".into(),
+                    size,
+                    mtime,
+                    content_hash: None,
+                    error: None,
+                    error_kind: None,
+                },
+                &[],
+            )
+            .unwrap();
+
+        let mut index = FakeIndex::default();
+        let r = sync(&f, &mut index);
+        assert_eq!(r.updated, 1); // se ha leído, aunque no había cambiado
+        assert!(
+            index.files.values().next().unwrap().chunks[0]
+                .1
+                .contains("Álgebra")
+        );
+        // Y una vez leído, ya no se vuelve a leer.
+        assert_eq!(sync(&f, &mut index).unchanged, 1);
+    }
+
+    #[test]
+    fn a_document_that_failed_is_not_retried_until_it_changes() {
+        let f = fixture();
+        write(&f, "roto.docx", "esto no es un zip");
+        let mut index = FakeIndex::default();
+        assert_eq!(sync(&f, &mut index).errors, 1);
+        let again = sync(&f, &mut index);
+        assert_eq!((again.unchanged, again.errors), (1, 0));
     }
 
     #[test]
