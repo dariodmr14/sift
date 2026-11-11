@@ -4,9 +4,12 @@
 pub mod chunk;
 pub mod ignore;
 pub mod sync;
+pub mod throttle;
 
 pub use chunk::{Chunk, chunk_text};
 pub use ignore::{IgnoreRules, PatternError};
 pub use sync::{
-    IndexSink, IndexedFile, RootPlan, SyncError, SyncReport, apply_plan, scan_root, sync_root,
+    Context, IndexSink, IndexedFile, PlanRun, RootPlan, SyncError, SyncReport, apply_plan,
+    is_generated_dir, recover, scan_root, sync_paths, sync_root,
 };
+pub use throttle::{LoadSampler, NoLoad, Pace, Throttle, ThrottleConfig};

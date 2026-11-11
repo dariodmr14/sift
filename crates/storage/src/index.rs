@@ -226,7 +226,7 @@ impl Database {
             Some(id) => {
                 tx.execute(
                     "UPDATE files SET root_id = ?1, name = ?2, ext = ?3, size = ?4, mtime = ?5,
-                            content_hash = ?6, error = ?7, error_kind = ?8,
+                            content_hash = ?6, error = ?7, error_kind = ?8, search_synced = 0,
                             indexed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                      WHERE id = ?9",
                     params![
@@ -247,8 +247,9 @@ impl Database {
             None => {
                 tx.execute(
                     "INSERT INTO files
-                        (root_id, path, name, ext, size, mtime, content_hash, error, error_kind)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                        (root_id, path, name, ext, size, mtime, content_hash, error, error_kind,
+                         search_synced)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0)",
                     params![
                         file.root_id,
                         path,
@@ -285,13 +286,158 @@ impl Database {
         Ok(())
     }
 
+    /// Borra archivos (y sus fragmentos) y, en la misma transacción, apunta sus ids como
+    /// pendientes de quitar del índice de búsqueda (ver [`Database::pending_removals`]).
     pub fn delete_files(&mut self, ids: &[i64]) -> Result<(), StorageError> {
         let tx = self.conn.transaction()?;
         for id in ids {
             tx.execute("DELETE FROM files WHERE id = ?1", [id])?;
+            tx.execute(
+                "INSERT OR IGNORE INTO index_removals (file_id) VALUES (?1)",
+                [id],
+            )?;
         }
         tx.commit()?;
         Ok(())
+    }
+
+    /// Lo que se sabe de un archivo por su ruta (o `None` si no está indexado).
+    pub fn file_state(&self, path: &Path) -> Result<Option<FileState>, StorageError> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT id, size, mtime, content_hash FROM files WHERE path = ?1",
+                [path.display().to_string()],
+                |r| {
+                    Ok(FileState {
+                        id: r.get(0)?,
+                        size: r.get(1)?,
+                        mtime: r.get(2)?,
+                        content_hash: r.get(3)?,
+                    })
+                },
+            )
+            .optional()?)
+    }
+
+    /// Los archivos indexados que son `path` o están dentro de esa carpeta. Sirve cuando
+    /// se borra, mueve o renombra una carpeta entera.
+    pub fn files_under(&self, path: &Path) -> Result<HashMap<PathBuf, FileState>, StorageError> {
+        let exact = path.display().to_string();
+        // `C:\Uni\BD` no debe arrastrar a `C:\Uni\BD2`: se compara con la barra final.
+        let inside = format!(
+            "{}{}",
+            exact.trim_end_matches(['\\', '/']),
+            std::path::MAIN_SEPARATOR
+        );
+        let mut stmt = self.conn.prepare(
+            "SELECT path, id, size, mtime, content_hash FROM files
+             WHERE path = ?1 OR substr(path, 1, ?3) = ?2",
+        )?;
+        let rows = stmt.query_map(params![exact, inside, inside.chars().count() as i64], |r| {
+            Ok((
+                PathBuf::from(r.get::<_, String>(0)?),
+                FileState {
+                    id: r.get(1)?,
+                    size: r.get(2)?,
+                    mtime: r.get(3)?,
+                    content_hash: r.get(4)?,
+                },
+            ))
+        })?;
+        Ok(rows.collect::<Result<_, _>>()?)
+    }
+
+    /// El archivo `id` ahora está en otra ruta (se renombró o se movió) con el mismo
+    /// contenido: cambia la ruta y conserva el id, los fragmentos y el historial de
+    /// aperturas. Devuelve sus fragmentos, para actualizar el índice de búsqueda.
+    pub fn move_file(&mut self, id: i64, to: &NewFile) -> Result<Vec<(i64, String)>, StorageError> {
+        let tx = self.conn.transaction()?;
+        // Si en el destino ya había otro archivo indexado, el movido lo sustituye.
+        let replaced: Option<i64> = tx
+            .query_row(
+                "SELECT id FROM files WHERE path = ?1 AND id <> ?2",
+                params![to.path.display().to_string(), id],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if let Some(old) = replaced {
+            tx.execute("DELETE FROM files WHERE id = ?1", [old])?;
+            tx.execute(
+                "INSERT OR IGNORE INTO index_removals (file_id) VALUES (?1)",
+                [old],
+            )?;
+        }
+        tx.execute(
+            "UPDATE files SET root_id = ?1, path = ?2, name = ?3, ext = ?4, size = ?5, mtime = ?6,
+                    search_synced = 0
+             WHERE id = ?7",
+            params![
+                to.root_id,
+                to.path.display().to_string(),
+                to.name,
+                to.ext,
+                to.size,
+                to.mtime,
+                id
+            ],
+        )?;
+        let chunks = tx
+            .prepare("SELECT id, text FROM chunks WHERE file_id = ?1 ORDER BY ordinal")?
+            .query_map([id], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<Result<Vec<(i64, String)>, _>>()?;
+        tx.commit()?;
+        Ok(chunks)
+    }
+
+    /// El índice de búsqueda acaba de confirmar: todo lo guardado hasta ahora está en él.
+    pub fn mark_search_synced(&mut self) -> Result<(), StorageError> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "UPDATE files SET search_synced = 1 WHERE search_synced = 0",
+            [],
+        )?;
+        tx.execute("DELETE FROM index_removals", [])?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// Ids de archivos borrados que el índice de búsqueda aún no ha quitado (la app se
+    /// cerró antes de confirmar).
+    pub fn pending_removals(&self) -> Result<Vec<i64>, StorageError> {
+        Ok(self
+            .conn
+            .prepare("SELECT file_id FROM index_removals")?
+            .query_map([], |r| r.get(0))?
+            .collect::<Result<_, _>>()?)
+    }
+
+    /// Archivos guardados que el índice de búsqueda aún no ha confirmado, con sus
+    /// fragmentos: se pueden reenviar sin volver a leer el disco.
+    pub fn unsynced_files(&self) -> Result<Vec<(FileRow, Vec<(i64, String)>)>, StorageError> {
+        let files: Vec<FileRow> = self
+            .conn
+            .prepare("SELECT id, path, name, ext FROM files WHERE search_synced = 0 ORDER BY id")?
+            .query_map([], |r| {
+                Ok(FileRow {
+                    id: r.get(0)?,
+                    path: r.get(1)?,
+                    name: r.get(2)?,
+                    ext: r.get(3)?,
+                })
+            })?
+            .collect::<Result<_, _>>()?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, text FROM chunks WHERE file_id = ?1 ORDER BY ordinal")?;
+        let mut out = Vec::with_capacity(files.len());
+        for file in files {
+            let chunks = stmt
+                .query_map([file.id], |r| Ok((r.get(0)?, r.get(1)?)))?
+                .collect::<Result<Vec<(i64, String)>, _>>()?;
+            out.push((file, chunks));
+        }
+        Ok(out)
     }
 
     /// Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (de más a
@@ -583,6 +729,81 @@ mod tests {
         assert_eq!(groups[0].examples.len(), 3);
         assert!(groups[0].examples[0].ends_with("raro4.txt"));
         assert_eq!((groups[1].kind.as_str(), groups[1].count), ("tooLarge", 1));
+    }
+
+    #[test]
+    fn files_under_a_folder_do_not_include_similar_names() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap();
+        for p in [
+            r"C:\Uni\BD\t1.md",
+            r"C:\Uni\BD\sub\t2.md",
+            r"C:\Uni\BD2\otro.md",
+        ] {
+            db.upsert_file(&file(root.id, p), &[]).unwrap();
+        }
+        let mut under: Vec<_> = db
+            .files_under(Path::new(r"C:\Uni\BD"))
+            .unwrap()
+            .into_keys()
+            .map(|p| p.display().to_string())
+            .collect();
+        under.sort();
+        assert_eq!(under, [r"C:\Uni\BD\sub\t2.md", r"C:\Uni\BD\t1.md"]);
+        // Y un archivo suelto se encuentra por su ruta exacta.
+        assert_eq!(
+            db.files_under(Path::new(r"C:\Uni\BD2\otro.md"))
+                .unwrap()
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn moving_a_file_keeps_its_id_and_chunks() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap();
+        let (id, chunk_ids) = db
+            .upsert_file(&file(root.id, r"C:\Uni\viejo.md"), &[chunk(0, "hola")])
+            .unwrap();
+        let chunks = db
+            .move_file(id, &file(root.id, r"C:\Uni\sub\nuevo.md"))
+            .unwrap();
+        assert_eq!(chunks, [(chunk_ids[0], "hola".to_string())]);
+        assert!(
+            db.file_state(Path::new(r"C:\Uni\viejo.md"))
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            db.file_state(Path::new(r"C:\Uni\sub\nuevo.md"))
+                .unwrap()
+                .unwrap()
+                .id,
+            id
+        );
+    }
+
+    #[test]
+    fn tracks_what_the_search_index_has_not_confirmed() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap();
+        let (a, _) = db
+            .upsert_file(&file(root.id, r"C:\Uni\a.md"), &[chunk(0, "uno")])
+            .unwrap();
+        db.mark_search_synced().unwrap();
+        // Tras confirmar: un archivo nuevo y uno borrado quedan pendientes.
+        let (b, _) = db
+            .upsert_file(&file(root.id, r"C:\Uni\b.md"), &[chunk(0, "dos")])
+            .unwrap();
+        db.delete_files(&[a]).unwrap();
+        let unsynced = db.unsynced_files().unwrap();
+        assert_eq!(unsynced.len(), 1);
+        assert_eq!((unsynced[0].0.id, unsynced[0].1[0].1.as_str()), (b, "dos"));
+        assert_eq!(db.pending_removals().unwrap(), [a]);
+        db.mark_search_synced().unwrap();
+        assert!(db.unsynced_files().unwrap().is_empty());
+        assert!(db.pending_removals().unwrap().is_empty());
     }
 
     #[test]
