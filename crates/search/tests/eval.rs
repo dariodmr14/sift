@@ -431,9 +431,10 @@ fn recall_at_10_words_meaning_and_hybrid() {
             embedder: &app_embedder,
             min_similarity: threshold,
         };
+        let full: Vec<&dyn Retriever> = vec![&lexical, &semantic];
         let mut times = Vec::new();
         for _ in 0..5 {
-            let (_, t) = run("lat", &text, &[&lexical, &semantic], &m, &root, false);
+            let (_, t) = run("lat", &text, &full, &m, &root, false);
             times.extend(t);
         }
         let (p50, p95) = (percentile(&mut times, 0.5), percentile(&mut times, 0.95));
@@ -450,10 +451,137 @@ fn recall_at_10_words_meaning_and_hybrid() {
             percentile(&mut first, 0.95)
         ));
         eprintln!("  fallos de la híbrida con {}:", card.id);
-        run(card.id, &text, &[&lexical, &semantic], &m, &root, true);
+        run(card.id, &text, &full, &m, &root, true);
     }
     eprintln!("\nrecall@10 (MRR entre paréntesis)");
     for line in report {
         eprintln!("{line}");
+    }
+}
+
+/// Los 10 primeros de una consulta, con su fragmento: para ver por qué falla una.
+/// `SIFT_EVAL_QUERY="…" cargo test -p sift-search --release --test eval -- --ignored show_one --nocapture`
+#[test]
+#[ignore = "necesita la base de datos real y los modelos: ejecutar a mano en release"]
+fn show_one() {
+    let Ok(query) = std::env::var("SIFT_EVAL_QUERY") else {
+        return;
+    };
+    let db = snapshot();
+    let text = lexical_index(&db);
+    let card = sift_embeddings::MODELS[0];
+    let embedder = OnnxEmbedder::load(card, &app_data().join("models").join(card.id), 2).unwrap();
+    let vectors = vector_index(&db, card);
+    let semantic = Semantic {
+        vectors: &vectors,
+        text: &text,
+        embedder: &embedder,
+        min_similarity: card.min_similarity,
+    };
+    let lexical = Lexical(&text);
+    // Lo que da la semántica por separado.
+    let parsed = ParsedQuery::parse(&query);
+    {
+        let keys: Vec<(i64, i64)> = semantic
+            .retrieve(&parsed, 40)
+            .unwrap()
+            .iter()
+            .map(|c| (c.file_id, c.chunk_id))
+            .collect();
+        let names: Vec<String> = text
+            .fetch(&keys)
+            .unwrap()
+            .into_iter()
+            .map(|h| h.name)
+            .collect();
+        let mut seen = std::collections::HashSet::new();
+        let unique: Vec<&String> = names
+            .iter()
+            .filter(|n| seen.insert(n.as_str()))
+            .take(8)
+            .collect();
+        eprintln!("[semántica] {unique:?}");
+    }
+    for h in search(&text, &[&lexical, &semantic], &query, 10)
+        .unwrap()
+        .hits
+    {
+        let snippet: String = h.snippet.iter().map(|s| s.text.as_str()).collect();
+        let snippet: String = snippet.chars().take(110).collect();
+        eprintln!(
+            "{} {} — {}",
+            if h.by_meaning { "≈" } else { "=" },
+            h.name,
+            snippet.replace('\n', " ")
+        );
+    }
+}
+
+/// Un recuperador con otro peso (solo donde el original pesa algo): para calibrar.
+struct Weighted<'a>(&'a dyn Retriever, f64);
+
+impl Retriever for Weighted<'_> {
+    fn name(&self) -> &'static str {
+        self.0.name()
+    }
+    fn weight(&self, intent: Intent) -> f64 {
+        if self.0.weight(intent) > 0.0 {
+            self.1
+        } else {
+            0.0
+        }
+    }
+    fn by_meaning(&self) -> bool {
+        self.0.by_meaning()
+    }
+    fn retrieve(
+        &self,
+        q: &ParsedQuery,
+        k: usize,
+    ) -> Result<Vec<sift_search::Candidate>, sift_search::IndexError> {
+        self.0.retrieve(q, k)
+    }
+}
+
+/// Calibra el peso de la semántica en la fusión con `eval/` (las palabras pesan 1).
+/// `cargo test -p sift-search --release --test eval -- --ignored calibrate --nocapture`
+///
+/// Se probó también un tercer recuperador, «alguna de las palabras» (BM25 con cualquiera
+/// de los términos), con pesos de 0 a 1: no mejoraba nada y se descartó (ADR 0009).
+#[test]
+#[ignore = "necesita la base de datos real y los modelos: ejecutar a mano en release"]
+fn calibrate_weights() {
+    let queries: QuerySet =
+        serde_json::from_str(&std::fs::read_to_string(repo().join("eval/queries.json")).unwrap())
+            .unwrap();
+    let m = matchers(&queries.queries);
+    let db = snapshot();
+    let root = db.list_roots().unwrap()[0].path.display().to_string();
+    let text = lexical_index(&db);
+    let card = sift_embeddings::MODELS[0];
+    let embedder = OnnxEmbedder::load(card, &app_data().join("models").join(card.id), 4).unwrap();
+    let vectors = vector_index(&db, card);
+    let semantic = Semantic {
+        vectors: &vectors,
+        text: &text,
+        embedder: &embedder,
+        min_similarity: card.min_similarity,
+    };
+    let lexical = Lexical(&text);
+    eprintln!(
+        "
+| semántica | concept | topic | exact | total |"
+    );
+    for sem_w in [0.3, 0.5, 0.7, 1.0] {
+        let b = Weighted(&semantic, sem_w);
+        let (s, _) = run("cal", &text, &[&lexical, &b], &m, &root, false);
+        let get = |k: &str| s.get(k).copied().unwrap_or_default().show();
+        eprintln!(
+            "| {sem_w} | {} | {} | {} | {} |",
+            get("concept"),
+            get("topic"),
+            get("exact"),
+            get("total")
+        );
     }
 }

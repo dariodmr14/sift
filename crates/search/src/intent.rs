@@ -6,8 +6,10 @@
 //!
 //! - Parece un nombre o un código → solo palabras.
 //! - Muy corta (alguien tecleando) → solo palabras.
-//! - Una palabra normal → híbrida, con la semántica a medio peso.
+//! - Una palabra normal → híbrida.
 //! - Lenguaje natural (dos o más palabras) → híbrida.
+//!
+//! El peso de la semántica (0,5 frente a 1 de las palabras) se calibró con `eval/`.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Intent {
@@ -74,8 +76,8 @@ fn looks_exact(text: &str) -> bool {
 pub fn semantic_weight(intent: Intent) -> f64 {
     match intent {
         Intent::Exact | Intent::Short => 0.0,
-        Intent::Word => 0.5,
-        Intent::Natural => 0.7,
+        // Calibrado con eval/ (2026-11-13): 0,5 da el mismo recall que 0,7 y mejor MRR.
+        Intent::Word | Intent::Natural => 0.5,
     }
 }
 
@@ -126,6 +128,6 @@ mod tests {
     #[test]
     fn exact_searches_do_not_use_meaning() {
         assert_eq!(semantic_weight(Intent::Exact), 0.0);
-        assert!(semantic_weight(Intent::Natural) > semantic_weight(Intent::Word));
+        assert!(semantic_weight(Intent::Natural) > 0.0);
     }
 }
