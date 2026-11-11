@@ -37,8 +37,10 @@ if ($Actual -ne $Sha256) {
     throw "El SHA-256 no coincide: esperado $Sha256, descargado $Actual. No se usa el archivo."
 }
 
-# tar viene con Windows 10 (1803+) y entiende .tgz.
-tar -xzf $Archive -C $Tmp
+# tar viene con Windows 10 (1803+) y entiende .tgz. Por su ruta completa: si Git Bash está
+# antes en el PATH, `tar` sería el de Git (GNU), que toma «C:» por un servidor remoto.
+& (Join-Path $env:SystemRoot "System32\tar.exe") -xzf $Archive -C $Tmp
+if ($LASTEXITCODE -ne 0) { throw "tar no pudo descomprimir $Archive" }
 New-Item -ItemType Directory -Force $Target | Out-Null
 Copy-Item (Join-Path $Tmp "bin\pdfium.dll") $Dll -Force
 Copy-Item (Join-Path $Tmp "LICENSE") (Join-Path $Target "LICENSE-pdfium.txt") -Force

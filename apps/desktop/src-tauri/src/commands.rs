@@ -259,9 +259,12 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         ])
 }
 
-/// Ruta de los tipos generados, relativa a este crate (`src-tauri/`).
+/// Ruta de los tipos generados, relativa a este crate (`src-tauri/`). Solo en desarrollo y
+/// en tests: la app de release no regenera los tipos.
+#[cfg(any(debug_assertions, test))]
 pub const BINDINGS_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../src/bindings.ts");
 
+#[cfg(any(debug_assertions, test))]
 pub fn typescript() -> specta_typescript::Typescript {
     specta_typescript::Typescript::default()
 }

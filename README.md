@@ -87,12 +87,10 @@ npm run tauri dev
 
 Variables útiles: `RUST_LOG=debug` (más logs) y `SIFT_FORCE_KEYBOARD_HOOK=1` (probar la vía alternativa del atajo). Logs: `%LOCALAPPDATA%\dev.sift.app\logs`.
 
-Comprobaciones:
+Comprobaciones (la CI, en local: lo mismo que el workflow de GitHub, que solo se lanza a mano; para al primer error y acaba con un resumen):
 
 ```bash
-cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
+powershell -ExecutionPolicy Bypass -File scripts/ci.ps1
 ```
 
 ## Decisiones de arquitectura
