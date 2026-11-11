@@ -27,6 +27,11 @@ tempfile = { workspace = true }
 serde_json = { workspace = true }
 globset = { workspace = true }
 rusqlite = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "search"
+harness = false
 
 [lints]
 workspace = true
