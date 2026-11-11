@@ -38,8 +38,15 @@ cargo test -p sift-search --release --test eval -- --ignored recall_at_10 --noca
 - `recall_at_10…`: la tabla (palabras / semántica / híbrida), la latencia y los fallos. Los vectores calculados se quedan en la copia: la segunda vez tarda segundos.
 - `calibrate_weights`: prueba pesos de la semántica en la fusión.
 - `show_one` (con `SIFT_EVAL_QUERY="…"`): los 10 primeros de una consulta y lo que trae la semántica sola.
+- `diagnose` (con `SIFT_EVAL_QUERY="…"` y `SIFT_EVAL_EXPECT="%patrón%,%patrón%"`, patrones de SQL `LIKE`): por qué falla una consulta. Dónde quedan los fragmentos de los archivos esperados en la búsqueda exacta y en HNSW, qué dicen, y en qué puesto los dejan las palabras y la fusión.
+- `hnsw_recall`: cuántos de los 40 vecinos de verdad devuelve HNSW según su esfuerzo (`ef`).
+- `calibrate_frecency`: el peso de la frecencia, simulando aperturas (ayuda cuando abriste el bueno; ruido cuando abriste mucho otros).
 
-Resultados actuales: en el README y en el ADR 0009.
+Resultados actuales: en el README y en los ADR 0009 y 0010.
+
+## Añadir consultas
+
+Cuando una búsqueda real falla, se añade aquí con lo que debería haber salido, comprobando que el archivo existe y trata de eso. Así el fallo queda medido y ningún cambio futuro lo vuelve a romper sin que se vea.
 
 ## Privacidad
 
