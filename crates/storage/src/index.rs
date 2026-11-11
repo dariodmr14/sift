@@ -564,6 +564,19 @@ impl Database {
         )?;
         Ok(())
     }
+
+    /// Las aperturas de archivos de los últimos `max_days` días: (archivo, hace cuántos
+    /// días), para la frecencia. Son pocas: unas cuantas por día de uso.
+    pub fn file_open_ages(&self, max_days: f64) -> Result<Vec<(i64, f64)>, StorageError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT file_id, julianday('now') - julianday(opened_at) AS age
+             FROM opens WHERE file_id IS NOT NULL AND age <= ?1",
+        )?;
+        let rows = stmt
+            .query_map([max_days], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<Result<_, _>>()?;
+        Ok(rows)
+    }
 }
 
 /// ¿Es `a` la misma carpeta que `b` o está dentro de ella? Sin distinguir mayúsculas,
@@ -680,7 +693,12 @@ mod tests {
             .upsert_file(&file(root, r"C:\Uni\a.md"), &[chunk(0, "x")])
             .unwrap();
         db.record_file_open(Path::new(r"C:\Uni\a.md")).unwrap();
+        let ages = db.file_open_ages(30.0).unwrap();
+        assert_eq!(ages.len(), 1);
+        assert_eq!(ages[0].0, a);
+        assert!((0.0..0.01).contains(&ages[0].1), "recién abierto: {ages:?}");
         assert_eq!(db.remove_root(root).unwrap(), vec![a]);
+        assert!(db.file_open_ages(30.0).unwrap().is_empty());
         assert_eq!(db.count_chunks().unwrap(), 0);
         assert!(db.list_roots().unwrap().is_empty());
         assert!(matches!(

@@ -175,6 +175,7 @@ pub fn run() {
         .manage(materials::Materials::default())
         .manage(settings_window::ReturnToLauncher::default())
         .manage(search_commands::SearchStats::default())
+        .manage(search_commands::FrecencyCache::default())
         .invoke_handler(specta.invoke_handler())
         .setup(move |app| {
             specta.mount_events(app);
