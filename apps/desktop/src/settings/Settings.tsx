@@ -87,6 +87,7 @@ function Settings() {
                   <StartupToggle initial={settings.launchAtStartup} />
                   <IconsToggle initial={settings.iconsHidden} />
                   <GlassToggle initial={settings.disableGlass} />
+                  <SmartSearchToggle />
                 </>
               ) : (
                 <p>Cargando…</p>
@@ -103,6 +104,40 @@ function Settings() {
         </main>
       </div>
     </div>
+  );
+}
+
+/** «Búsqueda inteligente»: buscar por significado (ADR 0009). Activada por defecto. */
+function SmartSearchToggle() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    void commands.getSmartSearch().then(setEnabled);
+  }, []);
+  return (
+    <Section title="Búsqueda">
+      <label className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={enabled ?? true}
+          disabled={enabled === null}
+          onChange={(e) => {
+            void commands.setSmartSearch(e.currentTarget.checked).then((r) => {
+              if (r.status === "ok") setEnabled(r.data);
+            });
+          }}
+          className="mt-1 size-4 accent-accent"
+        />
+        <span>
+          Búsqueda inteligente
+          <span className="block text-xs text-muted">
+            Encuentra también lo relacionado aunque no use tus palabras: «bases
+            de datos» trae los apuntes de normalización o de SQL. Funciona en tu
+            PC: la primera vez descarga un modelo de unos 120 MB y prepara tus
+            archivos en segundo plano.
+          </span>
+        </span>
+      </label>
+    </Section>
   );
 }
 

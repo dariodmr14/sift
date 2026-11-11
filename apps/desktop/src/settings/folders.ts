@@ -54,6 +54,22 @@ export function statusLine(
   }
   if (status.running && status.phase === "updating")
     return { text: "Actualizando lo que acabas de cambiar…", progress: null };
+  const smart = status.smart;
+  if (status.running && status.phase === "downloading") {
+    return {
+      text: `Descargando la búsqueda inteligente · ${count(smart.downloadedMb)} de ${count(smart.downloadMb)} MB`,
+      progress:
+        smart.downloadMb > 0
+          ? smart.downloadedMb / smart.downloadMb
+          : "indeterminate",
+    };
+  }
+  if (status.running && status.phase === "embedding" && status.total > 0) {
+    return {
+      text: `Preparando búsqueda inteligente · ${count(status.done)} de ${count(status.total)}`,
+      progress: status.done / status.total,
+    };
+  }
   if (status.running)
     return { text: "Buscando cambios…", progress: "indeterminate" };
   return { text: `Al día · ${files(totalFiles)}`, progress: null };
@@ -73,6 +89,19 @@ export function statusNotes(status: IndexStatus | null): string[] {
   if (!status.readsPdf)
     notes.push(
       "Los PDF se encuentran solo por su nombre: falta el lector de PDF (pdfium.dll).",
+    );
+  const smart = status.smart;
+  if (smart.enabled && smart.note)
+    notes.push(`Búsqueda inteligente: ${smart.note}`);
+  else if (
+    smart.enabled &&
+    smart.ready &&
+    smart.total > 0 &&
+    smart.done < smart.total &&
+    !status.running
+  )
+    notes.push(
+      `La búsqueda inteligente ya funciona y sigue preparándose (${count(smart.done)} de ${count(smart.total)}) cuando el PC está libre.`,
     );
   return notes;
 }
