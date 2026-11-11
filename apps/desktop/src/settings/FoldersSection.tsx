@@ -22,19 +22,13 @@ export function FoldersSection() {
   const [status, setStatus] = useState<IndexStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
-  const [unread, setUnread] = useState<UnreadGroupView[]>([]);
 
   const reloadRoots = useCallback(
     () =>
-      Promise.all([
-        commands.listRoots().then((r) => {
-          if (r.status === "ok") setRoots(r.data);
-          else setError(r.error.message);
-        }),
-        commands.unreadFiles().then((r) => {
-          if (r.status === "ok") setUnread(r.data);
-        }),
-      ]),
+      commands.listRoots().then((r) => {
+        if (r.status === "ok") setRoots(r.data);
+        else setError(r.error.message);
+      }),
     [],
   );
 
@@ -93,8 +87,6 @@ export function FoldersSection() {
           error={status?.error}
         />
 
-        <Unread groups={unread} />
-
         {error && <ErrorText>{error}</ErrorText>}
         <ul className="divide-y divide-line rounded-window border border-line">
           {roots?.length === 0 && (
@@ -104,59 +96,14 @@ export function FoldersSection() {
             </li>
           )}
           {roots?.map((root) => (
-            <li key={root.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-2">
-                  <span className="truncate text-sm font-medium">
-                    {folderName(root.path)}
-                  </span>
-                  <span
-                    className="truncate text-xs text-muted"
-                    title={root.path}
-                  >
-                    {shortParent(root.path)}
-                  </span>
-                </span>
-                <span className="block text-xs text-muted">
-                  {root.missing ? (
-                    <span className="text-danger">
-                      No se encuentra la carpeta. ¿Está en un disco
-                      desconectado?
-                    </span>
-                  ) : (
-                    <>
-                      {files(root.files)}
-                      {root.errors > 0 && ` · ${root.errors} sin poder leer`}
-                      {root.lastIndexedAt
-                        ? ` · actualizada ${since(root.lastIndexedAt)}`
-                        : " · aún sin revisar"}
-                    </>
-                  )}
-                </span>
-              </span>
-              {confirmRemove === root.id ? (
-                <span className="flex items-center gap-2 text-sm">
-                  ¿Dejar de buscar aquí?
-                  <Button variant="danger" onClick={() => void remove(root.id)}>
-                    Sí, quitar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setConfirmRemove(null)}
-                  >
-                    No
-                  </Button>
-                </span>
-              ) : (
-                <Button
-                  variant="ghost"
-                  onClick={() => setConfirmRemove(root.id)}
-                  aria-label={`Quitar ${root.path}`}
-                >
-                  Quitar
-                </Button>
-              )}
-            </li>
+            <RootRow
+              key={root.id}
+              root={root}
+              confirming={confirmRemove === root.id}
+              onAskRemove={() => setConfirmRemove(root.id)}
+              onCancelRemove={() => setConfirmRemove(null)}
+              onRemove={() => void remove(root.id)}
+            />
           ))}
         </ul>
         <p className="text-xs text-muted">
@@ -213,56 +160,138 @@ function StatusPanel({
 }
 
 /**
- * «439 archivos no se pudieron leer», plegado: al abrirlo, los motivos con su número y
- * unos pocos ejemplos de cada uno. No se listan todos: pueden ser miles.
+ * Una carpeta: nombre, dónde está, cuántos archivos y cuándo se actualizó. Si algunos no
+ * se pudieron leer, su número es un botón con flecha que despliega, debajo de la fila,
+ * los motivos de **esa** carpeta con unos pocos ejemplos (no todos: pueden ser miles).
  */
-function Unread({ groups }: { groups: UnreadGroupView[] }) {
-  const total = groups.reduce((n, g) => n + g.count, 0);
-  if (total === 0) return null;
+function RootRow({
+  root,
+  confirming,
+  onAskRemove,
+  onCancelRemove,
+  onRemove,
+}: {
+  root: RootView;
+  confirming: boolean;
+  onAskRemove: () => void;
+  onCancelRemove: () => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [groups, setGroups] = useState<UnreadGroupView[] | null>(null);
+  const panelId = `unread-${root.id}`;
+
+  // Se piden al abrir, y de nuevo si cambia el número (una revisión acaba de terminar).
+  useEffect(() => {
+    if (!open) return;
+    void commands.unreadFiles(root.id).then((r) => {
+      if (r.status === "ok") setGroups(r.data);
+    });
+  }, [open, root.id, root.errors]);
+
   return (
-    <details className="group rounded-window border border-line px-4 py-2 text-sm">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-muted outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent">
-        <span
-          aria-hidden
-          className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
-        >
-          ›
+    <li className="px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline gap-2">
+            <span className="truncate text-sm font-medium">
+              {folderName(root.path)}
+            </span>
+            <span className="truncate text-xs text-muted" title={root.path}>
+              {shortParent(root.path)}
+            </span>
+          </span>
+          <span className="block text-xs text-muted">
+            {root.missing ? (
+              <span className="text-danger">
+                No se encuentra la carpeta. ¿Está en un disco desconectado?
+              </span>
+            ) : (
+              <>
+                {files(root.files)}
+                {root.lastIndexedAt
+                  ? ` · actualizada ${since(root.lastIndexedAt)}`
+                  : " · aún sin revisar"}
+              </>
+            )}
+          </span>
         </span>
-        {total === 1
-          ? "1 archivo no se pudo leer"
-          : `${count(total)} archivos no se pudieron leer`}
-      </summary>
-      <ul className="space-y-3 pt-3 pb-1">
-        {groups.map((g) => {
-          const reason = unreadReason(g.kind);
-          return (
-            <li key={g.kind}>
-              <p>
-                <span className="font-medium">{reason.label}</span>
-                <span className="text-muted"> · {count(g.count)}</span>
-              </p>
-              <p className="text-xs text-muted">{reason.hint}</p>
-              <ul className="mt-1 space-y-0.5">
-                {g.examples.map((path) => (
-                  <li
-                    key={path}
-                    title={path}
-                    className="truncate font-mono text-xs text-muted"
-                  >
-                    {folderName(path)}
+        {confirming ? (
+          <span className="flex items-center gap-2 text-sm">
+            ¿Dejar de buscar aquí?
+            <Button variant="danger" onClick={onRemove}>
+              Sí, quitar
+            </Button>
+            <Button variant="ghost" onClick={onCancelRemove}>
+              No
+            </Button>
+          </span>
+        ) : (
+          <Button
+            variant="ghost"
+            onClick={onAskRemove}
+            aria-label={`Quitar ${root.path}`}
+          >
+            Quitar
+          </Button>
+        )}
+      </div>
+      {!root.missing && root.errors > 0 && (
+        <>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => setOpen(!open)}
+            className="mt-1 flex items-center gap-1.5 rounded-item text-xs text-muted outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <span
+              aria-hidden
+              className={`inline-block transition-transform duration-150 motion-reduce:transition-none ${
+                open ? "rotate-90" : ""
+              }`}
+            >
+              ›
+            </span>
+            {root.errors === 1
+              ? "1 archivo no se pudo leer"
+              : `${count(root.errors)} archivos no se pudieron leer`}
+          </button>
+          {open && (
+            <ul id={panelId} className="space-y-3 pt-2 pl-4 text-sm">
+              {groups?.map((g) => {
+                const reason = unreadReason(g.kind);
+                return (
+                  <li key={g.kind}>
+                    <p>
+                      <span className="font-medium">{reason.label}</span>
+                      <span className="text-muted"> · {count(g.count)}</span>
+                    </p>
+                    <p className="text-xs text-muted">{reason.hint}</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {g.examples.map((path) => (
+                        <li
+                          key={path}
+                          title={path}
+                          className="truncate font-mono text-xs text-muted"
+                        >
+                          {folderName(path)}
+                        </li>
+                      ))}
+                      {g.count > g.examples.length && (
+                        <li className="text-xs text-muted">
+                          …y {count(g.count - g.examples.length)} más
+                        </li>
+                      )}
+                    </ul>
                   </li>
-                ))}
-                {g.count > g.examples.length && (
-                  <li className="text-xs text-muted">
-                    …y {count(g.count - g.examples.length)} más
-                  </li>
-                )}
-              </ul>
-            </li>
-          );
-        })}
-      </ul>
-    </details>
+                );
+              })}
+            </ul>
+          )}
+        </>
+      )}
+    </li>
   );
 }
 
