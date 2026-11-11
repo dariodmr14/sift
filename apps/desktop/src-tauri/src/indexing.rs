@@ -968,7 +968,7 @@ impl Worker {
             let pruned = {
                 let db = self.db();
                 let mut db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-                db.prune_embeddings(card.id)
+                db.prune_embeddings(card.id, &policy)
             };
             match pruned {
                 Ok(gone) if !gone.is_empty() => {

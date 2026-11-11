@@ -33,6 +33,8 @@ fn runtime(e: impl std::fmt::Display) -> EmbedError {
 pub struct OnnxEmbedder {
     card: &'static ModelCard,
     tokenizer: Tokenizer,
+    /// El mismo tokenizador sin cortar, para contar tokens (no se clona en cada llamada).
+    counter: Tokenizer,
     /// ONNX Runtime pide `&mut` para ejecutar: un hilo cada vez.
     session: Mutex<Session>,
     /// El entorno de ONNX Runtime tiene que vivir lo que viva la sesión.
@@ -54,6 +56,7 @@ impl OnnxEmbedder {
         }
         let mut tokenizer = Tokenizer::from_file(dir.join(card.tokenizer.name))
             .map_err(|e| EmbedError::Tokenizer(e.to_string()))?;
+        let counter = tokenizer.clone();
         tokenizer.with_padding(Some(PaddingParams {
             strategy: PaddingStrategy::BatchLongest,
             ..PaddingParams::default()
@@ -81,6 +84,7 @@ impl OnnxEmbedder {
         Ok(OnnxEmbedder {
             card,
             tokenizer,
+            counter,
             session: Mutex::new(session),
             _env: env,
             wants_token_types,
@@ -89,9 +93,7 @@ impl OnnxEmbedder {
 
     /// Cuántos tokens tiene un texto (sin cortar). Para medir cuántos pasan del tope.
     pub fn count_tokens(&self, text: &str) -> usize {
-        let mut tokenizer = self.tokenizer.clone();
-        let _ = tokenizer.with_truncation(None);
-        tokenizer
+        self.counter
             .encode(text, true)
             .map_or(0, |e| e.get_ids().len())
     }

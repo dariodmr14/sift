@@ -24,7 +24,8 @@ use crate::snippet::max_typos;
 /// Versión del formato del índice. Si cambia (campos, analizador), el índice se borra y
 /// se reconstruye desde SQLite al arrancar.
 /// v3: cada fragmento lleva el hash de su texto (la clave de su vector, Fase 4).
-pub const SCHEMA_VERSION: u32 = 3;
+/// v4: ids en columnas rápidas, para no cargar documentos hasta mostrarlos.
+pub const SCHEMA_VERSION: u32 = 4;
 const VERSION_FILE: &str = "sift-schema-version";
 /// Memoria del escritor de Tantivy (lo mínimo razonable; el indexado no tiene prisa).
 const WRITER_MEMORY: usize = 50_000_000;
@@ -93,7 +94,7 @@ fn schema() -> (Schema, Fields) {
         }
     };
     let fields = Fields {
-        chunk_id: b.add_i64_field("chunk_id", STORED),
+        chunk_id: b.add_i64_field("chunk_id", INDEXED | STORED | FAST),
         file_id: b.add_i64_field("file_id", INDEXED | STORED | FAST),
         path: b.add_text_field("path", STRING | STORED),
         name: b.add_text_field("name", text(analyzer::NAME, true)),
@@ -101,7 +102,7 @@ fn schema() -> (Schema, Fields) {
         body: b.add_text_field("body", text(analyzer::NAME, true)),
         name_fold: b.add_text_field("name_fold", text(analyzer::FOLD_NAME, false)),
         body_fold: b.add_text_field("body_fold", text(analyzer::FOLD_NAME, false)),
-        text_hash: b.add_i64_field("text_hash", INDEXED | STORED),
+        text_hash: b.add_i64_field("text_hash", INDEXED | STORED | FAST),
     };
     (b.build(), fields)
 }
@@ -248,16 +249,25 @@ impl TextIndex {
         Box::new(BooleanQuery::new(musts))
     }
 
-    /// Los `k` fragmentos que mejor encajan con la consulta.
-    pub fn search_chunks(&self, q: &ParsedQuery, k: usize) -> Result<Vec<ChunkHit>, IndexError> {
+    /// Los `k` fragmentos que mejor encajan con la consulta. Solo sus ids (columnas
+    /// rápidas): el texto se carga después, y solo de lo que se va a mostrar.
+    pub fn search_chunks(&self, q: &ParsedQuery, k: usize) -> Result<Vec<Candidate>, IndexError> {
         if q.is_empty() {
             return Ok(Vec::new());
         }
         let searcher = self.reader.searcher();
         let query = self.build_query(q);
         let top = searcher.search(&*query, &TopDocs::with_limit(k).order_by_score())?;
+        let mut ids = Ids::new(&searcher);
         top.into_iter()
-            .map(|(score, address)| self.hit(&searcher, address, score))
+            .map(|(score, address)| {
+                let (file_id, chunk_id, _) = ids.of(address)?;
+                Ok(Candidate {
+                    file_id,
+                    chunk_id,
+                    score,
+                })
+            })
             .collect()
     }
 
@@ -267,7 +277,7 @@ impl TextIndex {
         &self,
         hashes: &[(i64, f32)],
         k: usize,
-    ) -> Result<Vec<ChunkHit>, IndexError> {
+    ) -> Result<Vec<Candidate>, IndexError> {
         if hashes.is_empty() {
             return Ok(Vec::new());
         }
@@ -290,51 +300,114 @@ impl TextIndex {
             .enumerate()
             .map(|(i, (h, s))| (*h, (i, *s)))
             .collect();
+        let mut ids = Ids::new(&searcher);
         let mut hits = Vec::with_capacity(found.len());
         for (_, address) in found {
-            let d: TantivyDocument = searcher.doc(address)?;
-            let hash = d
-                .get_first(f.text_hash)
-                .and_then(|v| v.as_i64())
-                .unwrap_or_default();
+            let (file_id, chunk_id, hash) = ids.of(address)?;
             if let Some((position, similarity)) = rank.get(&hash) {
-                hits.push((*position, self.hit(&searcher, address, *similarity)?));
+                hits.push((
+                    *position,
+                    Candidate {
+                        file_id,
+                        chunk_id,
+                        score: *similarity,
+                    },
+                ));
             }
         }
         hits.sort_by_key(|(position, _)| *position);
         Ok(hits.into_iter().map(|(_, h)| h).take(k).collect())
     }
 
-    fn hit(
-        &self,
-        searcher: &tantivy::Searcher,
-        address: tantivy::DocAddress,
-        score: f32,
-    ) -> Result<ChunkHit, IndexError> {
+    /// Carga nombre, ruta y texto de unos fragmentos (los que se van a mostrar). Es lo
+    /// caro de una búsqueda, por eso se hace al final y con pocos.
+    pub fn fetch(&self, keys: &[(i64, i64)]) -> Result<Vec<ChunkHit>, IndexError> {
         let f = self.fields;
-        {
-            let d: TantivyDocument = searcher.doc(address)?;
-            let i64_of = |field| {
-                d.get_first(field)
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or_default()
-            };
-            let str_of = |field| {
-                d.get_first(field)
-                    .and_then(|v| v.as_str())
-                    .unwrap_or_default()
-                    .to_owned()
-            };
-            Ok(ChunkHit {
-                chunk_id: i64_of(f.chunk_id),
-                file_id: i64_of(f.file_id),
-                path: str_of(f.path),
-                name: str_of(f.name),
-                ext: str_of(f.ext),
-                body: str_of(f.body),
-                score,
-            })
+        let searcher = self.reader.searcher();
+        let mut out = Vec::with_capacity(keys.len());
+        for &(file_id, chunk_id) in keys {
+            let query = BooleanQuery::new(vec![
+                (
+                    Occur::Must,
+                    Box::new(TermQuery::new(
+                        Term::from_field_i64(f.file_id, file_id),
+                        IndexRecordOption::Basic,
+                    )) as Box<dyn Query>,
+                ),
+                (
+                    Occur::Must,
+                    Box::new(TermQuery::new(
+                        Term::from_field_i64(f.chunk_id, chunk_id),
+                        IndexRecordOption::Basic,
+                    )),
+                ),
+            ]);
+            let found = searcher.search(&query, &TopDocs::with_limit(1).order_by_score())?;
+            if let Some((_, address)) = found.into_iter().next() {
+                let d: TantivyDocument = searcher.doc(address)?;
+                let str_of = |field| {
+                    d.get_first(field)
+                        .and_then(|v| v.as_str())
+                        .unwrap_or_default()
+                        .to_owned()
+                };
+                out.push(ChunkHit {
+                    chunk_id,
+                    file_id,
+                    path: str_of(f.path),
+                    name: str_of(f.name),
+                    ext: str_of(f.ext),
+                    body: str_of(f.body),
+                    score: 0.0,
+                });
+            }
         }
+        Ok(out)
+    }
+}
+
+/// Un fragmento candidato: solo sus ids y su puntuación (sin cargar el documento).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Candidate {
+    pub file_id: i64,
+    pub chunk_id: i64,
+    pub score: f32,
+}
+
+/// Lee los ids de un documento de las columnas rápidas de Tantivy, que están en memoria:
+/// mucho más barato que cargar el documento entero (su texto incluido).
+struct Ids<'a> {
+    searcher: &'a tantivy::Searcher,
+    columns: std::collections::HashMap<u32, [tantivy::columnar::Column<i64>; 3]>,
+}
+
+impl<'a> Ids<'a> {
+    fn new(searcher: &'a tantivy::Searcher) -> Self {
+        Ids {
+            searcher,
+            columns: std::collections::HashMap::new(),
+        }
+    }
+
+    /// (file_id, chunk_id, text_hash)
+    fn of(&mut self, address: tantivy::DocAddress) -> Result<(i64, i64, i64), IndexError> {
+        if !self.columns.contains_key(&address.segment_ord) {
+            let fast = self
+                .searcher
+                .segment_reader(address.segment_ord)
+                .fast_fields();
+            self.columns.insert(
+                address.segment_ord,
+                [
+                    fast.i64("file_id")?,
+                    fast.i64("chunk_id")?,
+                    fast.i64("text_hash")?,
+                ],
+            );
+        }
+        let [file_id, chunk_id, hash] = &self.columns[&address.segment_ord];
+        let get = |c: &tantivy::columnar::Column<i64>| c.first(address.doc_id).unwrap_or_default();
+        Ok((get(file_id), get(chunk_id), get(hash)))
     }
 }
 

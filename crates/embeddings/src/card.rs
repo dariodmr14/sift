@@ -62,7 +62,7 @@ pub const GRANITE_97M_R2: ModelCard = ModelCard {
     max_tokens: 512,
     query_prefix: "",
     document_prefix: "",
-    min_similarity: 0.6,
+    min_similarity: 0.0,
     model: ModelFile {
         name: "model.onnx",
         url: "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2/resolve/main/onnx/model_quint8_avx2.onnx",
@@ -87,7 +87,9 @@ pub const E5_SMALL: ModelCard = ModelCard {
     max_tokens: 512,
     query_prefix: "query: ",
     document_prefix: "passage: ",
-    min_similarity: 0.8,
+    // Calibrado con eval/ (2026-11-13): ningún umbral mejoraba la híbrida; el ruido en
+    // búsquedas exactas lo evita el tipo de búsqueda (`Intent`), no el umbral.
+    min_similarity: 0.0,
     model: ModelFile {
         name: "model.onnx",
         url: "https://huggingface.co/Xenova/multilingual-e5-small/resolve/main/onnx/model_quantized.onnx",
@@ -102,8 +104,10 @@ pub const E5_SMALL: ModelCard = ModelCard {
     },
 };
 
-/// Los modelos que conoce Sift. El primero es el que se usa por defecto.
-pub const MODELS: [&ModelCard; 2] = [&GRANITE_97M_R2, &E5_SMALL];
+/// Los modelos que conoce Sift. El primero es el que se usa por defecto: e5-small, elegido
+/// por calidad en `eval/` (recall@10 híbrido 0,69 frente a 0,65 de Granite) y además más
+/// rápido (ADR 0009).
+pub const MODELS: [&ModelCard; 2] = [&E5_SMALL, &GRANITE_97M_R2];
 
 /// La ficha de un modelo por su id.
 pub fn model(id: &str) -> Option<&'static ModelCard> {

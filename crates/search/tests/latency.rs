@@ -130,7 +130,7 @@ fn p95_under_50ms_with_50k_chunks() {
     for _ in 0..20 {
         for q in queries {
             let t = Instant::now();
-            let r = search(&[&lexical], q, 8).unwrap();
+            let r = search(&idx, &[&lexical], q, 8).unwrap();
             times.push(t.elapsed().as_secs_f64() * 1000.0);
             assert!(!r.hits.is_empty(), "«{q}» no encontró nada");
         }

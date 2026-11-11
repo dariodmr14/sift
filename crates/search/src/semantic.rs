@@ -4,10 +4,13 @@
 use sift_embeddings::{Embedder, Purpose};
 
 use crate::engine::Retriever;
-use crate::index::{ChunkHit, IndexError, TextIndex};
+use crate::index::{Candidate, IndexError, TextIndex};
 use crate::intent::{Intent, semantic_weight};
 use crate::query::ParsedQuery;
 use crate::vectors::VectorIndex;
+
+/// Vecinos que se piden al índice de vectores.
+pub const SEMANTIC_CANDIDATES: usize = 40;
 
 pub struct Semantic<'a> {
     pub vectors: &'a VectorIndex,
@@ -32,7 +35,10 @@ impl Retriever for Semantic<'_> {
         true
     }
 
-    fn retrieve(&self, q: &ParsedQuery, k: usize) -> Result<Vec<ChunkHit>, IndexError> {
+    fn retrieve(&self, q: &ParsedQuery, k: usize) -> Result<Vec<Candidate>, IndexError> {
+        // Menos vecinos que fragmentos por palabras: más allá de los primeros, la semántica
+        // aporta poco y cada uno cuesta buscar sus copias (ADR 0009, rendimiento).
+        let k = k.min(SEMANTIC_CANDIDATES);
         if self.vectors.is_empty() || q.raw.trim().is_empty() {
             return Ok(Vec::new());
         }
@@ -130,7 +136,7 @@ mod tests {
             embedder: &Toy,
             min_similarity: 0.5,
         };
-        search(&[&Lexical(text), &semantic], q, 10)
+        search(text, &[&Lexical(text), &semantic], q, 10)
             .unwrap()
             .hits
             .into_iter()
