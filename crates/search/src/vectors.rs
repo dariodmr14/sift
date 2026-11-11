@@ -59,12 +59,13 @@ impl VectorIndex {
 
     /// Carga un índice guardado. Si no está, no es de estas dimensiones o está dañado,
     /// devuelve `None`: hay que reconstruirlo desde SQLite.
+    ///
+    /// El archivo lo lee Rust y usearch solo recibe los bytes: usearch (C++) abre las rutas
+    /// con la codificación ANSI de Windows y falla con carpetas como `C:\Users\Darío`.
     pub fn load(path: &Path, dims: usize) -> Option<VectorIndex> {
-        if !path.is_file() {
-            return None;
-        }
+        let bytes = std::fs::read(path).ok()?;
         let index = Index::new(&options(dims)).ok()?;
-        index.load(path.to_str()?).ok()?;
+        index.load_from_buffer(&bytes).ok()?;
         (index.dimensions() == dims).then(|| VectorIndex {
             index: RwLock::new(index),
             dims,
@@ -72,11 +73,20 @@ impl VectorIndex {
     }
 
     /// Guarda en un temporal y lo cambia de nombre: un cierre a mitad no deja un archivo
-    /// a medias (y si lo dejara, `load` fallaría y se reconstruiría).
+    /// a medias (y si lo dejara, `load` fallaría y se reconstruiría). Como en `load`, el
+    /// archivo lo escribe Rust (rutas con tildes).
     pub fn save(&self, path: &Path) -> Result<(), VectorError> {
+        let bytes = {
+            let index = self.read();
+            let mut bytes = vec![0u8; index.serialized_length()];
+            index.save_to_buffer(&mut bytes).map_err(err)?;
+            bytes
+        };
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir).map_err(err)?;
+        }
         let tmp = path.with_extension("tmp");
-        let tmp_str = tmp.to_str().ok_or_else(|| err("ruta no válida"))?;
-        self.read().save(tmp_str).map_err(err)?;
+        std::fs::write(&tmp, bytes).map_err(err)?;
         std::fs::rename(&tmp, path).map_err(err)
     }
 
@@ -174,8 +184,9 @@ mod tests {
         assert_eq!(keys, [-7, 8]); // los hashes negativos también valen
         assert!(near[0].1 > 0.99 && near[0].1 <= 1.001);
 
+        // Una carpeta con tildes y eñes, como `C:\Users\Darío`: usearch sola no sabe abrirla.
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("v.usearch");
+        let path = dir.path().join("índice de Darío").join("v.usearch");
         idx.save(&path).unwrap();
         let back = VectorIndex::load(&path, 3).unwrap();
         assert_eq!(back.len(), 3);
