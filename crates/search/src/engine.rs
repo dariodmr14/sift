@@ -17,6 +17,10 @@ use crate::snippet::{Segment, highlight};
 
 /// Cuántos fragmentos pide cada recuperador antes de fusionar y agrupar.
 const CANDIDATES: usize = 100;
+/// Fragmentos de un mismo archivo que suman a su puntuación (calibrado con `eval/`:
+/// 1, 2, 3 y 5; ver ADR 0010).
+const CHUNKS_PER_FILE: usize = 3;
+
 /// De cuántos resultados por encima del límite se carga el texto: los justos para
 /// reordenar por nombre sin cargar cien documentos (lo caro de una búsqueda).
 const FETCH_MARGIN: usize = 2;
@@ -102,12 +106,31 @@ pub fn search(
     let mut lists = Vec::with_capacity(retrievers.len());
     // Archivos que encuentra algún recuperador por palabras.
     let mut by_words = std::collections::HashSet::new();
-    for r in retrievers {
-        let weight = r.weight(intent);
-        if weight <= 0.0 {
-            continue;
-        }
-        let hits = r.retrieve(&q, CANDIDATES)?;
+    // Los recuperadores, a la vez: la búsqueda tarda lo que el más lento, no la suma
+    // (las palabras y el vector de la consulta tardan parecido).
+    let active: Vec<(&dyn Retriever, f64)> = retrievers
+        .iter()
+        .map(|r| (*r, r.weight(intent)))
+        .filter(|(_, w)| *w > 0.0)
+        .collect();
+    let found: Vec<Result<Vec<Candidate>, IndexError>> = std::thread::scope(|s| {
+        let q = &q;
+        let handles: Vec<_> = active
+            .iter()
+            .skip(1)
+            .map(|(r, _)| s.spawn(move || r.retrieve(q, CANDIDATES)))
+            .collect();
+        let first = active.first().map(|(r, _)| r.retrieve(q, CANDIDATES));
+        first
+            .into_iter()
+            .chain(handles.into_iter().map(|h| {
+                // Si un recuperador entra en pánico, se propaga como si fuera en este hilo.
+                h.join().unwrap_or_else(|e| std::panic::resume_unwind(e))
+            }))
+            .collect()
+    });
+    for ((r, weight), hits) in active.into_iter().zip(found) {
+        let hits = hits?;
         if !r.by_meaning() {
             by_words.extend(hits.iter().map(|h| h.file_id));
         }
@@ -119,18 +142,29 @@ pub fn search(
         ));
     }
 
-    // Un resultado por archivo: su mejor fragmento (el primero tras fusionar). Solo se
-    // carga el texto de los primeros: es lo caro.
-    let mut seen = std::collections::HashSet::new();
-    let mut best: Vec<((i64, i64), f64)> = Vec::new();
-    for ((file_id, chunk_id), score) in rrf_weighted(&lists) {
-        if seen.insert(file_id) {
-            best.push(((file_id, chunk_id), score));
-            if best.len() >= limit * FETCH_MARGIN {
-                break;
-            }
+    // Un resultado por archivo. Su puntuación suma la de sus mejores fragmentos (hasta
+    // `CHUNKS_PER_FILE`): un apunte con varios fragmentos sobre el tema pesa más que otro
+    // con uno solo. Se enseña su mejor fragmento. Solo se carga el texto de los primeros.
+    let mut files: HashMap<i64, (usize, (i64, i64), f64, usize)> = HashMap::new();
+    for (order, ((file_id, chunk_id), score)) in rrf_weighted(&lists).into_iter().enumerate() {
+        let entry = files
+            .entry(file_id)
+            .or_insert((order, (file_id, chunk_id), 0.0, 0));
+        if entry.3 < CHUNKS_PER_FILE {
+            entry.2 += score;
+            entry.3 += 1;
         }
     }
+    let mut ranked: Vec<(usize, (i64, i64), f64)> = files
+        .into_values()
+        .map(|(order, key, score, _)| (order, key, score))
+        .collect();
+    ranked.sort_by(|a, b| b.2.total_cmp(&a.2).then(a.0.cmp(&b.0)));
+    let best: Vec<((i64, i64), f64)> = ranked
+        .into_iter()
+        .take(limit * FETCH_MARGIN)
+        .map(|(_, key, score)| (key, score))
+        .collect();
     let keys: Vec<(i64, i64)> = best.iter().map(|(k, _)| *k).collect();
     let loaded: HashMap<(i64, i64), _> = text
         .fetch(&keys)?
@@ -278,6 +312,93 @@ mod tests {
     #[test]
     fn all_words_must_match() {
         assert!(names(&sample(), "redundancia tcp ").is_empty());
+    }
+
+    #[test]
+    fn a_phrase_finds_chunks_missing_one_word_but_after_full_matches() {
+        let idx = index_with(&[
+            (1, "a.md", &["Cómo evitar la redundancia: normalizar."]),
+            (
+                2,
+                "b.md",
+                &["La redundancia en las tablas se evita normalizando."],
+            ),
+            (3, "c.md", &["Las tablas hash evitan colisiones."]),
+            (4, "d.md", &["Nada que ver."]),
+        ]);
+        // Ningún fragmento tiene las tres palabras; antes, nada. Ahora, los que tienen dos.
+        let found = names(&idx, "evitar redundancia tablas ");
+        assert_eq!(found.len(), 3, "{found:?}");
+        assert!(!found.contains(&"d.md".to_string()));
+        // Dentro de las palabras, el fragmento que lo tiene todo va primero (luego, en la
+        // fusión, un archivo con varios fragmentos parciales puede sumar más).
+        let idx = index_with(&[
+            (
+                1,
+                "parcial.md",
+                &["evitar redundancia", "evitar redundancia otra vez"],
+            ),
+            (2, "completo.md", &["evitar redundancia en tablas"]),
+        ]);
+        let chunks = idx
+            .search_chunks(&ParsedQuery::parse("evitar redundancia tablas "), 10)
+            .unwrap();
+        assert_eq!(chunks.len(), 3);
+        assert_eq!(chunks[0].file_id, 2);
+    }
+
+    #[test]
+    fn two_words_are_still_both_required() {
+        // Con dos palabras, «falta una» sería «cualquiera de las dos»: no se relaja.
+        assert!(names(&sample(), "redundancia tcp ").is_empty());
+    }
+
+    #[test]
+    fn several_good_chunks_make_a_file_rank_higher() {
+        // Mismo mejor fragmento, pero b.md tiene más fragmentos que encajan.
+        let idx = index_with(&[
+            (1, "a.md", &["redes", "otra cosa", "nada"]),
+            (2, "b.md", &["redes", "más redes", "redes otra vez"]),
+        ]);
+        let r = search(&idx, &[&Lexical(&idx)], "redes ", 10).unwrap();
+        assert_eq!(r.hits[0].name, "b.md");
+        assert!(r.hits[0].score > r.hits[1].score);
+    }
+
+    /// Un recuperador que devuelve una lista fija (para probar la fusión en paralelo).
+    struct Fixed(Vec<Candidate>, bool);
+
+    impl Retriever for Fixed {
+        fn name(&self) -> &'static str {
+            "fijo"
+        }
+        fn by_meaning(&self) -> bool {
+            self.1
+        }
+        fn retrieve(&self, _: &ParsedQuery, _: usize) -> Result<Vec<Candidate>, IndexError> {
+            Ok(self.0.clone())
+        }
+    }
+
+    #[test]
+    fn retrievers_run_together_and_all_count() {
+        let idx = sample();
+        // tema4.md (id 1): fragmentos 2 y 3; redes.md (id 4): fragmento 5.
+        let meaning = Fixed(
+            vec![Candidate {
+                file_id: 4,
+                chunk_id: 5,
+                score: 0.9,
+            }],
+            true,
+        );
+        let r = search(&idx, &[&Lexical(&idx), &meaning], "redundancia ", 10).unwrap();
+        let found: Vec<(&str, bool)> = r
+            .hits
+            .iter()
+            .map(|h| (h.name.as_str(), h.by_meaning))
+            .collect();
+        assert_eq!(found, vec![("tema4.md", false), ("redes.md", true)]);
     }
 
     #[test]
