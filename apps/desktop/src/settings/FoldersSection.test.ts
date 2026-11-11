@@ -50,7 +50,61 @@ describe("statusLine", () => {
     total: 0,
     watching: true,
     readsPdf: true,
+    smart: {
+      enabled: true,
+      ready: true,
+      done: 0,
+      total: 0,
+      downloadedMb: 0,
+      downloadMb: 0,
+    },
   };
+
+  it("descargando el modelo, en MB", () => {
+    const s = {
+      ...base,
+      running: true,
+      phase: "downloading" as const,
+      smart: { ...base.smart, ready: false, downloadedMb: 45, downloadMb: 123 },
+    };
+    const line = statusLine(s, 0, 1);
+    expect(line.text).toBe(
+      "Descargando la búsqueda inteligente · 45 de 123 MB",
+    );
+    expect(line.progress).toBeCloseTo(45 / 123);
+  });
+
+  it("preparando la búsqueda inteligente, con su progreso", () => {
+    const s = {
+      ...base,
+      running: true,
+      phase: "embedding" as const,
+      done: 3200,
+      total: 13000,
+    };
+    expect(statusLine(s, 0, 1).text).toBe(
+      "Preparando búsqueda inteligente · 3.200 de 13.000",
+    );
+  });
+
+  it("explica por qué la búsqueda inteligente no está lista", () => {
+    const notes = statusNotes({
+      ...base,
+      smart: {
+        ...base.smart,
+        ready: false,
+        note: "Sin conexión: se descargará cuando la haya.",
+      },
+    });
+    expect(notes).toEqual([
+      "Búsqueda inteligente: Sin conexión: se descargará cuando la haya.",
+    ]);
+    const halfway = statusNotes({
+      ...base,
+      smart: { ...base.smart, done: 10, total: 30 },
+    });
+    expect(halfway[0]).toContain("10 de 30");
+  });
 
   it("en pausa si el PC está ocupado, sin perder la cuenta", () => {
     const s = {
