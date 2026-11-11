@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { IndexStatus } from "../bindings";
 import { duration, files, since } from "../format";
-import { folderName, shortParent, statusLine } from "./folders";
+import { folderName, shortParent, statusLine, statusNotes } from "./folders";
 
 describe("since", () => {
   const now = Date.parse("2026-11-10T12:00:00Z");
@@ -48,7 +48,37 @@ describe("statusLine", () => {
     scanned: 0,
     done: 0,
     total: 0,
+    watching: true,
+    readsPdf: true,
   };
+
+  it("en pausa si el PC está ocupado, sin perder la cuenta", () => {
+    const s = {
+      ...base,
+      running: true,
+      phase: "paused" as const,
+      done: 32,
+      total: 120,
+    };
+    const line = statusLine(s, 0, 1);
+    expect(line.text).toBe("En pausa mientras usas el PC · 32 de 120 archivos");
+    expect(line.progress).toBeCloseTo(32 / 120);
+  });
+
+  it("cambios recientes, sin barra", () => {
+    const s = { ...base, running: true, phase: "updating" as const };
+    expect(statusLine(s, 10, 1)).toEqual({
+      text: "Actualizando lo que acabas de cambiar…",
+      progress: null,
+    });
+  });
+
+  it("avisa si no hay vigilancia o lector de PDF", () => {
+    expect(statusNotes(base)).toEqual([]);
+    const notes = statusNotes({ ...base, watching: false, readsPdf: false });
+    expect(notes).toHaveLength(2);
+    expect(notes[1]).toContain("PDF");
+  });
 
   it("al día, con el total de archivos", () => {
     expect(statusLine(base, 1240, 2)).toEqual({

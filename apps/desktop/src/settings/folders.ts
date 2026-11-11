@@ -28,8 +28,8 @@ export interface StatusLine {
 }
 
 /**
- * «Al día · 1.240 archivos», «Buscando cambios…», «Leyendo 32 de 120 archivos».
- * `totalFiles` es la suma de archivos de las carpetas (de `listRoots`).
+ * «Al día · 1.240 archivos», «Buscando cambios…», «Leyendo 32 de 120 archivos», «En
+ * pausa…». `totalFiles` es la suma de archivos de las carpetas (de `listRoots`).
  */
 export function statusLine(
   status: IndexStatus | null,
@@ -39,15 +39,42 @@ export function statusLine(
   if (folders === 0)
     return { text: "Añade una carpeta para empezar.", progress: null };
   if (!status) return { text: "Comprobando…", progress: null };
-  if (status.running && status.phase === "reading" && status.total > 0) {
+  const reading = status.running && status.total > 0;
+  if (reading && status.phase === "reading") {
     return {
       text: `Leyendo ${count(Math.min(status.done + 1, status.total))} de ${files(status.total)}`,
       progress: status.done / status.total,
     };
   }
+  if (reading && status.phase === "paused") {
+    return {
+      text: `En pausa mientras usas el PC · ${count(status.done)} de ${files(status.total)}`,
+      progress: status.done / status.total,
+    };
+  }
+  if (status.running && status.phase === "updating")
+    return { text: "Actualizando lo que acabas de cambiar…", progress: null };
   if (status.running)
     return { text: "Buscando cambios…", progress: "indeterminate" };
   return { text: `Al día · ${files(totalFiles)}`, progress: null };
+}
+
+/**
+ * Avisos que no son errores pero conviene saber: sin vigilancia en tiempo real, los
+ * cambios se ven al volver a abrir Sift; sin lector de PDF, los PDF van solo por nombre.
+ */
+export function statusNotes(status: IndexStatus | null): string[] {
+  if (!status) return [];
+  const notes: string[] = [];
+  if (!status.watching)
+    notes.push(
+      "Los cambios en tus carpetas se verán la próxima vez que abras Sift: no se pudieron vigilar en tiempo real.",
+    );
+  if (!status.readsPdf)
+    notes.push(
+      "Los PDF se encuentran solo por su nombre: falta el lector de PDF (pdfium.dll).",
+    );
+  return notes;
 }
 
 /** Por qué no se pudo leer un archivo, dicho para cualquiera (códigos de Rust). */

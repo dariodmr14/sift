@@ -12,6 +12,7 @@ import {
   folderName,
   shortParent,
   statusLine,
+  statusNotes,
   unreadReason,
   type StatusLine,
 } from "./folders";
@@ -85,6 +86,7 @@ export function FoldersSection() {
           running={status?.running ?? false}
           lastRun={status?.last?.seconds ?? undefined}
           error={status?.error}
+          notes={statusNotes(status)}
         />
 
         {error && <ErrorText>{error}</ErrorText>}
@@ -110,9 +112,10 @@ export function FoldersSection() {
           Sift solo mira lo que sirve para buscar: documentos, textos, código y,
           por su nombre, imágenes y vídeos. Se salta programas y archivos
           internos de otras herramientas. Por ahora lee el contenido de textos,
-          Markdown y código; los PDF y Word se encuentran por su nombre. Quitar
-          una carpeta solo hace que Sift deje de buscar en ella: tus archivos no
-          se tocan.
+          Markdown, código, PDF, Word y PowerPoint; las hojas de cálculo se
+          encuentran por su nombre. Lee en segundo plano y se pausa si estás
+          usando mucho el PC. Quitar una carpeta solo hace que Sift deje de
+          buscar en ella: tus archivos no se tocan.
         </p>
       </section>
 
@@ -126,11 +129,13 @@ function StatusPanel({
   running,
   lastRun,
   error,
+  notes,
 }: {
   line: StatusLine;
   running: boolean;
   lastRun: number | undefined;
   error: string | null | undefined;
+  notes: string[];
 }) {
   return (
     <div className="space-y-2 rounded-window border border-line px-4 py-3">
@@ -151,10 +156,15 @@ function StatusPanel({
       {line.progress !== null && <ProgressBar value={line.progress} />}
       {!running && lastRun !== undefined && (
         <p className="text-xs text-muted">
-          La última revisión tardó {duration(lastRun)}. Sift solo vuelve a leer
-          lo que ha cambiado.
+          La última revisión completa tardó {duration(lastRun)}. Desde entonces,
+          Sift ve tus cambios al momento y solo vuelve a leer lo que cambia.
         </p>
       )}
+      {notes.map((note) => (
+        <p key={note} className="text-xs text-muted">
+          {note}
+        </p>
+      ))}
       {error && <ErrorText>{error}</ErrorText>}
     </div>
   );
