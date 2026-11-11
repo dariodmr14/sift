@@ -72,6 +72,13 @@ export const commands = {
 	 *  listan todos).
 	 */
 	unreadFiles: (rootId: number) => typedError<UnreadGroupView[], AppError>(__TAURI_INVOKE("unread_files", { rootId })),
+	/**  ¿Se buscan imágenes y vídeos por su nombre? (Ajustes → Carpetas → Avanzado) */
+	getIndexMedia: () => __TAURI_INVOKE<boolean>("get_index_media"),
+	/**
+	 *  Activa o desactiva buscar imágenes y vídeos por nombre, y revisa las carpetas: los
+	 *  que sobran salen del índice y los que faltan entran.
+	 */
+	setIndexMedia: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_index_media", { enabled })),
 	/**  Elige una carpeta con el diálogo de Windows y empieza a indexarla. */
 	addRoot: () => typedError<string | null, AppError>(__TAURI_INVOKE("add_root")),
 	/**  Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan). */

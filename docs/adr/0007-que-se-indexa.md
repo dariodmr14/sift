@@ -22,7 +22,7 @@ Ese ruido ensucia los resultados (escribir «ajustes» devolvía antes código g
 
 ### 1. Lista de formatos permitidos, no de formatos prohibidos
 
-Solo se indexan textos, Markdown, código y documentos (`sift_extract::is_indexable`). Todo lo demás ni se guarda ni se cuenta: binarios, compilados, imágenes, vídeo, audio, comprimidos, archivos sin extensión (salvo nombres conocidos: `README`, `Makefile`, `Dockerfile`…).
+Solo se indexan textos, Markdown, código, documentos y —por nombre— imágenes y vídeos (`sift_extract::is_indexable`). Todo lo demás ni se guarda ni se cuenta: binarios, compilados, audio, comprimidos, archivos sin extensión (salvo nombres conocidos: `README`, `Makefile`, `Dockerfile`…).
 
 Una lista de prohibidos nunca se acaba (cada herramienta inventa extensiones: `.meta`, `.hyb`, `.prefs`…); una de permitidos es corta y se amplía cuando hace falta.
 
@@ -49,6 +49,6 @@ La migración v3 añade, sin tocar los que ya hubiera: compilación (`bin`, `obj
 ## Consecuencias
 
 - Lo que ya estaba indexado y deja de ser útil **se borra solo** en la siguiente revisión (el indexador lo trata como «ya no está»). Tras un borrado grande, la base de datos se compacta (`VACUUM`).
-- Las imágenes y los vídeos dejan de encontrarse por nombre. Si se echa de menos, se añade un tipo «solo por nombre» a la lista; es un cambio de una línea.
+- Las imágenes y los vídeos se encuentran **por nombre** (`Kind::Media`; nunca se lee su contenido), salvo en carpetas ignoradas o generadas. Se puede desactivar en Ajustes → Carpetas → Avanzado (`indexing.skipMedia`). Se añadió tras probar la primera versión, en la que no se encontraban de ninguna forma.
 - `bin` y `out` como patrones pueden esconder una carpeta del usuario que se llame así. Se asume: son nombres de compilación casi siempre, y el patrón se puede quitar en Avanzado.
 - La detección por contexto cuesta dos o tres consultas al disco por carpeta al recorrer; frente a no leer 35.000 archivos, es despreciable.

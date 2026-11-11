@@ -215,8 +215,9 @@ impl Worker {
                 return;
             }
         };
+        let media = !crate::load_settings(&self.app).indexing.skip_media;
         let rules = match IgnoreRules::new(&patterns) {
-            Ok(r) => r,
+            Ok(r) => r.with_media(media),
             Err(e) => {
                 self.update(|s| s.error = Some(e.to_string()));
                 return;
