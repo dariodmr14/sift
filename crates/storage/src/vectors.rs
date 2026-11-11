@@ -210,15 +210,22 @@ impl Database {
             .execute("DELETE FROM embeddings WHERE model <> ?1", [keep])?)
     }
 
-    /// Borra los vectores de `model` cuyo texto ya no usa ningún fragmento. Devuelve sus
-    /// hashes (para quitarlos también del índice).
-    pub fn prune_embeddings(&mut self, keep: &str) -> Result<Vec<i64>, StorageError> {
+    /// Borra los vectores de `model` que ya no hacen falta: su texto no lo usa ningún
+    /// fragmento, o solo fragmentos que la política deja fuera (p. ej. tras cambiar el tope
+    /// de los `.txt`). Devuelve sus hashes (para quitarlos también del índice).
+    pub fn prune_embeddings(
+        &mut self,
+        keep: &str,
+        policy: &EmbedPolicy,
+    ) -> Result<Vec<i64>, StorageError> {
+        let (filter, _) = policy.sql();
         let tx = self.conn.transaction()?;
         let orphans: Vec<i64> = tx
-            .prepare(
+            .prepare(&format!(
                 "SELECT e.text_hash FROM embeddings e WHERE e.model = ?1
-                 AND NOT EXISTS (SELECT 1 FROM chunks c WHERE c.text_hash = e.text_hash)",
-            )?
+                 AND NOT EXISTS (SELECT 1 FROM chunks c JOIN files f ON f.id = c.file_id
+                                 WHERE c.text_hash = e.text_hash AND ({filter}))"
+            ))?
             .query_map([keep], |r| r.get(0))?
             .collect::<Result<_, _>>()?;
         for hash in &orphans {
@@ -384,6 +391,26 @@ mod tests {
     }
 
     #[test]
+    fn vectors_left_outside_the_policy_are_pruned() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        let texts: Vec<String> = (0..30).map(|i| format!("dato {i}")).collect();
+        let refs: Vec<&str> = texts.iter().map(String::as_str).collect();
+        add(&mut db, root, r"C:\Uni\volcado.txt", "txt", 1, &refs);
+        // Vectores de los 30 fragmentos (con una regla anterior más generosa)…
+        let all: Vec<(i64, Vec<f32>)> = texts.iter().map(|t| (text_hash(t), vec![1.0])).collect();
+        db.save_embeddings("m", &all).unwrap();
+        // …y con la de ahora solo valen los 20 primeros.
+        assert_eq!(
+            db.prune_embeddings("m", &EmbedPolicy::standard())
+                .unwrap()
+                .len(),
+            10
+        );
+        assert_eq!(db.count_embeddings("m").unwrap(), 20);
+    }
+
+    #[test]
     fn chunks_saved_before_v5_get_their_hash() {
         let mut db = Database::open_in_memory().unwrap();
         let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
@@ -415,7 +442,10 @@ mod tests {
         .unwrap();
         db.save_embeddings("viejo", &[(text_hash("sigue aquí"), vec![1.0])])
             .unwrap();
-        assert_eq!(db.prune_embeddings("m").unwrap(), [text_hash("ya no está")]);
+        assert_eq!(
+            db.prune_embeddings("m", &EmbedPolicy::standard()).unwrap(),
+            [text_hash("ya no está")]
+        );
         assert_eq!(db.count_embeddings("m").unwrap(), 1);
         // Los del modelo anterior siguen ahí hasta que se cambia de verdad.
         assert_eq!(db.count_embeddings("viejo").unwrap(), 1);

@@ -99,12 +99,13 @@ fn lexical_index(db: &Database) -> TextIndex {
     index
 }
 
-/// Qué se vectoriza en la evaluación. Por defecto, solo documentos y apuntes: es donde
-/// están las respuestas de `eval/`, y comparar modelos sobre todo el código costaría más
-/// de una hora de CPU. `SIFT_EVAL_POLICY=standard` usa la política completa de la app.
+/// Qué se vectoriza en la evaluación: por defecto, lo mismo que la app (documentos,
+/// apuntes, código y `.txt` con su tope), para que las cifras sean las de verdad.
+/// `SIFT_EVAL_POLICY=docs` se queda con documentos y apuntes: sirvió para comparar modelos
+/// sin pasar una hora vectorizando código.
 fn eval_policy() -> EmbedPolicy {
     let mut policy = EmbedPolicy::standard();
-    if std::env::var("SIFT_EVAL_POLICY").as_deref() != Ok("standard") {
+    if std::env::var("SIFT_EVAL_POLICY").as_deref() == Ok("docs") {
         policy.tiers.truncate(2);
     }
     policy
@@ -204,7 +205,7 @@ impl Retriever for Always<'_> {
         &self,
         q: &ParsedQuery,
         k: usize,
-    ) -> Result<Vec<sift_search::index::ChunkHit>, sift_search::IndexError> {
+    ) -> Result<Vec<sift_search::Candidate>, sift_search::IndexError> {
         self.0.retrieve(q, k)
     }
 }
@@ -276,6 +277,7 @@ fn grade(found: &[String], globs: &[GlobMatcher]) -> (f64, f64) {
 
 fn run(
     label: &str,
+    text: &TextIndex,
     retrievers: &[&dyn Retriever],
     m: &Matchers,
     root: &str,
@@ -285,7 +287,7 @@ fn run(
     let mut times = Vec::new();
     for (q, globs) in &m.0 {
         let started = Instant::now();
-        let hits = search(retrievers, &q.query, 10).unwrap().hits;
+        let hits = search(text, retrievers, &q.query, 10).unwrap().hits;
         times.push(started.elapsed().as_secs_f64() * 1000.0);
         let found: Vec<String> = hits
             .iter()
@@ -350,12 +352,10 @@ fn recall_at_10_words_meaning_and_hybrid() {
         "|------------------------------------|-------------|-------------|-------------|-------------|"
     );
     let lexical = Lexical(&text);
-    let (words, mut t) = run("palabras", &[&lexical], &m, &root, false);
+    let (words, _) = run("palabras", &text, &[&lexical], &m, &root, false);
     row("solo palabras", &words);
-    let lexical_p95 = percentile(&mut t, 0.95);
 
-    let wanted =
-        std::env::var("SIFT_EVAL_MODELS").unwrap_or_else(|_| "granite-97m-r2,e5-small".into());
+    let wanted = std::env::var("SIFT_EVAL_MODELS").unwrap_or_else(|_| "e5-small".into());
     let threads = std::env::var("SIFT_EVAL_THREADS")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -371,7 +371,18 @@ fn recall_at_10_words_meaning_and_hybrid() {
                 continue;
             }
         };
-        token_stats(&db, &embedder, card);
+        if std::env::var("SIFT_EVAL_TOKENS").is_ok_and(|v| v == "1") {
+            token_stats(&db, &embedder, card);
+        }
+        // Fuera lo que la política ya no vectoriza (p. ej. lo de una regla anterior).
+        let pruned = db.prune_embeddings(card.id, &eval_policy()).unwrap();
+        if !pruned.is_empty() {
+            eprintln!(
+                "{}: {} vectores fuera de la política, quitados",
+                card.id,
+                pruned.len()
+            );
+        }
         embed_all(&mut db, &embedder, card);
         let vectors = vector_index(&db, card);
 
@@ -385,7 +396,7 @@ fn recall_at_10_words_meaning_and_hybrid() {
                 embedder: &embedder,
                 min_similarity: threshold,
             };
-            let (hybrid, _) = run("híbrida", &[&lexical, &semantic], &m, &root, false);
+            let (hybrid, _) = run("híbrida", &text, &[&lexical, &semantic], &m, &root, false);
             let total = |s: &HashMap<String, Score>| s["total"].recall / s["total"].n as f64;
             let exact =
                 |s: &HashMap<String, Score>| s.get("exact").map_or(0.0, |x| x.recall / x.n as f64);
@@ -405,7 +416,7 @@ fn recall_at_10_words_meaning_and_hybrid() {
             min_similarity: threshold,
         };
         let only = Always(&semantic);
-        let (meaning, _) = run(card.id, &[&only], &m, &root, false);
+        let (meaning, _) = run(card.id, &text, &[&only], &m, &root, false);
         row(&format!("solo semántica · {}", card.id), &meaning);
         row(
             &format!("híbrida · {} (umbral {threshold})", card.id),
@@ -422,16 +433,24 @@ fn recall_at_10_words_meaning_and_hybrid() {
         };
         let mut times = Vec::new();
         for _ in 0..5 {
-            let (_, t) = run("lat", &[&lexical, &semantic], &m, &root, false);
+            let (_, t) = run("lat", &text, &[&lexical, &semantic], &m, &root, false);
             times.extend(t);
         }
         let (p50, p95) = (percentile(&mut times, 0.5), percentile(&mut times, 0.95));
+        // Lo que tarda en salir lo primero: solo palabras (lo que el plan B enseña ya).
+        let mut first = Vec::new();
+        for _ in 0..5 {
+            let (_, t) = run("lat", &text, &[&lexical], &m, &root, false);
+            first.extend(t);
+        }
         report.push(format!(
-            "{}: híbrida p50 {p50:.1} ms · p95 {p95:.1} ms (solo palabras p95 {lexical_p95:.1} ms)",
-            card.id
+            "{}: híbrida p50 {p50:.1} ms · p95 {p95:.1} ms · solo palabras p50 {:.1} ms · p95 {:.1} ms",
+            card.id,
+            percentile(&mut first, 0.5),
+            percentile(&mut first, 0.95)
         ));
         eprintln!("  fallos de la híbrida con {}:", card.id);
-        run(card.id, &[&lexical, &semantic], &m, &root, true);
+        run(card.id, &text, &[&lexical, &semantic], &m, &root, true);
     }
     eprintln!("\nrecall@10 (MRR entre paréntesis)");
     for line in report {

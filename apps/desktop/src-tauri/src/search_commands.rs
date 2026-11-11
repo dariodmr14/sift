@@ -81,7 +81,7 @@ pub async fn search_files(
     if let Some(semantic) = &semantic {
         retrievers.push(semantic);
     }
-    let results = sift_search::search(&retrievers, &query, MAX_FILE_HITS)
+    let results = sift_search::search(&indexing.index, &retrievers, &query, MAX_FILE_HITS)
         .map_err(|e| AppError::System(e.to_string()))?;
     if !query.trim().is_empty() {
         app.state::<SearchStats>()

@@ -13,7 +13,7 @@ pub mod snippet;
 pub mod vectors;
 
 pub use engine::{FileHit, Lexical, Retriever, SearchResults, search};
-pub use index::{IndexError, TextIndex};
+pub use index::{Candidate, IndexError, TextIndex};
 pub use intent::Intent;
 pub use query::ParsedQuery;
 pub use semantic::Semantic;
