@@ -1,7 +1,12 @@
-//! Extracción de texto de archivos.
+//! Extracción de texto de archivos, y qué archivos merece la pena indexar.
 //!
-//! Fase 2: texto plano, Markdown y código. PDF y Word llegan en la Fase 3; mientras, se
-//! indexan solo por nombre ([`Kind::NameOnly`]).
+//! Solo se indexan **formatos útiles para buscar**: textos, código y documentos. Lo demás
+//! (programas, compilados, imágenes, vídeos, cachés, archivos sin extensión…) ni se
+//! guarda ni se cuenta: en una carpeta de la universidad real, 69.000 de 86.500 archivos
+//! eran eso, y solo hacían ruido en los resultados ([`Kind::Other`]).
+//!
+//! Fase 2: se lee el contenido de texto plano, Markdown y código. Los documentos (PDF,
+//! Word…) se encuentran por nombre hasta la Fase 3 ([`Kind::Document`]).
 //!
 //! La codificación importa: en Windows hay muchos apuntes en Windows-1252 (Bloc de notas
 //! antiguo) y en UTF-16 (algunas herramientas). Leídos como UTF-8, «normalización» saldría
@@ -16,12 +21,16 @@ pub enum Kind {
     Text,
     Markdown,
     Code,
-    /// Se indexa por nombre, sin contenido (por ahora: PDF, Word, imágenes…).
-    NameOnly,
+    /// Documento que se indexa por nombre, sin contenido (por ahora: PDF, Word…).
+    Document,
+    /// No se indexa: binarios, compilados, imágenes, vídeos, cachés…
+    Other,
 }
 
-const TEXT: &[&str] = &[
-    "txt", "text", "log", "csv", "tsv", "ini", "cfg", "conf", "rtf",
+const TEXT: &[&str] = &["txt", "text", "csv", "tsv", "ini", "cfg", "conf", "rtf"];
+/// Documentos: por nombre hasta que la Fase 3 lea su contenido.
+const DOCUMENT: &[&str] = &[
+    "pdf", "doc", "docx", "odt", "ppt", "pptx", "odp", "xls", "xlsx", "ods", "epub",
 ];
 const MARKDOWN: &[&str] = &["md", "markdown", "mdx", "rst", "adoc", "org", "tex"];
 const CODE: &[&str] = &[
@@ -92,13 +101,20 @@ pub fn kind_for(ext: &str) -> Kind {
         Kind::Code
     } else if TEXT.contains(&ext) {
         Kind::Text
+    } else if DOCUMENT.contains(&ext) {
+        Kind::Document
     } else {
-        Kind::NameOnly
+        Kind::Other
     }
 }
 
+/// ¿Merece la pena indexar este archivo? Solo textos, código y documentos.
+pub fn is_indexable(path: &Path) -> bool {
+    kind_for(&extension(path)) != Kind::Other
+}
+
 /// Extensión de un archivo en minúsculas y sin punto. Archivos sin extensión con nombre
-/// conocido (`Dockerfile`, `Makefile`) cuentan como código.
+/// conocido cuentan como código (`Dockerfile`, `Makefile`) o texto (`README`, `LICENSE`).
 pub fn extension(path: &Path) -> String {
     match path.extension() {
         Some(e) => e.to_string_lossy().to_ascii_lowercase(),
@@ -109,6 +125,9 @@ pub fn extension(path: &Path) -> String {
             match name.as_deref() {
                 Some("dockerfile") => "dockerfile".into(),
                 Some("makefile") => "makefile".into(),
+                Some("readme" | "leeme" | "license" | "licencia" | "notas" | "todo") => {
+                    "txt".into()
+                }
                 _ => String::new(),
             }
         }
@@ -132,9 +151,67 @@ pub enum ExtractError {
     Io(#[from] std::io::Error),
 }
 
+/// Por qué no se pudo leer el contenido de un archivo, en categorías que entiende
+/// cualquiera. Es lo que agrupa Ajustes → Carpetas («439 sin poder leer»).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum UnreadReason {
+    /// El contenido no es lo que dice la extensión (un `.txt` que en realidad es binario).
+    Unsupported,
+    TooLarge,
+    NoPermission,
+    /// Protegido con contraseña (documentos, Fase 3).
+    Protected,
+    /// Dañado o incompleto (documentos, Fase 3).
+    Damaged,
+    Other,
+}
+
+impl UnreadReason {
+    pub const ALL: [UnreadReason; 6] = [
+        UnreadReason::Unsupported,
+        UnreadReason::TooLarge,
+        UnreadReason::NoPermission,
+        UnreadReason::Protected,
+        UnreadReason::Damaged,
+        UnreadReason::Other,
+    ];
+
+    /// Código estable con el que se guarda en la base de datos.
+    pub fn code(self) -> &'static str {
+        match self {
+            UnreadReason::Unsupported => "unsupported",
+            UnreadReason::TooLarge => "tooLarge",
+            UnreadReason::NoPermission => "noPermission",
+            UnreadReason::Protected => "protected",
+            UnreadReason::Damaged => "damaged",
+            UnreadReason::Other => "other",
+        }
+    }
+
+    pub fn from_code(code: &str) -> UnreadReason {
+        Self::ALL
+            .into_iter()
+            .find(|r| r.code() == code)
+            .unwrap_or(UnreadReason::Other)
+    }
+}
+
+impl ExtractError {
+    pub fn reason(&self) -> UnreadReason {
+        match self {
+            ExtractError::TooLarge(_) => UnreadReason::TooLarge,
+            ExtractError::Binary => UnreadReason::Unsupported,
+            ExtractError::Io(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+                UnreadReason::NoPermission
+            }
+            ExtractError::Io(_) => UnreadReason::Other,
+        }
+    }
+}
+
 /// Lee el texto de un archivo si su tipo lo permite. `Ok(None)` = solo nombre.
 pub fn extract(path: &Path, max_bytes: u64) -> Result<Option<Extracted>, ExtractError> {
-    if kind_for(&extension(path)) == Kind::NameOnly {
+    if matches!(kind_for(&extension(path)), Kind::Document | Kind::Other) {
         return Ok(None);
     }
     let file = std::fs::File::open(path)?;
@@ -178,15 +255,59 @@ mod tests {
         assert_eq!(kind_for("MD"), Kind::Markdown);
         assert_eq!(kind_for("rs"), Kind::Code);
         assert_eq!(kind_for("txt"), Kind::Text);
-        assert_eq!(kind_for("pdf"), Kind::NameOnly);
-        assert_eq!(kind_for(""), Kind::NameOnly);
+        assert_eq!(kind_for("pdf"), Kind::Document);
+        assert_eq!(kind_for(""), Kind::Other);
+    }
+
+    #[test]
+    fn only_text_code_and_documents_are_worth_indexing() {
+        for yes in [
+            "Tema 4.pdf",
+            "apuntes.md",
+            "Main.java",
+            "notas.docx",
+            "README",
+            "Makefile",
+        ] {
+            assert!(is_indexable(Path::new(yes)), "{yes}");
+        }
+        for no in [
+            "foto.png",
+            "clase.mp4",
+            "app.exe",
+            "lib.dll",
+            "Main.class",
+            "datos.bin",
+            "a.o",
+            "practica.zip",
+            "Player.cs.meta",
+            "debug.log",
+            "sin_extension",
+        ] {
+            assert!(!is_indexable(Path::new(no)), "{no}");
+        }
+    }
+
+    #[test]
+    fn errors_map_to_plain_reasons() {
+        assert_eq!(ExtractError::Binary.reason(), UnreadReason::Unsupported);
+        assert_eq!(ExtractError::TooLarge(9).reason(), UnreadReason::TooLarge);
+        let denied = std::io::Error::from(std::io::ErrorKind::PermissionDenied);
+        assert_eq!(
+            ExtractError::Io(denied).reason(),
+            UnreadReason::NoPermission
+        );
+        for r in UnreadReason::ALL {
+            assert_eq!(UnreadReason::from_code(r.code()), r);
+        }
     }
 
     #[test]
     fn extension_is_lowercase_and_knows_dockerfile() {
         assert_eq!(extension(Path::new(r"C:\a\Tema.MD")), "md");
         assert_eq!(extension(Path::new(r"C:\a\Dockerfile")), "dockerfile");
-        assert_eq!(extension(Path::new(r"C:\a\LEEME")), "");
+        assert_eq!(extension(Path::new(r"C:\a\LEEME")), "txt");
+        assert_eq!(extension(Path::new(r"C:\a\datos")), "");
     }
 
     #[test]

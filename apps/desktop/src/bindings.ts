@@ -67,6 +67,8 @@ export const commands = {
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
 	searchFiles: (query: string, seq: number) => typedError<SearchResponse, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
 	listRoots: () => typedError<RootView_Serialize[], AppError>(__TAURI_INVOKE("list_roots")),
+	/**  Los archivos que no se pudieron leer, agrupados por motivo (no se listan todos). */
+	unreadFiles: () => typedError<UnreadGroupView[], AppError>(__TAURI_INVOKE("unread_files")),
 	/**  Elige una carpeta con el diálogo de Windows y empieza a indexarla. */
 	addRoot: () => typedError<string | null, AppError>(__TAURI_INVOKE("add_root")),
 	/**  Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan). */
@@ -514,6 +516,14 @@ export type Status_Serialize = {
 };
 
 export type Theme = "light" | "dark";
+
+/**  Archivos que no se pudieron leer por un mismo motivo, con unos pocos ejemplos. */
+export type UnreadGroupView = {
+	/**  `unsupported`, `tooLarge`, `noPermission`, `protected`, `damaged` u `other`. */
+	kind: string,
+	count: number,
+	examples: string[],
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

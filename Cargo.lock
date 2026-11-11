@@ -3637,6 +3637,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sift-core",
+ "sift-extract",
  "sift-indexer",
  "sift-search",
  "sift-spaces",

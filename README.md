@@ -62,6 +62,7 @@ cargo test --workspace
 - [ADR 0004](docs/adr/0004-espacios-en-sqlite.md): Espacios en SQLite, migraciones y aprobación de comandos.
 - [ADR 0005](docs/adr/0005-direccion-visual-vidrio.md): dirección visual «Vidrio».
 - [ADR 0006](docs/adr/0006-arquitectura-de-busqueda.md): arquitectura de búsqueda pensada para la Fase 4 (fragmentos, recuperadores y RRF).
+- [ADR 0007](docs/adr/0007-que-se-indexa.md): qué se indexa (solo formatos útiles) y qué carpetas se saltan.
 
 ## Lo aprendido
 

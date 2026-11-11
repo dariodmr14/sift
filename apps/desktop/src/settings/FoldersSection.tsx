@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { commands, events, type IndexStatus, type RootView } from "../bindings";
+import {
+  commands,
+  events,
+  type IndexStatus,
+  type RootView,
+  type UnreadGroupView,
+} from "../bindings";
 import { Button, ErrorText } from "./ui";
-import { duration, files, since } from "../format";
+import { count, duration, files, since } from "../format";
 import {
   folderName,
   shortParent,
   statusLine,
+  unreadReason,
   type StatusLine,
 } from "./folders";
 
@@ -15,13 +22,19 @@ export function FoldersSection() {
   const [status, setStatus] = useState<IndexStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<number | null>(null);
+  const [unread, setUnread] = useState<UnreadGroupView[]>([]);
 
   const reloadRoots = useCallback(
     () =>
-      commands.listRoots().then((r) => {
-        if (r.status === "ok") setRoots(r.data);
-        else setError(r.error.message);
-      }),
+      Promise.all([
+        commands.listRoots().then((r) => {
+          if (r.status === "ok") setRoots(r.data);
+          else setError(r.error.message);
+        }),
+        commands.unreadFiles().then((r) => {
+          if (r.status === "ok") setUnread(r.data);
+        }),
+      ]),
     [],
   );
 
@@ -79,6 +92,8 @@ export function FoldersSection() {
           lastRun={status?.last?.seconds ?? undefined}
           error={status?.error}
         />
+
+        <Unread groups={unread} />
 
         {error && <ErrorText>{error}</ErrorText>}
         <ul className="divide-y divide-line rounded-window border border-line">
@@ -145,9 +160,11 @@ export function FoldersSection() {
           ))}
         </ul>
         <p className="text-xs text-muted">
-          Quitar una carpeta solo hace que Sift deje de buscar en ella: tus
-          archivos no se tocan. Por ahora se lee el contenido de textos,
-          Markdown y código; los PDF y Word se encuentran por su nombre.
+          Sift solo mira lo que sirve para buscar: documentos, textos y código.
+          Se salta programas, imágenes, vídeos y archivos internos de otras
+          herramientas. Por ahora lee el contenido de textos, Markdown y código;
+          los PDF y Word se encuentran por su nombre. Quitar una carpeta solo
+          hace que Sift deje de buscar en ella: tus archivos no se tocan.
         </p>
       </section>
 
@@ -192,6 +209,60 @@ function StatusPanel({
       )}
       {error && <ErrorText>{error}</ErrorText>}
     </div>
+  );
+}
+
+/**
+ * «439 archivos no se pudieron leer», plegado: al abrirlo, los motivos con su número y
+ * unos pocos ejemplos de cada uno. No se listan todos: pueden ser miles.
+ */
+function Unread({ groups }: { groups: UnreadGroupView[] }) {
+  const total = groups.reduce((n, g) => n + g.count, 0);
+  if (total === 0) return null;
+  return (
+    <details className="group rounded-window border border-line px-4 py-2 text-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-muted outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent">
+        <span
+          aria-hidden
+          className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+        >
+          ›
+        </span>
+        {total === 1
+          ? "1 archivo no se pudo leer"
+          : `${count(total)} archivos no se pudieron leer`}
+      </summary>
+      <ul className="space-y-3 pt-3 pb-1">
+        {groups.map((g) => {
+          const reason = unreadReason(g.kind);
+          return (
+            <li key={g.kind}>
+              <p>
+                <span className="font-medium">{reason.label}</span>
+                <span className="text-muted"> · {count(g.count)}</span>
+              </p>
+              <p className="text-xs text-muted">{reason.hint}</p>
+              <ul className="mt-1 space-y-0.5">
+                {g.examples.map((path) => (
+                  <li
+                    key={path}
+                    title={path}
+                    className="truncate font-mono text-xs text-muted"
+                  >
+                    {folderName(path)}
+                  </li>
+                ))}
+                {g.count > g.examples.length && (
+                  <li className="text-xs text-muted">
+                    …y {count(g.count - g.examples.length)} más
+                  </li>
+                )}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }
 
@@ -257,11 +328,13 @@ function Advanced() {
       </summary>
       <div className="space-y-3 pt-3">
         <p className="text-sm text-muted">
-          Sift se salta por su cuenta lo que no tiene sentido buscar: archivos
-          temporales, copias de programas y carpetas técnicas como{" "}
-          <code className="font-mono">node_modules</code>. Normalmente no tienes
-          que tocar nada. Si quieres que no mire alguna carpeta o tipo de
-          archivo, añádelo aquí.
+          Además, Sift se salta por su cuenta las carpetas que crean las
+          herramientas y no tú: dependencias (
+          <code className="font-mono">node_modules</code>), compilados (
+          <code className="font-mono">bin</code>,{" "}
+          <code className="font-mono">build</code>), entornos de Python y
+          cachés. Normalmente no tienes que tocar nada. Si quieres que no mire
+          alguna carpeta o tipo de archivo más, añádelo aquí.
         </p>
         <label className="block space-y-1">
           <span className="text-xs text-muted">
