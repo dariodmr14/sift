@@ -260,39 +260,31 @@ impl TextIndex {
             return Ok(Vec::new());
         }
         let searcher = self.reader.searcher();
-        let mut top = searcher.search(
+        let mut ids = Ids::new(&searcher);
+        let strict = searcher.search(
             &*self.build_query(q, 0),
             &TopDocs::with_limit(k).order_by_score(),
         )?;
+        let mut found = candidates(&mut ids, &strict)?;
         // Una frase («cómo evitar redundancia en tablas») rara vez tiene todas sus palabras
         // en el mismo fragmento: sin esto, las palabras no aportan nada. Si faltan
         // resultados, detrás de los que lo tienen todo van los que tienen casi todo.
         let words = q.terms.len() + usize::from(q.prefix.is_some());
         let missing = relaxed_missing(words);
-        if top.len() < k && missing > 0 {
-            let seen: std::collections::HashSet<_> = top.iter().map(|(_, a)| *a).collect();
-            let relaxed = searcher.search(
-                &*self.build_query(q, missing),
-                &TopDocs::with_limit(k).order_by_score(),
-            )?;
-            top.extend(
-                relaxed
-                    .into_iter()
-                    .filter(|(_, a)| !seen.contains(a))
-                    .take(k - seen.len()),
-            );
+        if found.len() < k && missing > 0 {
+            let seen: std::collections::HashSet<_> = strict.iter().map(|(_, a)| *a).collect();
+            let relaxed: Vec<_> = searcher
+                .search(
+                    &*self.build_query(q, missing),
+                    &TopDocs::with_limit(k).order_by_score(),
+                )?
+                .into_iter()
+                .filter(|(_, a)| !seen.contains(a))
+                .take(k - found.len())
+                .collect();
+            found.extend(candidates(&mut ids, &relaxed)?);
         }
-        let mut ids = Ids::new(&searcher);
-        top.into_iter()
-            .map(|(score, address)| {
-                let (file_id, chunk_id, _) = ids.of(address)?;
-                Ok(Candidate {
-                    file_id,
-                    chunk_id,
-                    score,
-                })
-            })
-            .collect()
+        Ok(found)
     }
 
     /// Los fragmentos cuyos textos son estos (hash, parecido), en ese orden. Un texto
@@ -339,7 +331,8 @@ impl TextIndex {
                 ));
             }
         }
-        hits.sort_by_key(|(position, _)| *position);
+        // Las copias de un mismo texto, por id: el mismo orden aunque se rehaga el índice.
+        hits.sort_by_key(|(position, c)| (*position, c.file_id, c.chunk_id));
         Ok(hits.into_iter().map(|(_, h)| h).take(k).collect())
     }
 
@@ -487,4 +480,31 @@ impl IndexSink for TextIndex {
 /// (con dos, faltar una es buscar cualquiera de las dos). Calibrado con `eval/` (ADR 0010).
 fn relaxed_missing(words: usize) -> usize {
     if words >= 3 { 1 } else { 0 }
+}
+
+/// Los ids de unos documentos encontrados, el mejor primero. A igual puntuación (copias
+/// del mismo texto en varias carpetas), por id: si no, el orden dependería de cómo quedó
+/// el índice por dentro, que cambia al rehacerlo, y los resultados también.
+fn candidates(
+    ids: &mut Ids,
+    docs: &[(f32, tantivy::DocAddress)],
+) -> Result<Vec<Candidate>, IndexError> {
+    let mut out = docs
+        .iter()
+        .map(|(score, address)| {
+            let (file_id, chunk_id, _) = ids.of(*address)?;
+            Ok(Candidate {
+                file_id,
+                chunk_id,
+                score: *score,
+            })
+        })
+        .collect::<Result<Vec<_>, IndexError>>()?;
+    out.sort_by(|a, b| {
+        b.score
+            .total_cmp(&a.score)
+            .then(a.file_id.cmp(&b.file_id))
+            .then(a.chunk_id.cmp(&b.chunk_id))
+    });
+    Ok(out)
 }
