@@ -40,6 +40,7 @@ window-vibrancy = { workspace = true }
 tauri-specta = { workspace = true }
 specta = { workspace = true }
 specta-typescript = { workspace = true }
+notify = "8"
 
 [dev-dependencies]
 tempfile = { workspace = true }

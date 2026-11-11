@@ -5,8 +5,9 @@
 //! guarda ni se cuenta: en una carpeta de la universidad real, 69.000 de 86.500 archivos
 //! eran eso, y solo hacían ruido en los resultados ([`Kind::Other`]).
 //!
-//! Fase 2: se lee el contenido de texto plano, Markdown y código. Los documentos (PDF,
-//! Word…) se encuentran por nombre hasta la Fase 3 ([`Kind::Document`]).
+//! Se lee el contenido de texto plano, Markdown y código, y el de los documentos: PDF
+//! (con PDFium, [`pdf`]) y Word, PowerPoint y Writer ([`office`]). Los demás documentos
+//! (hojas de cálculo, `.doc` antiguo, epub) se encuentran por nombre.
 //!
 //! La codificación importa: en Windows hay muchos apuntes en Windows-1252 (Bloc de notas
 //! antiguo) y en UTF-16 (algunas herramientas). Leídos como UTF-8, «normalización» saldría
@@ -15,13 +16,16 @@
 use std::io::Read;
 use std::path::Path;
 
+pub mod office;
+pub mod pdf;
+
 /// Qué se hace con un archivo según su extensión.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
     Text,
     Markdown,
     Code,
-    /// Documento que se indexa por nombre, sin contenido (por ahora: PDF, Word…).
+    /// Documento: se lee su contenido si es PDF, Word, PowerPoint u odt; si no, por nombre.
     Document,
     /// Imagen o vídeo: se puede buscar por nombre (opcional), nunca por contenido.
     Media,
@@ -30,7 +34,7 @@ pub enum Kind {
 }
 
 const TEXT: &[&str] = &["txt", "text", "csv", "tsv", "ini", "cfg", "conf", "rtf"];
-/// Documentos: por nombre hasta que la Fase 3 lea su contenido.
+/// Documentos. De los que no se sabe leer el contenido queda el nombre.
 const DOCUMENT: &[&str] = &[
     "pdf", "doc", "docx", "odt", "ppt", "pptx", "odp", "xls", "xlsx", "ods", "epub",
 ];
@@ -163,6 +167,10 @@ pub enum ExtractError {
     Binary,
     #[error("no se pudo leer: {0}")]
     Io(#[from] std::io::Error),
+    #[error("está protegido con contraseña")]
+    Protected,
+    #[error("está dañado o incompleto: {0}")]
+    Damaged(String),
 }
 
 /// Por qué no se pudo leer el contenido de un archivo, en categorías que entiende
@@ -219,28 +227,119 @@ impl ExtractError {
                 UnreadReason::NoPermission
             }
             ExtractError::Io(_) => UnreadReason::Other,
+            ExtractError::Protected => UnreadReason::Protected,
+            ExtractError::Damaged(_) => UnreadReason::Damaged,
         }
     }
 }
 
-/// Lee el texto de un archivo si su tipo lo permite. `Ok(None)` = solo nombre.
+/// Tamaño máximo de un documento (PDF, Word…) para abrirlo. Son mucho más grandes que
+/// su texto: un PDF de 40 MB con figuras puede tener 200 KB de texto.
+pub const MAX_DOCUMENT_BYTES: u64 = 200 * 1024 * 1024;
+
+/// El que lee archivos. Guarda el motor de PDF (PDFium), que se carga una vez.
+///
+/// Sin PDFium (no se encontró `pdfium.dll`), los PDF se indexan solo por nombre: la app
+/// funciona igual y lo dice en Ajustes → Estado.
+#[derive(Default)]
+pub struct Extractor {
+    pdf: Option<pdf::Engine>,
+}
+
+impl Extractor {
+    /// Sin motor de PDF: textos, código y documentos de Office.
+    pub fn new() -> Extractor {
+        Extractor::default()
+    }
+
+    /// Con PDFium, buscando `pdfium.dll` en `dir`. Si no se puede cargar, devuelve el
+    /// motivo y un extractor sin PDF.
+    pub fn with_pdfium(dir: &Path) -> (Extractor, Option<String>) {
+        match pdf::Engine::load(dir) {
+            Ok(engine) => (Extractor { pdf: Some(engine) }, None),
+            Err(reason) => (Extractor::new(), Some(reason)),
+        }
+    }
+
+    pub fn reads_pdf(&self) -> bool {
+        self.pdf.is_some()
+    }
+
+    /// Lee el texto de un archivo si su tipo lo permite. `Ok(None)` = solo nombre.
+    /// `max_bytes` es el tope para archivos de texto; los documentos tienen el suyo
+    /// ([`MAX_DOCUMENT_BYTES`]) y su texto se recorta a `max_bytes`.
+    pub fn extract(&self, path: &Path, max_bytes: u64) -> Result<Option<Extracted>, ExtractError> {
+        let ext = extension(path);
+        match kind_for(&ext) {
+            Kind::Media | Kind::Other => Ok(None),
+            Kind::Document => self.extract_document(path, &ext, max_bytes),
+            Kind::Text | Kind::Markdown | Kind::Code => {
+                let file = std::fs::File::open(path)?;
+                let len = file.metadata()?.len();
+                if len > max_bytes {
+                    return Err(ExtractError::TooLarge(len));
+                }
+                let mut bytes = Vec::with_capacity(len as usize);
+                file.take(max_bytes).read_to_end(&mut bytes)?;
+                let hash = blake3::hash(&bytes).to_hex().to_string();
+                let text = decode(&bytes)?;
+                Ok(Some(Extracted { text, hash }))
+            }
+        }
+    }
+
+    fn extract_document(
+        &self,
+        path: &Path,
+        ext: &str,
+        max_text: u64,
+    ) -> Result<Option<Extracted>, ExtractError> {
+        let readable = match ext {
+            "pdf" => self.pdf.is_some(),
+            "docx" | "pptx" | "odt" => true,
+            _ => false,
+        };
+        if !readable {
+            return Ok(None);
+        }
+        let len = std::fs::metadata(path)?.len();
+        if len > MAX_DOCUMENT_BYTES {
+            return Err(ExtractError::TooLarge(len));
+        }
+        // El hash es del archivo (no del texto): si no cambia, no se vuelve a abrir.
+        let mut hasher = blake3::Hasher::new();
+        std::io::copy(&mut std::fs::File::open(path)?, &mut hasher)?;
+        let hash = hasher.finalize().to_hex().to_string();
+
+        let text = match (&self.pdf, ext) {
+            (Some(engine), "pdf") => engine.text(path, max_text as usize)?,
+            _ => {
+                let file = std::io::BufReader::new(std::fs::File::open(path)?);
+                office::extract_text(file, ext)?.unwrap_or_default()
+            }
+        };
+        Ok(Some(Extracted {
+            text: truncate_at_char(text, max_text as usize),
+            hash,
+        }))
+    }
+}
+
+/// Recorta un texto a `max` bytes sin partir un carácter.
+fn truncate_at_char(mut text: String, max: usize) -> String {
+    if text.len() > max {
+        let mut cut = max;
+        while !text.is_char_boundary(cut) {
+            cut -= 1;
+        }
+        text.truncate(cut);
+    }
+    text
+}
+
+/// Lee el texto de un archivo sin motor de PDF (ver [`Extractor::extract`]).
 pub fn extract(path: &Path, max_bytes: u64) -> Result<Option<Extracted>, ExtractError> {
-    if matches!(
-        kind_for(&extension(path)),
-        Kind::Document | Kind::Media | Kind::Other
-    ) {
-        return Ok(None);
-    }
-    let file = std::fs::File::open(path)?;
-    let len = file.metadata()?.len();
-    if len > max_bytes {
-        return Err(ExtractError::TooLarge(len));
-    }
-    let mut bytes = Vec::with_capacity(len as usize);
-    file.take(max_bytes).read_to_end(&mut bytes)?;
-    let hash = blake3::hash(&bytes).to_hex().to_string();
-    let text = decode(&bytes)?;
-    Ok(Some(Extracted { text, hash }))
+    Extractor::new().extract(path, max_bytes)
 }
 
 /// Decodifica bytes a texto: marca BOM de UTF-8/UTF-16 si la hay; si no, UTF-8 si es
@@ -311,7 +410,48 @@ mod tests {
     }
 
     #[test]
+    fn word_documents_are_read_and_hashed_by_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("Tema 4.docx");
+        let xml = r#"<w:document xmlns:w="x"><w:body><w:p><w:r><w:t>Dependencias funcionales</w:t></w:r></w:p></w:body></w:document>"#;
+        std::fs::write(
+            &path,
+            office::tests::zip_with(&[("word/document.xml", xml)]),
+        )
+        .unwrap();
+        let got = extract(&path, 1024).unwrap().unwrap();
+        assert!(got.text.contains("Dependencias funcionales"));
+        assert_eq!(
+            got.hash,
+            blake3::hash(&std::fs::read(&path).unwrap())
+                .to_hex()
+                .to_string()
+        );
+    }
+
+    #[test]
+    fn documents_without_a_reader_keep_only_their_name() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["notas.xlsx", "viejo.doc", "sin motor.pdf"] {
+            let path = dir.path().join(name);
+            std::fs::write(&path, b"x").unwrap();
+            assert_eq!(extract(&path, 1024).unwrap(), None, "{name}");
+        }
+    }
+
+    #[test]
+    fn long_document_text_is_cut_on_a_character_boundary() {
+        assert_eq!(truncate_at_char("añadir".into(), 2), "a"); // la ñ ocupa 2 bytes
+        assert_eq!(truncate_at_char("corto".into(), 99), "corto");
+    }
+
+    #[test]
     fn errors_map_to_plain_reasons() {
+        assert_eq!(ExtractError::Protected.reason(), UnreadReason::Protected);
+        assert_eq!(
+            ExtractError::Damaged("x".into()).reason(),
+            UnreadReason::Damaged
+        );
         assert_eq!(ExtractError::Binary.reason(), UnreadReason::Unsupported);
         assert_eq!(ExtractError::TooLarge(9).reason(), UnreadReason::TooLarge);
         let denied = std::io::Error::from(std::io::ErrorKind::PermissionDenied);

@@ -143,6 +143,19 @@ const MIGRATIONS: &[&str] = &[
     FROM new
     WHERE pattern NOT IN (SELECT pattern FROM ignore_patterns);
     "#,
+    // v4: recuperación ante cierres a mitad de indexado (Fase 3). SQLite se guarda archivo
+    // a archivo, pero el índice de búsqueda se confirma por lotes: si la app muere entre
+    // medias, estas dos marcas dicen qué falta por llevar al índice al volver a arrancar.
+    r#"
+    -- 0 = guardado en SQLite pero aún no confirmado en el índice de búsqueda.
+    ALTER TABLE files ADD COLUMN search_synced INTEGER NOT NULL DEFAULT 1;
+    CREATE INDEX files_unsynced ON files(search_synced) WHERE search_synced = 0;
+
+    -- Archivos borrados de SQLite que aún hay que quitar del índice de búsqueda.
+    CREATE TABLE index_removals (
+        file_id INTEGER PRIMARY KEY
+    );
+    "#,
 ];
 
 pub struct Database {
