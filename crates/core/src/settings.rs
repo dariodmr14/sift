@@ -29,6 +29,9 @@ pub struct IndexingSettings {
     /// No indexar imágenes ni vídeos. Por defecto se pueden buscar por su nombre (su
     /// contenido nunca se lee).
     pub skip_media: bool,
+    /// Sin «búsqueda inteligente» (por significado): ni se descarga el modelo ni se
+    /// calculan vectores. Por defecto está activada.
+    pub disable_smart_search: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -92,7 +95,10 @@ mod tests {
             appearance: AppearanceSettings {
                 disable_glass: true,
             },
-            indexing: IndexingSettings { skip_media: true },
+            indexing: IndexingSettings {
+                skip_media: true,
+                disable_smart_search: true,
+            },
         };
         s.save(&path).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), s);

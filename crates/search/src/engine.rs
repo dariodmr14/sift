@@ -1,27 +1,42 @@
 //! El motor de búsqueda: recuperadores → fusión RRF → agrupar por archivo → fragmento.
 //!
-//! Hoy hay un recuperador (el léxico, Tantivy). En la Fase 4 se añade el semántico
-//! implementando [`Retriever`]; el resto no cambia (ver ADR 0006).
+//! Recuperadores: el léxico (Tantivy) y el semántico (vectores, Fase 4). Cada uno pesa
+//! en la fusión según el tipo de búsqueda ([`Intent`]): en una búsqueda exacta («shell-v4.3»)
+//! la semántica no participa. Ver ADR 0006 y 0009.
 
 use std::collections::HashMap;
 use std::time::Instant;
 
 use serde::Serialize;
 
-use crate::fusion::rrf;
-use crate::index::{ChunkHit, IndexError, TextIndex};
+use crate::fusion::rrf_weighted;
+use crate::index::{Candidate, IndexError, TextIndex};
+use crate::intent::Intent;
 use crate::query::ParsedQuery;
 use crate::snippet::{Segment, highlight};
 
 /// Cuántos fragmentos pide cada recuperador antes de fusionar y agrupar.
 const CANDIDATES: usize = 100;
+/// De cuántos resultados por encima del límite se carga el texto: los justos para
+/// reordenar por nombre sin cargar cien documentos (lo caro de una búsqueda).
+const FETCH_MARGIN: usize = 2;
 /// Longitud del fragmento resaltado que se muestra, en caracteres.
 const SNIPPET_CHARS: usize = 160;
 
 /// Un recuperador devuelve fragmentos ordenados, el mejor primero.
 pub trait Retriever: Send + Sync {
     fn name(&self) -> &'static str;
-    fn retrieve(&self, q: &ParsedQuery, k: usize) -> Result<Vec<ChunkHit>, IndexError>;
+    /// Cuánto pesa en la fusión para este tipo de búsqueda. 0 = no se le pregunta.
+    fn weight(&self, _intent: Intent) -> f64 {
+        1.0
+    }
+    /// ¿Encuentra por significado? (sus resultados se marcan si solo llegan por aquí)
+    fn by_meaning(&self) -> bool {
+        false
+    }
+    /// Los fragmentos que encuentra, el mejor primero (solo ids: el texto se carga al
+    /// final, y solo de lo que se muestra).
+    fn retrieve(&self, q: &ParsedQuery, k: usize) -> Result<Vec<Candidate>, IndexError>;
 }
 
 /// El recuperador léxico: palabras, prefijos y erratas (Tantivy).
@@ -31,7 +46,7 @@ impl Retriever for Lexical<'_> {
     fn name(&self) -> &'static str {
         "léxico"
     }
-    fn retrieve(&self, q: &ParsedQuery, k: usize) -> Result<Vec<ChunkHit>, IndexError> {
+    fn retrieve(&self, q: &ParsedQuery, k: usize) -> Result<Vec<Candidate>, IndexError> {
         self.0.search_chunks(q, k)
     }
 }
@@ -52,6 +67,9 @@ pub struct FileHit {
     /// Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre).
     pub snippet: Vec<Segment>,
     pub score: f64,
+    /// Encontrado solo por significado (no comparte palabras con la búsqueda): la UI lo
+    /// marca para que se entienda por qué está ahí.
+    pub by_meaning: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -64,7 +82,9 @@ pub struct SearchResults {
 }
 
 /// Busca con todos los recuperadores, fusiona, agrupa por archivo y prepara los fragmentos.
+/// `text` es el índice del que se cargan nombre, ruta y texto de lo que se muestra.
 pub fn search(
+    text: &TextIndex,
     retrievers: &[&dyn Retriever],
     raw: &str,
     limit: usize,
@@ -78,28 +98,49 @@ pub fn search(
         });
     }
 
+    let intent = Intent::of(raw);
     let mut lists = Vec::with_capacity(retrievers.len());
-    let mut by_chunk: HashMap<(i64, i64), ChunkHit> = HashMap::new();
+    // Archivos que encuentra algún recuperador por palabras.
+    let mut by_words = std::collections::HashSet::new();
     for r in retrievers {
+        let weight = r.weight(intent);
+        if weight <= 0.0 {
+            continue;
+        }
         let hits = r.retrieve(&q, CANDIDATES)?;
-        lists.push(
+        if !r.by_meaning() {
+            by_words.extend(hits.iter().map(|h| h.file_id));
+        }
+        lists.push((
+            weight,
             hits.iter()
                 .map(|h| (h.file_id, h.chunk_id))
                 .collect::<Vec<_>>(),
-        );
-        for h in hits {
-            by_chunk.entry((h.file_id, h.chunk_id)).or_insert(h);
-        }
+        ));
     }
 
-    // Un resultado por archivo: su mejor fragmento (el primero tras fusionar).
-    let mut seen = HashMap::new();
-    let mut hits = Vec::new();
-    for ((file_id, chunk_id), score) in rrf(&lists) {
-        if hits.len() >= limit || seen.insert(file_id, ()).is_some() {
-            continue;
+    // Un resultado por archivo: su mejor fragmento (el primero tras fusionar). Solo se
+    // carga el texto de los primeros: es lo caro.
+    let mut seen = std::collections::HashSet::new();
+    let mut best: Vec<((i64, i64), f64)> = Vec::new();
+    for ((file_id, chunk_id), score) in rrf_weighted(&lists) {
+        if seen.insert(file_id) {
+            best.push(((file_id, chunk_id), score));
+            if best.len() >= limit * FETCH_MARGIN {
+                break;
+            }
         }
-        let Some(h) = by_chunk.remove(&(file_id, chunk_id)) else {
+    }
+    let keys: Vec<(i64, i64)> = best.iter().map(|(k, _)| *k).collect();
+    let loaded: HashMap<(i64, i64), _> = text
+        .fetch(&keys)?
+        .into_iter()
+        .map(|h| ((h.file_id, h.chunk_id), h))
+        .collect();
+    let mut loaded = loaded;
+    let mut hits = Vec::with_capacity(best.len());
+    for (key, score) in best {
+        let Some(h) = loaded.remove(&key) else {
             continue;
         };
         hits.push(FileHit {
@@ -109,6 +150,7 @@ pub fn search(
             } else {
                 highlight(&h.body, &q, SNIPPET_CHARS)
             },
+            by_meaning: !by_words.contains(&h.file_id),
             file_id: h.file_id,
             path: h.path,
             name: h.name,
@@ -116,6 +158,22 @@ pub fn search(
             score,
         });
     }
+    // Lo que nombras va primero: si todas las palabras están en el nombre de un archivo,
+    // ningún resultado que solo llega por significado se le pone delante.
+    let words: Vec<String> = q
+        .terms
+        .iter()
+        .map(|t| t.word.clone())
+        .chain(q.prefix.clone())
+        .collect();
+    if !words.is_empty() {
+        let named = |h: &FileHit| {
+            let name = crate::analyzer::fold(&h.name);
+            words.iter().all(|w| name.contains(w.as_str()))
+        };
+        hits.sort_by_key(|h| !named(h)); // estable: dentro de cada grupo, el orden de la fusión
+    }
+    hits.truncate(limit);
     Ok(SearchResults {
         hits,
         took_ms: started.elapsed().as_secs_f64() * 1000.0,
@@ -152,7 +210,7 @@ mod tests {
     }
 
     fn names(idx: &TextIndex, q: &str) -> Vec<String> {
-        search(&[&Lexical(idx)], q, 10)
+        search(idx, &[&Lexical(idx)], q, 10)
             .unwrap()
             .hits
             .into_iter()
@@ -224,7 +282,8 @@ mod tests {
 
     #[test]
     fn one_result_per_file_with_its_best_snippet() {
-        let r = search(&[&Lexical(&sample())], "transitivas ", 10).unwrap();
+        let idx = sample();
+        let r = search(&idx, &[&Lexical(&idx)], "transitivas ", 10).unwrap();
         assert_eq!(r.hits.len(), 1);
         let hit: Vec<_> = r.hits[0]
             .snippet
@@ -266,7 +325,7 @@ mod tests {
     #[test]
     fn empty_query_returns_nothing() {
         assert!(
-            search(&[&Lexical(&sample())], "  ", 10)
+            search(&sample(), &[&Lexical(&sample())], "  ", 10)
                 .unwrap()
                 .hits
                 .is_empty()

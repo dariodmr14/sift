@@ -2,7 +2,7 @@
 
 Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escribes lo que buscas y encuentra tus archivos por su significado, no solo por sus palabras. Todo en local: ni el índice, ni los archivos, ni el modelo de IA salen del ordenador.
 
-> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras) y 3 (más formatos e indexado en tiempo real) terminadas. Plan completo en [PLAN.md](PLAN.md).
+> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras) 3 (más formatos e indexado en tiempo real) y 4 (búsqueda por significado) terminadas. Plan completo en [PLAN.md](PLAN.md).
 
 ## Qué hace ya
 
@@ -18,6 +18,7 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **En tiempo real y sin notarse**: guardar, renombrar, mover o borrar un archivo se ve en la búsqueda en segundos. El indexado va en segundo plano con prioridad baja, limita su CPU y se pausa si estás usando mucho el PC. Si Sift se cierra a mitad, sigue donde iba.
 - **Ajustes → Carpetas**: eliges dónde busca Sift y ves su estado en palabras («Al día · 1.240 archivos», «Leyendo 32 de 120 archivos», «En pausa mientras usas el PC»). Solo indexa lo que sirve para buscar: se salta programas, compilados, cachés y dependencias.
 - **Un único vidrio** en toda la app (barra, Ajustes y diálogos), con la opción «Desactivar vidrio».
+- **Búsqueda inteligente (por significado)**: «bases de datos» trae también lo relacionado aunque no use esas palabras. Combina la búsqueda por palabras con un modelo local (`multilingual-e5-small`, en ONNX Runtime) que se descarga una vez (~135 MB, con su hash comprobado) y prepara tus archivos en segundo plano. Los resultados que llegan solo por significado se marcan «Por significado». En las búsquedas de un nombre o un código («shell-v4.3») no interviene. Se puede desactivar en Ajustes → General.
 
 ### Métricas (Windows 10, build de release)
 
@@ -27,6 +28,23 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 | Atajo → ventana pintada (hook de teclado) | < 100 ms | p50 34 ms · p95 40 ms | p50 36 ms · p95 43 ms |
 
 | Búsqueda (50.000 fragmentos, índice Tantivy) | < 50 ms | | Fase 2: p50 6,3 ms · p95 12,1 ms |
+
+#### Búsqueda por significado (Fase 4)
+
+Con 34 consultas reales sobre una carpeta de la carrera (12.871 archivos, 29.477 textos con vector), definidas en [`eval/`](eval/README.md). **recall@10** (de lo esperado, cuánto sale entre los 10 primeros) y, entre paréntesis, **MRR** (lo arriba que sale lo primero que vale):
+
+| Búsqueda | Idea sin sus palabras (26) | Tema (3) | Nombre o código (5) | Total |
+|---|---|---|---|---|
+| Solo palabras (Fase 3) | 0,12 (0,10) | 0,75 (0,57) | 1,00 (1,00) | 0,30 (0,27) |
+| Solo significado | 0,56 (0,41) | 0,75 (0,53) | 0,20 (0,20) | 0,52 (0,39) |
+| **Híbrida (la de Sift)** | **0,56 (0,45)** | **0,83 (0,61)** | **1,00 (1,00)** | **0,65 (0,55)** |
+
+| Latencia de la búsqueda (34 consultas × 5) | p50 | p95 |
+|---|---|---|
+| Solo palabras | 8,2 ms | 17,8 ms |
+| Híbrida, incluido calcular el vector de la consulta | 22,5 ms | **37,2 ms** (objetivo < 50 ms) |
+
+Medido en un i7-7700K con Sift abierto vectorizando en segundo plano; sin nada compilando. Se repite con `cargo test -p sift-search --release --test eval -- --ignored --nocapture` (necesita la base de datos y el modelo).
 
 20–22 medidas por fila en el atajo. La búsqueda se mide con `cargo test -p sift-search --release -- --ignored`. Se mide desde que el hilo del atajo detecta la pulsación hasta que la UI ha pintado el primer fotograma. La latencia aparece en el log y en Ajustes → Estado.
 
@@ -71,6 +89,7 @@ cargo test --workspace
 - [ADR 0006](docs/adr/0006-arquitectura-de-busqueda.md): arquitectura de búsqueda pensada para la Fase 4 (fragmentos, recuperadores y RRF).
 - [ADR 0007](docs/adr/0007-que-se-indexa.md): qué se indexa (solo formatos útiles) y qué carpetas se saltan.
 - [ADR 0008](docs/adr/0008-distribucion-de-pdfium.md): PDFium para los PDF y cómo llega `pdfium.dll` (dentro del instalador, versión y hash fijados).
+- [ADR 0009](docs/adr/0009-busqueda-por-significado.md): búsqueda por significado (modelo elegido midiendo, vectores en SQLite, HNSW derivado, fusión y evaluación).
 
 ## Lo aprendido
 
@@ -101,6 +120,14 @@ cargo test --workspace
 - Para recuperarse de un cierre a mitad basta con una marca por archivo: SQLite se guarda archivo a archivo y el índice de búsqueda por lotes, así que lo que quede sin confirmar se reenvía desde SQLite al arrancar, sin tocar el disco.
 - Que el indexado «no se note» tiene tres capas: el modo de segundo plano de Windows (que también baja la prioridad del disco), un descanso proporcional al trabajo y una pausa con histéresis cuando el sistema está ocupado.
 - Los materiales de Windows no se pueden fundir entre sí, pero sí taparse: un velo del color del fondo que entra antes de cambiar y sale después esconde el salto.
+
+**Fase 4**
+- Elegir el modelo midiendo: en las tablas públicas Granite R2 (mayo de 2026) superaba a e5-small por 9 puntos; con mis consultas en español, e5-small salió mejor en todo y, además, el doble de rápido.
+- Una búsqueda de palabras que exige todas las palabras no encuentra nada con una frase («cómo evitar… en tablas»): por eso la semántica es lo que salva las ideas. Pero también por eso la semántica sola no basta para nombres y códigos (0,20): la fusión decide por tipo de búsqueda.
+- Los pesos y umbrales «a ojo» del diseño estaban mal: el umbral de parecido no ayudaba (la protección real es el tipo de búsqueda) y un tercer recuperador que parecía obvio (BM25 con alguna de las palabras) no mejoraba nada. `eval/` lo dijo en minutos.
+- Lo caro de una búsqueda no era el modelo (4 ms) sino cargar cien documentos de Tantivy para enseñar diez: leer solo ids de las columnas rápidas y cargar el texto al final bajó la p95 de 70 a 37 ms.
+- Un vector por **texto** (hash) y no por fragmento: el 40 % de los fragmentos estaban repetidos, y reindexar un archivo no tira sus vectores.
+- usearch (C++) abre las rutas con la codificación ANSI de Windows: con `C:\Users\Darío` no guardaba el índice. Los tests no lo vieron porque la carpeta temporal se llama `DARO~1`; ahora hay uno con tildes.
 
 ## Licencia
 [MIT](LICENSE)

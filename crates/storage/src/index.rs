@@ -274,8 +274,9 @@ impl Database {
         let mut chunk_ids = Vec::with_capacity(chunks.len());
         for c in chunks {
             tx.execute(
-                "INSERT INTO chunks (file_id, ordinal, start, text) VALUES (?1, ?2, ?3, ?4)",
-                params![id, c.ordinal, c.start, c.text],
+                "INSERT INTO chunks (file_id, ordinal, start, text, text_hash)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![id, c.ordinal, c.start, c.text, crate::text_hash(&c.text)],
             )?;
             chunk_ids.push(tx.last_insert_rowid());
         }
