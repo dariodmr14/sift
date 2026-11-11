@@ -22,6 +22,9 @@ sift-core = { workspace = true }
 sift-spaces = { workspace = true, features = ["specta"] }
 sift-storage = { workspace = true }
 sift-extract = { workspace = true }
+sift-embeddings = { workspace = true }
+ureq = { workspace = true }
+sha2 = { workspace = true }
 sift-indexer = { workspace = true }
 sift-search = { workspace = true, features = ["specta"] }
 tauri = { workspace = true }

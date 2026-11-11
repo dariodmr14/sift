@@ -5,6 +5,7 @@
 //! (`settings_ready`): así el primer fotograma que se ve ya tiene el contenido y el
 //! vidrio, y no una ventana vacía y transparente.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
@@ -34,8 +35,37 @@ pub fn reveal(app: &AppHandle) {
     materials::refresh(app, &window);
 }
 
+/// Desde dónde se abrieron los ajustes la última vez. Decide qué pasa al cerrarlos.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Origin {
+    /// Desde la barra (Ctrl+, o «Ajustes»): al cerrar, la barra vuelve, con el foco en
+    /// la búsqueda. Lo normal es que hayas cambiado algo y quieras usarlo.
+    Launcher,
+    /// Desde el icono de la bandeja: al cerrar no aparece nada.
+    Tray,
+}
+
+/// ¿Hay que volver a la barra al cerrar los ajustes? (Tauri lo guarda con `manage`.)
+#[derive(Default)]
+pub struct ReturnToLauncher(AtomicBool);
+
+/// La ventana de ajustes se ha cerrado: si se abrió desde la barra, la barra vuelve.
+pub fn on_closed(app: &AppHandle) {
+    if app
+        .state::<ReturnToLauncher>()
+        .0
+        .swap(false, Ordering::Relaxed)
+    {
+        crate::launcher::show(app);
+    }
+}
+
 /// Abre los ajustes. Con `new_space`, directamente en "crear Espacio".
-pub fn open(app: &AppHandle, new_space: bool) {
+pub fn open(app: &AppHandle, new_space: bool, origin: Origin) {
+    // Cuenta el último sitio desde el que se pidieron, también si ya estaban abiertos.
+    app.state::<ReturnToLauncher>()
+        .0
+        .store(origin == Origin::Launcher, Ordering::Relaxed);
     // Si ya está abierta, se trae al frente (y se le avisa si hay que crear un Espacio).
     if let Some(window) = app.get_webview_window(LABEL) {
         let _ = window.unminimize();

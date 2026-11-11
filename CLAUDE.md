@@ -5,7 +5,7 @@ El plan completo, con fases y criterios de "hecho", está en [PLAN.md](PLAN.md).
 
 ## Entorno de Darío
 - Windows 10 Pro: donde el plan dice Mica, usar **Acrylic** (Mica es solo Windows 11).
-- Editor: VS Code. Push: lo hace Darío con GitHub Desktop. **Claude nunca hace `git push`.**
+- Editor: VS Code. Darío usa GitHub Desktop para sus repos de la uni; en Sift, Claude se encarga de GitHub (ver «Flujo de GitHub»).
 
 ## Cómo trabajamos
 - Una rama y un PR por tarea o grupo pequeño de tareas; nunca todo de golpe.
@@ -15,6 +15,21 @@ El plan completo, con fases y criterios de "hecho", está en [PLAN.md](PLAN.md).
 - Decisiones de arquitectura nuevas → un ADR corto en `docs/adr/` (plantilla: `docs/adr/0001-*.md`).
 - Si aparece una idea nueva a mitad de una fase → al backlog de PLAN.md, salvo que bloquee la fase actual.
 - Al acabar cada fase: marcar casillas en PLAN.md, actualizar el README y apuntar qué se aprendió.
+
+## Flujo de GitHub
+Claude hace push, abre el PR y lo fusiona, con `gh` (autenticado con un token que solo tiene acceso a este repo). El push usa un *credential helper* **local de este repo** (`.git/config`) que llama a `gh auth git-credential`; la configuración global de git y el gestor de credenciales de Windows no se tocan.
+
+Para cada fase o rama, al terminar:
+1. CI local en verde (fmt, clippy, tests; format, lint, typecheck y tests de la UI).
+2. `git push -u origin <rama>` y `gh pr create` con una descripción clara: qué cambia, cómo probarlo, decisiones importantes y enlaces a los ADR.
+3. `gh pr checks --watch`. Si la CI falla, se arregla y se vuelve a subir.
+4. Con la CI en verde: `gh pr merge --merge --delete-branch`, `git checkout main` y `git pull`.
+5. En el resumen final: el enlace del PR y si quedó fusionado.
+
+Nunca:
+- Merge con la CI en rojo.
+- Force push (`--force`, `-f`, `--force-with-lease`, `+rama`), y menos a `main`: lo bloquea `.claude/settings.json`.
+- Si algo de git se complica (historiales que divergen, conflictos, un push rechazado), **parar y avisar a Darío antes de tocar nada**.
 
 ## Estructura
 - `apps/desktop/` — app Tauri (`src/` UI React + TS, `src-tauri/` arranque y comandos IPC).

@@ -180,20 +180,23 @@ sift/
 **Hecho cuando:** guardas un PDF nuevo en una carpeta y en segundos aparece en la búsqueda, sin reindexar todo. ⏳ Comprobado en la app con datos reales: 542 de 543 PDF y 750 Word leídos (el que falta, dañado), y el vigilante probado sobre el disco real. Falta la prueba a mano de guardar un PDF nuevo y verlo en la barra.
 
 ### Fase 4 — Búsqueda semántica
-- [ ] Troceado de documentos (por párrafos/secciones, con solapamiento).
-- [ ] Modelo `multilingual-e5-small` en ONNX Runtime, descargado la primera vez.
-- [ ] Cálculo de embeddings en segundo plano dentro de la cola de trabajos.
-- [ ] Índice HNSW (usearch), persistido en disco y reconstruible desde SQLite.
-- [ ] Búsqueda por significado conectada a la UI.
+> Diseño, elección del modelo y resultados: [ADR 0009](docs/adr/0009-busqueda-por-significado.md).
+- [x] Troceado de documentos (por párrafos/secciones, con solapamiento): el de la Fase 2, con una política de qué lleva vector (documentos, apuntes, código; `.txt` hasta 20 fragmentos; datos, no) y un vector por texto distinto.
+- [x] Modelo en ONNX Runtime, descargado la primera vez: `multilingual-e5-small`, **elegido midiendo** frente a Granite 97M R2.
+- [x] Cálculo de embeddings en segundo plano dentro de la cola de trabajos (prioridad más baja, mismo límite de CPU y pausa).
+- [x] Índice HNSW (usearch), persistido en disco y reconstruible desde SQLite.
+- [x] Búsqueda por significado conectada a la UI (marca «Por significado», estado en Carpetas, interruptor en Ajustes).
+- [x] Adelantado de la Fase 5: fusión RRF ponderada por tipo de búsqueda y `eval/` con 34 consultas reales.
 
-**Hecho cuando:** "cómo evitar redundancia en tablas" encuentra el tema de normalización sin compartir palabras.
+**Hecho cuando:** "cómo evitar redundancia en tablas" encuentra el tema de normalización sin compartir palabras. ⏳ **No cumplido**: esa consulta concreta trae apuntes que hablan de «tablas» (hash, SQL) y no los de normalización. En el conjunto, la búsqueda por ideas pasa de 0,12 a 0,56 de recall@10 sin estropear las exactas (1,00) y con p95 de 37 ms. Lo que falta va a la Fase 5.
 
 ### Fase 5 — Ranking híbrido y medición
-- [ ] Búsqueda de texto + semántica en paralelo y fusión con RRF.
+- [x] Búsqueda de texto + semántica y fusión con RRF (adelantado a la Fase 4).
 - [ ] Frecencia: lo abierto a menudo y hace poco sube.
-- [ ] Carpeta `eval/` con ~30 consultas reales y sus resultados esperados; métrica *recall@10*.
+- [x] Carpeta `eval/` con ~30 consultas reales y sus resultados esperados; métrica *recall@10* (adelantado a la Fase 4).
 - [ ] Benchmark de latencia (p50/p95) con `criterion`.
-- [ ] Ajustar pesos con los datos, no a ojo.
+- [ ] Ajustar pesos con los datos, no a ojo (empezado: peso de la semántica y umbral calibrados con `eval/`).
+- [ ] Mejorar las búsquedas de ideas que aún fallan (p. ej. «cómo evitar redundancia en tablas» → normalización): reordenar los primeros resultados con un *reranker* local, dar a cada fragmento el contexto de su documento (título, asignatura) o ampliar `eval/`. Medir cada cambio.
 
 **Hecho cuando:** hay números en el README (recall y latencia) y mejoran frente a usar cada búsqueda por separado.
 
@@ -217,6 +220,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 **Hecho cuando:** un Espacio abre VS Code en la mitad derecha y el navegador en la izquierda del monitor elegido, aunque alguna de las dos ya estuviera abierta.
 
 ### Fase 7 — Pulido
+- [ ] Instalar y usar la skill unslop (https://github.com/heydamir/unslop, licencia CC BY 4.0: citar a Damir Sokolovsky en el README) para auditar y rediseñar la interfaz, respetando el sistema de diseño Vidrio y justificando cualquier cambio en un ADR. Usarla también para el vídeo de LinkedIn.
 - [ ] Diseño final: tipografía, espaciado, tema claro/oscuro según Windows.
 - [ ] Animaciones de entrada/salida y de lista (rápidas, sin estorbar).
 - [ ] Vista previa del resultado seleccionado.

@@ -232,11 +232,25 @@ function App() {
       key: `file-${hit.fileId}`,
       section: "files" as const,
       title: <Highlighted segments={hit.nameSegments} />,
-      // Con coincidencia en el contenido, el fragmento; si no, la carpeta.
-      subtitle: hit.snippet.length ? (
-        <Highlighted segments={hit.snippet} />
-      ) : (
-        shortFolder(hit.path)
+      // Con coincidencia en el contenido, el fragmento; si no, la carpeta. Lo que llega
+      // solo por significado no tiene palabras que resaltar: se dice, para que se
+      // entienda por qué está ahí.
+      subtitle: (
+        <>
+          {hit.byMeaning && (
+            <span
+              className="text-accent"
+              title="No contiene tus palabras: Sift lo ha encontrado por su significado"
+            >
+              Por significado ·{" "}
+            </span>
+          )}
+          {hit.snippet.length ? (
+            <Highlighted segments={hit.snippet} />
+          ) : (
+            shortFolder(hit.path)
+          )}
+        </>
       ),
       icon: fileIcons[hit.path] ? (
         <img

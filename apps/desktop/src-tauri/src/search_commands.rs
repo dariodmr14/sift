@@ -67,7 +67,21 @@ pub async fn search_files(
     seq: u32,
 ) -> Result<SearchResponse, AppError> {
     let indexing = app.state::<Indexing>();
-    let results = sift_search::search(&[&Lexical(&indexing.index)], &query, MAX_FILE_HITS)
+    let lexical = Lexical(&indexing.index);
+    // Con la búsqueda inteligente lista, también por significado (ADR 0009); si no, solo
+    // por palabras, como siempre.
+    let ready = indexing.smart.ready();
+    let semantic = ready.as_ref().map(|r| sift_search::Semantic {
+        vectors: &r.vectors,
+        text: &indexing.index,
+        embedder: r.query.as_ref(),
+        min_similarity: r.card.min_similarity,
+    });
+    let mut retrievers: Vec<&dyn sift_search::Retriever> = vec![&lexical];
+    if let Some(semantic) = &semantic {
+        retrievers.push(semantic);
+    }
+    let results = sift_search::search(&indexing.index, &retrievers, &query, MAX_FILE_HITS)
         .map_err(|e| AppError::System(e.to_string()))?;
     if !query.trim().is_empty() {
         app.state::<SearchStats>()
@@ -183,6 +197,24 @@ pub fn set_ignore_patterns(app: AppHandle, patterns: Vec<String>) -> Result<Vec<
     indexing.cancel_current();
     indexing.sync();
     Ok(saved)
+}
+
+/// ¿Está activada la búsqueda inteligente (por significado)?
+#[tauri::command]
+#[specta::specta]
+pub fn get_smart_search(app: AppHandle) -> bool {
+    !crate::load_settings(&app).indexing.disable_smart_search
+}
+
+/// Activa o desactiva la búsqueda inteligente. Desactivarla libera el modelo de memoria;
+/// los vectores ya calculados se quedan en disco por si se vuelve a activar.
+#[tauri::command]
+#[specta::specta]
+pub fn set_smart_search(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.indexing.disable_smart_search = !enabled)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    app.state::<Indexing>().smart_changed();
+    Ok(enabled)
 }
 
 /// ¿Se buscan imágenes y vídeos por su nombre? (Ajustes → Carpetas → Avanzado)

@@ -92,7 +92,7 @@ fn hide_launcher(app: AppHandle) {
 #[specta::specta]
 async fn open_settings(app: AppHandle, new_space: bool) {
     launcher::hide(&app);
-    settings_window::open(&app, new_space);
+    settings_window::open(&app, new_space, settings_window::Origin::Launcher);
 }
 
 /// La UI de ajustes ya ha pintado: se puede mostrar su ventana (se crea oculta).
@@ -238,6 +238,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             search::list_roots,
             search::unread_files,
             search::get_index_media,
+            search::get_smart_search,
+            search::set_smart_search,
             search::set_index_media,
             search::add_root,
             search::remove_root,

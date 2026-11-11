@@ -9,9 +9,11 @@ mod launcher;
 mod load;
 mod logging;
 mod materials;
+mod models;
 mod search_commands;
 mod settings_window;
 mod shell;
+mod smart;
 mod spaces_commands;
 mod tray;
 mod watcher;
@@ -171,6 +173,7 @@ pub fn run() {
         .manage(launcher::LauncherState::default())
         .manage(shell::IconCache::default())
         .manage(materials::Materials::default())
+        .manage(settings_window::ReturnToLauncher::default())
         .manage(search_commands::SearchStats::default())
         .invoke_handler(specta.invoke_handler())
         .setup(move |app| {
@@ -217,6 +220,10 @@ pub fn run() {
                     && let Some(w) = window.app_handle().get_webview_window(window.label())
                 {
                     materials::on_moved(window.app_handle(), &w);
+                }
+                // Cerrados los ajustes: si se abrieron desde la barra, la barra vuelve.
+                if let tauri::WindowEvent::Destroyed = event {
+                    settings_window::on_closed(window.app_handle());
                 }
                 return;
             }

@@ -85,6 +85,7 @@ Cuando la barra se oculta (por cualquier vía), Rust emite `LauncherHidden` y la
 - **`TitleBar`** (`src/settings/TitleBar.tsx`): barra de título propia de las ventanas de app (la nativa de Windows 10 es negra y no admite vidrio). Zona de arrastre con `data-tauri-drag-region` (el arrastre lo hace Windows: conserva el ajuste a los bordes, Win+flechas y el doble clic para maximizar) y botones de 46 × 32 px con los glifos de Windows. El de cerrar usa `bg-caption-close`.
 - **`.sift-glass`** (`index.css`): superficie flotante de vidrio para diálogos (`Modal` ya la usa).
 - **Reordenar arrastrando**: `SortableList` y `useSortableItem` (`src/settings/Sortable.tsx`), sobre [dnd-kit](https://dndkit.com). La tarjeta sigue al puntero, se levanta (`bg-glass` + `shadow-window`) y las demás se apartan con una transición de 180 ms solo de `transform` (ninguna con «reducir movimiento»). Mientras se arrastra, `<html class="sift-sorting">` impide seleccionar texto. El asa lleva `select-none touch-none` y las imágenes `draggable={false}`. Siempre con la alternativa de teclado Alt+↑/↓ y anuncios en español para lectores de pantalla.
+- **«Por significado»** (`App.tsx`): los resultados que llegan solo por la búsqueda inteligente empiezan su subtítulo con esa marca en `text-accent`. No tienen palabras que resaltar: se enseña el principio de su fragmento.
 - **`SpaceIcon`** (`src/components/SpaceIcon.tsx`): icono de un Espacio. Los SVG se pintan con `<img>` o máscara CSS, nunca como HTML.
 
 ## Textos

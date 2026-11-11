@@ -4,11 +4,29 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "PowerShell(git add:*)",
-      "PowerShell(git commit:*)"
+      "PowerShell(git commit:*)",
+      "Bash(git push:*)",
+      "PowerShell(git push:*)",
+      "Bash(gh pr:*)",
+      "PowerShell(gh pr:*)",
+      "Bash(gh run:*)",
+      "PowerShell(gh run:*)"
     ],
     "deny": [
-      "Bash(git push:*)",
-      "PowerShell(git push:*)"
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push --force-with-lease:*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Bash(git push *+main*)",
+      "Bash(git push *+refs/heads/main*)",
+      "PowerShell(git push --force:*)",
+      "PowerShell(git push -f:*)",
+      "PowerShell(git push --force-with-lease:*)",
+      "PowerShell(git push * --force*)",
+      "PowerShell(git push * -f*)",
+      "PowerShell(git push *+main*)",
+      "PowerShell(git push *+refs/heads/main*)"
     ]
   }
 }

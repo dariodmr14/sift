@@ -22,7 +22,9 @@ pub fn init(log_dir: &Path) -> anyhow::Result<WorkerGuard> {
         .build(log_dir)?;
     let (file_writer, guard) = tracing_appender::non_blocking(file);
 
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    // ONNX Runtime cuenta en INFO cada reserva de memoria: solo sus avisos.
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info,ort=warn"));
     tracing_subscriber::registry()
         .with(filter)
         .with(fmt::layer())
