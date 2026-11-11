@@ -109,12 +109,13 @@ pub struct UnreadGroupView {
 /// Cuántos ejemplos se enseñan por motivo: los justos para hacerse una idea.
 const UNREAD_EXAMPLES: usize = 3;
 
-/// Los archivos que no se pudieron leer, agrupados por motivo (no se listan todos).
+/// Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
+/// listan todos).
 #[tauri::command]
 #[specta::specta]
-pub fn unread_files(app: AppHandle) -> Result<Vec<UnreadGroupView>, AppError> {
+pub fn unread_files(app: AppHandle, root_id: i32) -> Result<Vec<UnreadGroupView>, AppError> {
     Ok(db(&app)
-        .unread_summary(UNREAD_EXAMPLES)?
+        .unread_summary(i64::from(root_id), UNREAD_EXAMPLES)?
         .into_iter()
         .map(|g| UnreadGroupView {
             // Un código que esta versión no conozca cuenta como «otros».

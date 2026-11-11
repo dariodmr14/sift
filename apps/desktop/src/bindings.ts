@@ -67,8 +67,11 @@ export const commands = {
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
 	searchFiles: (query: string, seq: number) => typedError<SearchResponse, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
 	listRoots: () => typedError<RootView_Serialize[], AppError>(__TAURI_INVOKE("list_roots")),
-	/**  Los archivos que no se pudieron leer, agrupados por motivo (no se listan todos). */
-	unreadFiles: () => typedError<UnreadGroupView[], AppError>(__TAURI_INVOKE("unread_files")),
+	/**
+	 *  Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
+	 *  listan todos).
+	 */
+	unreadFiles: (rootId: number) => typedError<UnreadGroupView[], AppError>(__TAURI_INVOKE("unread_files", { rootId })),
 	/**  Elige una carpeta con el diálogo de Windows y empieza a indexarla. */
 	addRoot: () => typedError<string | null, AppError>(__TAURI_INVOKE("add_root")),
 	/**  Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan). */

@@ -294,16 +294,22 @@ impl Database {
         Ok(())
     }
 
-    /// Los archivos que no se pudieron leer, agrupados por motivo (de más a menos), con
-    /// hasta `examples` rutas de ejemplo por grupo. No los lista todos: pueden ser miles.
-    pub fn unread_summary(&self, examples: usize) -> Result<Vec<UnreadGroup>, StorageError> {
+    /// Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (de más a
+    /// menos), con hasta `examples` rutas de ejemplo por grupo. No los lista todos: pueden
+    /// ser miles.
+    pub fn unread_summary(
+        &self,
+        root_id: i64,
+        examples: usize,
+    ) -> Result<Vec<UnreadGroup>, StorageError> {
         let mut groups: Vec<UnreadGroup> = self
             .conn
             .prepare(
-                "SELECT error_kind, COUNT(*) FROM files WHERE error_kind IS NOT NULL
+                "SELECT error_kind, COUNT(*) FROM files
+                 WHERE root_id = ?1 AND error_kind IS NOT NULL
                  GROUP BY error_kind ORDER BY COUNT(*) DESC, error_kind",
             )?
-            .query_map([], |r| {
+            .query_map([root_id], |r| {
                 Ok(UnreadGroup {
                     kind: r.get(0)?,
                     count: r.get(1)?,
@@ -311,12 +317,13 @@ impl Database {
                 })
             })?
             .collect::<Result<_, _>>()?;
-        let mut stmt = self
-            .conn
-            .prepare("SELECT path FROM files WHERE error_kind = ?1 ORDER BY mtime DESC LIMIT ?2")?;
+        let mut stmt = self.conn.prepare(
+            "SELECT path FROM files WHERE root_id = ?1 AND error_kind = ?2
+                 ORDER BY mtime DESC LIMIT ?3",
+        )?;
         for group in &mut groups {
             group.examples = stmt
-                .query_map(params![group.kind, examples as i64], |r| r.get(0))?
+                .query_map(params![root_id, group.kind, examples as i64], |r| r.get(0))?
                 .collect::<Result<_, _>>()?;
         }
         Ok(groups)
@@ -559,7 +566,14 @@ mod tests {
         db.upsert_file(&file(root.id, r"C:\Uni\bien.md"), &[])
             .unwrap();
 
-        let groups = db.unread_summary(3).unwrap();
+        // Otra carpeta con su propio archivo ilegible: no se mezcla.
+        let other = db.add_root(Path::new(r"D:\Otra")).unwrap();
+        let mut theirs = file(other.id, r"D:\Otra\x.txt");
+        theirs.error_kind = Some("unsupported".into());
+        db.upsert_file(&theirs, &[]).unwrap();
+        assert_eq!(db.unread_summary(other.id, 3).unwrap()[0].count, 1);
+
+        let groups = db.unread_summary(root.id, 3).unwrap();
         assert_eq!(groups.len(), 2);
         assert_eq!(
             (groups[0].kind.as_str(), groups[0].count),
