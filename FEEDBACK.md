@@ -55,3 +55,29 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ Los patrones a ignorar vienen por defecto y van en «Avanzado», plegado, con una explicación en lenguaje normal.
 - [x] ✅ Estado en lenguaje humano: «Al día · 1.240 archivos», «Buscando cambios…», «Leyendo 32 de 120 archivos», con barra de progreso.
 - [x] ✅ Por carpeta: nombre, ruta abreviada, número de archivos y última actualización.
+
+## 2026-11-12 — Tras usar la Fase 2 fusionada (rama `feat/fase-3-formatos`)
+
+### Ventana de Ajustes
+- [x] ✅ **Se abre MUY transparente** y no coge el vidrio bueno hasta que se mueve un milímetro. El material correcto tiene que estar desde el primer fotograma.
+- [x] ✅ **La barra de título es negra.** (barra propia sobre el vidrio) Que sea del mismo vidrio que la ventana (o, como mínimo, del color del fondo). Valorar una barra propia con botones estilo Windows, sin perder el ajuste a los bordes (snap) ni el arrastre. Tiene que funcionar en Windows 10.
+- [x] ✅ **Al mover la ventana, el blur temporal se ve más transparente** que el Acrylic. Ajustar el tinte para que el cambio casi no se note.
+- [x] ✅ **El pie fijo del editor** (Guardar / Guardado / Duplicar / Borrar) sigue opaco. Debe seguir la opción de vidrio.
+- [x] ✅ **Orden de la navegación**: como las apps estándar de Windows (General primero; Estado/Acerca de al final).
+
+### Textos
+- [x] ✅ **Duraciones legibles**: nada de «335 s». «5 min 35 s», «2 min», «hace 1 h»… en toda la app.
+
+### Carpetas e indexado
+- [x] ✅ **Archivos que no se pudieron leer** (salen 439): un desplegable pequeño que los agrupe por motivo con su número («formato no compatible», «protegido con contraseña», «sin permiso», «demasiado grande», «dañado»…) y unos pocos ejemplos por grupo.
+- [x] ✅ **La carpeta de la uni dice 86.509 archivos** (quedan 11.888 útiles; ver ADR 0007), exagerado. Indexar solo formatos útiles (texto, código, documentos) e ignorar por defecto binarios, compilados, imágenes, vídeos, cachés, entornos virtuales y dependencias. Explicar qué había en esos 86.509.
+
+### Para la Fase 7 (pulido)
+- [ ] ⏳ Las animaciones del arrastre de acciones cambian de color de golpe al coger y al soltar la tarjeta: tienen que ser transiciones suaves. Habrá que pulir a fondo todas las animaciones.
+
+## 2026-11-12 (2) — Tras probar los ajustes de la ventana y del indexado
+
+- [x] ✅ **El cambio entre blur y Acrylic al mover Ajustes se nota demasiado** (un velo del color del fondo tapa los dos cambios de material), sobre todo al volver al Acrylic al soltar. Suavizarlo (p. ej. una capa de tinte con un fundido de ~200 ms que tape el cambio de material) o explicar por qué no se puede más.
+- [x] ✅ **Volver a reordenar los Espacios arrastrando**, con la misma animación y librería (dnd-kit) que las acciones. Alt+↑/↓ se mantiene. A la gente le puede gustar tener su orden.
+- [x] ✅ **El desplegable de «no se pudieron leer» va dentro de cada carpeta**: debajo de su fila, con su flechita y solo lo de esa carpeta. Fuera el bloque general del medio; arriba basta el estado global.
+- [x] ✅ **Imágenes y vídeos por nombre** (sin leer el contenido), siempre que no estén en carpetas generadas. Opción en Avanzado para desactivarlo.

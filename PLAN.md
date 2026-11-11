@@ -170,13 +170,14 @@ sift/
 **Hecho cuando:** buscas una palabra que está dentro de un apunte y aparece en < 50 ms. ✅ p50 6,3 ms · p95 12,1 ms con 50.000 fragmentos.
 
 ### Fase 3 — Más formatos e indexado incremental
-- [ ] Extracción de PDF (PDFium) y Word.
-- [ ] Watcher de carpetas + hash de contenido: solo se reprocesa lo que cambia.
-- [ ] Cola de trabajos en segundo plano con prioridad y límite de CPU.
-- [ ] Progreso del indexado visible en la UI.
-- [ ] Recuperación ante fallos: si la app se cierra a mitad, retoma donde iba.
+> Qué se indexa: [ADR 0007](docs/adr/0007-que-se-indexa.md). Cómo llega `pdfium.dll`: [ADR 0008](docs/adr/0008-distribucion-de-pdfium.md).
+- [x] Extracción de PDF (PDFium) y Word (también PowerPoint y odt). Protegidos y dañados, con su motivo.
+- [x] Watcher de carpetas + hash de contenido: solo se reprocesa lo que cambia. Renombrar o mover conserva el archivo (se reconoce por su contenido) y no deja resultados rotos.
+- [x] Cola de trabajos en segundo plano con prioridad (lo cambiado hace poco va primero) y límite de CPU; prioridad baja de Windows y pausa si el PC está ocupado.
+- [x] Progreso del indexado visible en la UI, en lenguaje humano.
+- [x] Recuperación ante fallos: si la app se cierra a mitad, retoma donde iba.
 
-**Hecho cuando:** guardas un PDF nuevo en una carpeta y en segundos aparece en la búsqueda, sin reindexar todo.
+**Hecho cuando:** guardas un PDF nuevo en una carpeta y en segundos aparece en la búsqueda, sin reindexar todo. ⏳ Comprobado en la app con datos reales: 542 de 543 PDF y 750 Word leídos (el que falta, dañado), y el vigilante probado sobre el disco real. Falta la prueba a mano de guardar un PDF nuevo y verlo en la barra.
 
 ### Fase 4 — Búsqueda semántica
 - [ ] Troceado de documentos (por párrafos/secciones, con solapamiento).

@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { commands, events, type IndexStatus, type RootView } from "../bindings";
-import { Button, ErrorText } from "./ui";
 import {
-  files,
+  commands,
+  events,
+  type IndexStatus,
+  type RootView,
+  type UnreadGroupView,
+} from "../bindings";
+import { Button, ErrorText } from "./ui";
+import { count, duration, files, since } from "../format";
+import {
   folderName,
   shortParent,
-  since,
   statusLine,
+  statusNotes,
+  unreadReason,
   type StatusLine,
 } from "./folders";
 
@@ -79,6 +86,7 @@ export function FoldersSection() {
           running={status?.running ?? false}
           lastRun={status?.last?.seconds ?? undefined}
           error={status?.error}
+          notes={statusNotes(status)}
         />
 
         {error && <ErrorText>{error}</ErrorText>}
@@ -90,65 +98,24 @@ export function FoldersSection() {
             </li>
           )}
           {roots?.map((root) => (
-            <li key={root.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-2">
-                  <span className="truncate text-sm font-medium">
-                    {folderName(root.path)}
-                  </span>
-                  <span
-                    className="truncate text-xs text-muted"
-                    title={root.path}
-                  >
-                    {shortParent(root.path)}
-                  </span>
-                </span>
-                <span className="block text-xs text-muted">
-                  {root.missing ? (
-                    <span className="text-danger">
-                      No se encuentra la carpeta. ¿Está en un disco
-                      desconectado?
-                    </span>
-                  ) : (
-                    <>
-                      {files(root.files)}
-                      {root.errors > 0 && ` · ${root.errors} sin poder leer`}
-                      {root.lastIndexedAt
-                        ? ` · actualizada ${since(root.lastIndexedAt)}`
-                        : " · aún sin revisar"}
-                    </>
-                  )}
-                </span>
-              </span>
-              {confirmRemove === root.id ? (
-                <span className="flex items-center gap-2 text-sm">
-                  ¿Dejar de buscar aquí?
-                  <Button variant="danger" onClick={() => void remove(root.id)}>
-                    Sí, quitar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => setConfirmRemove(null)}
-                  >
-                    No
-                  </Button>
-                </span>
-              ) : (
-                <Button
-                  variant="ghost"
-                  onClick={() => setConfirmRemove(root.id)}
-                  aria-label={`Quitar ${root.path}`}
-                >
-                  Quitar
-                </Button>
-              )}
-            </li>
+            <RootRow
+              key={root.id}
+              root={root}
+              confirming={confirmRemove === root.id}
+              onAskRemove={() => setConfirmRemove(root.id)}
+              onCancelRemove={() => setConfirmRemove(null)}
+              onRemove={() => void remove(root.id)}
+            />
           ))}
         </ul>
         <p className="text-xs text-muted">
-          Quitar una carpeta solo hace que Sift deje de buscar en ella: tus
-          archivos no se tocan. Por ahora se lee el contenido de textos,
-          Markdown y código; los PDF y Word se encuentran por su nombre.
+          Sift solo mira lo que sirve para buscar: documentos, textos, código y,
+          por su nombre, imágenes y vídeos. Se salta programas y archivos
+          internos de otras herramientas. Por ahora lee el contenido de textos,
+          Markdown, código, PDF, Word y PowerPoint; las hojas de cálculo se
+          encuentran por su nombre. Lee en segundo plano y se pausa si estás
+          usando mucho el PC. Quitar una carpeta solo hace que Sift deje de
+          buscar en ella: tus archivos no se tocan.
         </p>
       </section>
 
@@ -162,11 +129,13 @@ function StatusPanel({
   running,
   lastRun,
   error,
+  notes,
 }: {
   line: StatusLine;
   running: boolean;
   lastRun: number | undefined;
   error: string | null | undefined;
+  notes: string[];
 }) {
   return (
     <div className="space-y-2 rounded-window border border-line px-4 py-3">
@@ -187,12 +156,153 @@ function StatusPanel({
       {line.progress !== null && <ProgressBar value={line.progress} />}
       {!running && lastRun !== undefined && (
         <p className="text-xs text-muted">
-          La última revisión tardó {lastRun.toFixed(1).replace(".", ",")} s.
-          Sift solo vuelve a leer lo que ha cambiado.
+          La última revisión completa tardó {duration(lastRun)}. Desde entonces,
+          Sift ve tus cambios al momento y solo vuelve a leer lo que cambia.
         </p>
       )}
+      {notes.map((note) => (
+        <p key={note} className="text-xs text-muted">
+          {note}
+        </p>
+      ))}
       {error && <ErrorText>{error}</ErrorText>}
     </div>
+  );
+}
+
+/**
+ * Una carpeta: nombre, dónde está, cuántos archivos y cuándo se actualizó. Si algunos no
+ * se pudieron leer, su número es un botón con flecha que despliega, debajo de la fila,
+ * los motivos de **esa** carpeta con unos pocos ejemplos (no todos: pueden ser miles).
+ */
+function RootRow({
+  root,
+  confirming,
+  onAskRemove,
+  onCancelRemove,
+  onRemove,
+}: {
+  root: RootView;
+  confirming: boolean;
+  onAskRemove: () => void;
+  onCancelRemove: () => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [groups, setGroups] = useState<UnreadGroupView[] | null>(null);
+  const panelId = `unread-${root.id}`;
+
+  // Se piden al abrir, y de nuevo si cambia el número (una revisión acaba de terminar).
+  useEffect(() => {
+    if (!open) return;
+    void commands.unreadFiles(root.id).then((r) => {
+      if (r.status === "ok") setGroups(r.data);
+    });
+  }, [open, root.id, root.errors]);
+
+  return (
+    <li className="px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span className="min-w-0 flex-1">
+          <span className="flex items-baseline gap-2">
+            <span className="truncate text-sm font-medium">
+              {folderName(root.path)}
+            </span>
+            <span className="truncate text-xs text-muted" title={root.path}>
+              {shortParent(root.path)}
+            </span>
+          </span>
+          <span className="block text-xs text-muted">
+            {root.missing ? (
+              <span className="text-danger">
+                No se encuentra la carpeta. ¿Está en un disco desconectado?
+              </span>
+            ) : (
+              <>
+                {files(root.files)}
+                {root.lastIndexedAt
+                  ? ` · actualizada ${since(root.lastIndexedAt)}`
+                  : " · aún sin revisar"}
+              </>
+            )}
+          </span>
+        </span>
+        {confirming ? (
+          <span className="flex items-center gap-2 text-sm">
+            ¿Dejar de buscar aquí?
+            <Button variant="danger" onClick={onRemove}>
+              Sí, quitar
+            </Button>
+            <Button variant="ghost" onClick={onCancelRemove}>
+              No
+            </Button>
+          </span>
+        ) : (
+          <Button
+            variant="ghost"
+            onClick={onAskRemove}
+            aria-label={`Quitar ${root.path}`}
+          >
+            Quitar
+          </Button>
+        )}
+      </div>
+      {!root.missing && root.errors > 0 && (
+        <>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => setOpen(!open)}
+            className="mt-1 flex items-center gap-1.5 rounded-item text-xs text-muted outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <span
+              aria-hidden
+              className={`inline-block transition-transform duration-150 motion-reduce:transition-none ${
+                open ? "rotate-90" : ""
+              }`}
+            >
+              ›
+            </span>
+            {root.errors === 1
+              ? "1 archivo no se pudo leer"
+              : `${count(root.errors)} archivos no se pudieron leer`}
+          </button>
+          {open && (
+            <ul id={panelId} className="space-y-3 pt-2 pl-4 text-sm">
+              {groups?.map((g) => {
+                const reason = unreadReason(g.kind);
+                return (
+                  <li key={g.kind}>
+                    <p>
+                      <span className="font-medium">{reason.label}</span>
+                      <span className="text-muted"> · {count(g.count)}</span>
+                    </p>
+                    <p className="text-xs text-muted">{reason.hint}</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {g.examples.map((path) => (
+                        <li
+                          key={path}
+                          title={path}
+                          className="truncate font-mono text-xs text-muted"
+                        >
+                          {folderName(path)}
+                        </li>
+                      ))}
+                      {g.count > g.examples.length && (
+                        <li className="text-xs text-muted">
+                          …y {count(g.count - g.examples.length)} más
+                        </li>
+                      )}
+                    </ul>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
+      )}
+    </li>
   );
 }
 
@@ -216,6 +326,36 @@ function ProgressBar({ value }: { value: number | "indeterminate" }) {
         />
       )}
     </div>
+  );
+}
+
+/** «Buscar también imágenes y vídeos por su nombre» (activado por defecto). */
+function MediaToggle() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    void commands.getIndexMedia().then(setEnabled);
+  }, []);
+  return (
+    <label className="flex items-start gap-3 text-sm">
+      <input
+        type="checkbox"
+        checked={enabled ?? true}
+        disabled={enabled === null}
+        onChange={(e) => {
+          void commands.setIndexMedia(e.currentTarget.checked).then((r) => {
+            if (r.status === "ok") setEnabled(r.data);
+          });
+        }}
+        className="mt-1 size-4 accent-accent"
+      />
+      <span>
+        Buscar también imágenes y vídeos por su nombre
+        <span className="block text-xs text-muted">
+          Su contenido no se lee. Los que están en carpetas que Sift se salta
+          (dependencias, compilados, cachés) no aparecen.
+        </span>
+      </span>
+    </label>
   );
 }
 
@@ -257,12 +397,15 @@ function Advanced() {
         Avanzado
       </summary>
       <div className="space-y-3 pt-3">
+        <MediaToggle />
         <p className="text-sm text-muted">
-          Sift se salta por su cuenta lo que no tiene sentido buscar: archivos
-          temporales, copias de programas y carpetas técnicas como{" "}
-          <code className="font-mono">node_modules</code>. Normalmente no tienes
-          que tocar nada. Si quieres que no mire alguna carpeta o tipo de
-          archivo, añádelo aquí.
+          Además, Sift se salta por su cuenta las carpetas que crean las
+          herramientas y no tú: dependencias (
+          <code className="font-mono">node_modules</code>), compilados (
+          <code className="font-mono">bin</code>,{" "}
+          <code className="font-mono">build</code>), entornos de Python y
+          cachés. Normalmente no tienes que tocar nada. Si quieres que no mire
+          alguna carpeta o tipo de archivo más, añádelo aquí.
         </p>
         <label className="block space-y-1">
           <span className="text-xs text-muted">

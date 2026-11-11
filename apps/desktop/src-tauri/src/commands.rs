@@ -95,6 +95,13 @@ async fn open_settings(app: AppHandle, new_space: bool) {
     settings_window::open(&app, new_space);
 }
 
+/// La UI de ajustes ya ha pintado: se puede mostrar su ventana (se crea oculta).
+#[tauri::command]
+#[specta::specta]
+fn settings_ready(app: AppHandle) {
+    settings_window::reveal(&app);
+}
+
 /// La UI lo llama tras pintar el primer fotograma con el lanzador visible.
 #[tauri::command]
 #[specta::specta]
@@ -212,6 +219,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             set_launch_at_startup,
             set_icons_hidden,
             set_glass_disabled,
+            settings_ready,
             spaces::list_spaces,
             spaces::create_space,
             spaces::update_space,
@@ -228,6 +236,9 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::import_spaces,
             search::search_files,
             search::list_roots,
+            search::unread_files,
+            search::get_index_media,
+            search::set_index_media,
             search::add_root,
             search::remove_root,
             search::get_ignore_patterns,
@@ -241,6 +252,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             LauncherShown,
             LauncherHidden,
             NewSpaceRequested,
+            crate::materials::GlassMoving,
             crate::indexing::IndexProgress
         ])
 }

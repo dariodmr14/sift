@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sift_indexer::IgnoreRules;
 use sift_search::{Lexical, SearchResults};
 use sift_spaces::Opener;
@@ -96,6 +96,38 @@ pub fn list_roots(app: AppHandle) -> Result<Vec<RootView>, AppError> {
         .collect())
 }
 
+/// Archivos que no se pudieron leer por un mismo motivo, con unos pocos ejemplos.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct UnreadGroupView {
+    /// `unsupported`, `tooLarge`, `noPermission`, `protected`, `damaged` u `other`.
+    pub kind: String,
+    pub count: u32,
+    pub examples: Vec<String>,
+}
+
+/// Cuántos ejemplos se enseñan por motivo: los justos para hacerse una idea.
+const UNREAD_EXAMPLES: usize = 3;
+
+/// Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
+/// listan todos).
+#[tauri::command]
+#[specta::specta]
+pub fn unread_files(app: AppHandle, root_id: i32) -> Result<Vec<UnreadGroupView>, AppError> {
+    Ok(db(&app)
+        .unread_summary(i64::from(root_id), UNREAD_EXAMPLES)?
+        .into_iter()
+        .map(|g| UnreadGroupView {
+            // Un código que esta versión no conozca cuenta como «otros».
+            kind: sift_extract::UnreadReason::from_code(&g.kind)
+                .code()
+                .to_owned(),
+            count: g.count as u32,
+            examples: g.examples,
+        })
+        .collect())
+}
+
 /// Elige una carpeta con el diálogo de Windows y empieza a indexarla.
 #[tauri::command]
 #[specta::specta]
@@ -151,6 +183,26 @@ pub fn set_ignore_patterns(app: AppHandle, patterns: Vec<String>) -> Result<Vec<
     indexing.cancel_current();
     indexing.sync();
     Ok(saved)
+}
+
+/// ¿Se buscan imágenes y vídeos por su nombre? (Ajustes → Carpetas → Avanzado)
+#[tauri::command]
+#[specta::specta]
+pub fn get_index_media(app: AppHandle) -> bool {
+    !crate::load_settings(&app).indexing.skip_media
+}
+
+/// Activa o desactiva buscar imágenes y vídeos por nombre, y revisa las carpetas: los
+/// que sobran salen del índice y los que faltan entran.
+#[tauri::command]
+#[specta::specta]
+pub fn set_index_media(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.indexing.skip_media = !enabled)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    let indexing = app.state::<Indexing>();
+    indexing.cancel_current();
+    indexing.sync();
+    Ok(enabled)
 }
 
 #[tauri::command]
