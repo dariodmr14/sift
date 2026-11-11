@@ -81,6 +81,103 @@ mod tests {
         assert!(matches!(to_extract_error(broken), ExtractError::Damaged(_)));
     }
 
+    /// Un PDF mínimo de una página con `text` (Helvetica), con su tabla de referencias
+    /// calculada a mano: así el test no necesita archivos de muestra.
+    fn tiny_pdf(text: &str) -> Vec<u8> {
+        let stream = format!("BT /F1 18 Tf 72 720 Td ({text}) Tj ET");
+        let objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R              /Resources << /Font << /F1 5 0 R >> >> >>"
+                .to_string(),
+            format!("<< /Length {} >>
+stream
+{stream}
+endstream", stream.len()),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
+        ];
+        let mut pdf = b"%PDF-1.4
+"
+        .to_vec();
+        let mut offsets = Vec::new();
+        for (i, body) in objects.iter().enumerate() {
+            offsets.push(pdf.len());
+            pdf.extend(
+                format!(
+                    "{} 0 obj
+{body}
+endobj
+",
+                    i + 1
+                )
+                .bytes(),
+            );
+        }
+        let xref = pdf.len();
+        pdf.extend(
+            format!(
+                "xref
+0 {}
+0000000000 65535 f 
+",
+                objects.len() + 1
+            )
+            .bytes(),
+        );
+        for offset in offsets {
+            pdf.extend(
+                format!(
+                    "{offset:010} 00000 n 
+"
+                )
+                .bytes(),
+            );
+        }
+        pdf.extend(
+            format!(
+                "trailer
+<< /Size {} /Root 1 0 R >>
+startxref
+{xref}
+%%EOF
+",
+                objects.len() + 1
+            )
+            .bytes(),
+        );
+        pdf
+    }
+
+    /// Dónde está `pdfium.dll` en el repositorio (la baja `scripts/fetch-pdfium.ps1`).
+    fn repo_pdfium() -> std::path::PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../apps/desktop/src-tauri/pdfium")
+    }
+
+    /// Con PDFium de verdad: lee el texto de un PDF, y uno roto da «dañado». Si la DLL no
+    /// está (no se ha ejecutado el script), se salta avisando; la CI sí la tiene.
+    #[test]
+    fn reads_a_real_pdf_with_pdfium() {
+        let engine = match Engine::load(&repo_pdfium()) {
+            Ok(engine) => engine,
+            Err(reason) => {
+                eprintln!("se salta: {reason} (ejecuta scripts/fetch-pdfium.ps1)");
+                return;
+            }
+        };
+        let dir = tempfile::tempdir().unwrap();
+        let good = dir.path().join("tema.pdf");
+        std::fs::write(&good, tiny_pdf("Normalizacion y formas normales")).unwrap();
+        let text = engine.text(&good, 1024).unwrap();
+        assert!(text.contains("Normalizacion y formas normales"), "{text:?}");
+
+        let broken = dir.path().join("roto.pdf");
+        std::fs::write(&broken, b"%PDF-1.4 esto se corta aqui").unwrap();
+        assert!(matches!(
+            engine.text(&broken, 1024),
+            Err(ExtractError::Damaged(_))
+        ));
+    }
+
     #[test]
     fn without_the_dll_the_engine_says_why() {
         let dir = tempfile::tempdir().unwrap();

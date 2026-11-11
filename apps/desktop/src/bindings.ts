@@ -259,7 +259,11 @@ export type IndexPhase =
 /**  Recorriendo las carpetas para ver qué ha cambiado («Buscando cambios…»). */
 "scanning" | 
 /**  Leyendo lo nuevo o cambiado («Leyendo `done` de `total` archivos»). */
-"reading";
+"reading" | 
+/**  Leyendo, pero en pausa porque el PC está ocupado. */
+"paused" | 
+/**  Poniendo al día unos pocos archivos que acaban de cambiar. */
+"updating";
 
 /**  Evento: el estado del indexado ha cambiado. */
 export type IndexProgress = IndexProgress_Serialize | IndexProgress_Deserialize;
@@ -285,9 +289,13 @@ export type IndexStatus_Deserialize = {
 	done: number,
 	/**  Leyendo: archivos nuevos o cambiados que hay que leer en esta pasada. */
 	total: number,
-	/**  Resumen de la última pasada completa. */
+	/**  Resumen de la última revisión completa. */
 	last?: LastRun | null,
 	error?: string | null,
+	/**  ¿Se vigilan las carpetas en tiempo real? (si no, solo se revisan al arrancar) */
+	watching: boolean,
+	/**  ¿Se lee el contenido de los PDF? (hace falta `pdfium.dll`) */
+	readsPdf: boolean,
 };
 
 /**  Estado del indexado, para Ajustes → Carpetas. */
@@ -302,9 +310,13 @@ export type IndexStatus_Serialize = {
 	done: number,
 	/**  Leyendo: archivos nuevos o cambiados que hay que leer en esta pasada. */
 	total: number,
-	/**  Resumen de la última pasada completa. */
+	/**  Resumen de la última revisión completa. */
 	last: LastRun | null,
 	error: string | null,
+	/**  ¿Se vigilan las carpetas en tiempo real? (si no, solo se revisan al arrancar) */
+	watching: boolean,
+	/**  ¿Se lee el contenido de los PDF? (hace falta `pdfium.dll`) */
+	readsPdf: boolean,
 };
 
 /**  Una app instalada, para el selector. */

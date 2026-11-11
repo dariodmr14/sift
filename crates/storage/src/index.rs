@@ -62,6 +62,9 @@ pub struct NewChunk {
     pub text: String,
 }
 
+/// (id del fragmento, texto).
+pub type ChunkText = (i64, String);
+
 /// Un archivo indexado (lo justo para reconstruir el índice).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileRow {
@@ -414,7 +417,7 @@ impl Database {
 
     /// Archivos guardados que el índice de búsqueda aún no ha confirmado, con sus
     /// fragmentos: se pueden reenviar sin volver a leer el disco.
-    pub fn unsynced_files(&self) -> Result<Vec<(FileRow, Vec<(i64, String)>)>, StorageError> {
+    pub fn unsynced_files(&self) -> Result<Vec<(FileRow, Vec<ChunkText>)>, StorageError> {
         let files: Vec<FileRow> = self
             .conn
             .prepare("SELECT id, path, name, ext FROM files WHERE search_synced = 0 ORDER BY id")?
