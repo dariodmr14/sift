@@ -81,3 +81,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Volver a reordenar los Espacios arrastrando**, con la misma animación y librería (dnd-kit) que las acciones. Alt+↑/↓ se mantiene. A la gente le puede gustar tener su orden.
 - [x] ✅ **El desplegable de «no se pudieron leer» va dentro de cada carpeta**: debajo de su fila, con su flechita y solo lo de esa carpeta. Fuera el bloque general del medio; arriba basta el estado global.
 - [x] ✅ **Imágenes y vídeos por nombre** (sin leer el contenido), siempre que no estén en carpetas generadas. Opción en Avanzado para desactivarlo.
+
+## 2026-11-13 — Tras fusionar la Fase 3 (rama `feat/fase-4-semantica`)
+
+- [x] ✅ **Al cerrar Ajustes, volver a la barra** si se abrieron desde ella (Alt+Espacio → Ajustes), con el foco en la búsqueda: lo normal es que hayas cambiado algo y quieras usar la app. Si se abrieron desde la bandeja, al cerrar no se muestra la barra.

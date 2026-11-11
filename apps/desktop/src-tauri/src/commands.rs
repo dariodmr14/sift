@@ -92,7 +92,7 @@ fn hide_launcher(app: AppHandle) {
 #[specta::specta]
 async fn open_settings(app: AppHandle, new_space: bool) {
     launcher::hide(&app);
-    settings_window::open(&app, new_space);
+    settings_window::open(&app, new_space, settings_window::Origin::Launcher);
 }
 
 /// La UI de ajustes ya ha pintado: se puede mostrar su ventana (se crea oculta).
