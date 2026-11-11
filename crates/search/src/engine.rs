@@ -375,6 +375,21 @@ mod tests {
     }
 
     #[test]
+    fn copies_of_the_same_text_come_in_id_order() {
+        // Mismo texto en tres carpetas, añadidas en otro orden: siempre por id.
+        let idx = index_with(&[
+            (3, "c.md", &["apuntes de redes"]),
+            (1, "a.md", &["apuntes de redes"]),
+            (2, "b.md", &["apuntes de redes"]),
+        ]);
+        let chunks = idx
+            .search_chunks(&ParsedQuery::parse("redes "), 10)
+            .unwrap();
+        let ids: Vec<i64> = chunks.iter().map(|c| c.file_id).collect();
+        assert_eq!(ids, vec![1, 2, 3]);
+    }
+
+    #[test]
     fn two_words_are_still_both_required() {
         // Con dos palabras, «falta una» sería «cualquiera de las dos»: no se relaja.
         assert!(names(&sample(), "redundancia tcp ").is_empty());
