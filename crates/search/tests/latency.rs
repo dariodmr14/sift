@@ -5,76 +5,10 @@
 
 use std::time::Instant;
 
-use sift_indexer::{IndexSink, IndexedFile};
-use sift_search::{Lexical, TextIndex, search};
+#[path = "../benches/support/corpus.rs"]
+mod corpus;
 
-/// Vocabulario de apuntes de la carrera, para generar texto con aspecto realista.
-const WORDS: &[&str] = &[
-    "normalización",
-    "tabla",
-    "clave",
-    "primaria",
-    "foránea",
-    "dependencia",
-    "funcional",
-    "transacción",
-    "concurrencia",
-    "bloqueo",
-    "índice",
-    "consulta",
-    "relación",
-    "atributo",
-    "protocolo",
-    "red",
-    "paquete",
-    "enrutamiento",
-    "capa",
-    "transporte",
-    "algoritmo",
-    "grafo",
-    "árbol",
-    "complejidad",
-    "recursión",
-    "memoria",
-    "proceso",
-    "hilo",
-    "sistema",
-    "operativo",
-    "compilador",
-    "gramática",
-    "autómata",
-    "lenguaje",
-    "función",
-    "variable",
-    "objeto",
-    "clase",
-    "herencia",
-    "interfaz",
-    "prueba",
-    "requisito",
-    "diseño",
-    "arquitectura",
-    "servidor",
-    "cliente",
-    "seguridad",
-    "cifrado",
-    "certificado",
-    "examen",
-    "práctica",
-    "entrega",
-];
-
-/// Generador pseudoaleatorio simple y determinista (sin dependencias).
-struct Lcg(u64);
-impl Lcg {
-    fn next(&mut self) -> usize {
-        self.0 = self
-            .0
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
-        (self.0 >> 33) as usize
-    }
-}
+use sift_search::{Lexical, search};
 
 fn percentile(sorted: &[f64], p: usize) -> f64 {
     sorted[((p * sorted.len()).div_ceil(100)).max(1) - 1]
@@ -85,50 +19,22 @@ fn percentile(sorted: &[f64], p: usize) -> f64 {
 fn p95_under_50ms_with_50k_chunks() {
     const FILES: i64 = 5_000;
     const CHUNKS_PER_FILE: i64 = 10;
-    let mut rng = Lcg(42);
-    let mut idx = TextIndex::in_memory().unwrap();
     let started = Instant::now();
-    let mut chunk_id = 0;
-    for file_id in 1..=FILES {
-        let chunks = (0..CHUNKS_PER_FILE)
-            .map(|_| {
-                chunk_id += 1;
-                let text: Vec<&str> = (0..180).map(|_| WORDS[rng.next() % WORDS.len()]).collect();
-                (chunk_id, text.join(" "))
-            })
-            .collect();
-        idx.upsert(&IndexedFile {
-            file_id,
-            path: format!(r"C:\Uni\apuntes\tema{file_id}.md"),
-            name: format!("tema{file_id}.md"),
-            ext: "md".into(),
-            chunks,
-        })
-        .unwrap();
-    }
-    idx.commit().unwrap();
+    let (idx, _) = corpus::text_index(FILES, CHUNKS_PER_FILE);
     println!(
-        "índice: {chunk_id} fragmentos en {:.1} s",
+        "índice: {} fragmentos en {:.1} s",
+        FILES * CHUNKS_PER_FILE,
         started.elapsed().as_secs_f64()
     );
-
-    // Consultas variadas: palabras completas, prefijos (escribiendo) y erratas.
-    let queries = [
-        "normalización ",
-        "clave primaria ",
-        "transacción concurrencia ",
-        "normali",
-        "protoc",
-        "arbol ",
-        "complejidad algoritmo ",
-        "dependensia funcional ",
-        "enrutamento ",
-        "cifr",
-    ];
+    // Palabras, prefijos y erratas (las frases del final buscan palabras que el
+    // vocabulario sintético no tiene: son para la híbrida del benchmark).
+    let queries = corpus::QUERIES
+        .iter()
+        .filter(|q| !q.starts_with("cómo") && !q.starts_with("conectar"));
     let lexical = Lexical(&idx);
     let mut times = Vec::new();
     for _ in 0..20 {
-        for q in queries {
+        for q in queries.clone() {
             let t = Instant::now();
             let r = search(&idx, &[&lexical], q, 8).unwrap();
             times.push(t.elapsed().as_secs_f64() * 1000.0);

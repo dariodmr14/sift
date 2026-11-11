@@ -1,11 +1,12 @@
 //! Comandos IPC de la búsqueda de archivos y de Ajustes → Carpetas.
 
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use sift_indexer::IgnoreRules;
-use sift_search::{Lexical, SearchResults};
+use sift_search::{Frecency, Lexical, SearchResults};
 use sift_spaces::Opener;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -26,6 +27,39 @@ pub struct SearchStats(pub Mutex<LatencyStats>);
 impl SearchStats {
     pub fn summary(&self) -> Option<LatencySummary> {
         self.0.lock().unwrap_or_else(|p| p.into_inner()).summary()
+    }
+}
+
+/// Cada cuánto se recalcula la frecencia aunque no abras nada (las aperturas envejecen).
+const FRECENCY_TTL: Duration = Duration::from_secs(60 * 60);
+
+/// La frecencia en memoria: se calcula de la tabla `opens` al buscar por primera vez,
+/// cuando abres algo y cada hora. Así cada búsqueda no consulta SQLite.
+#[derive(Default)]
+pub struct FrecencyCache(Mutex<Option<(Instant, Arc<Frecency>)>>);
+
+impl FrecencyCache {
+    fn get(&self, app: &AppHandle) -> Arc<Frecency> {
+        let mut cached = self.0.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some((built, f)) = cached.as_ref()
+            && built.elapsed() < FRECENCY_TTL
+        {
+            return f.clone();
+        }
+        let f = match db(app).file_open_ages(sift_search::frecency::MAX_AGE_DAYS) {
+            Ok(opens) => Arc::new(Frecency::from_opens(opens)),
+            Err(e) => {
+                // Sin frecencia se busca igual: no es motivo para fallar.
+                tracing::warn!("no se pudo leer la frecencia: {e}");
+                Arc::new(Frecency::default())
+            }
+        };
+        *cached = Some((Instant::now(), f.clone()));
+        f
+    }
+
+    fn invalidate(&self) {
+        *self.0.lock().unwrap_or_else(|p| p.into_inner()) = None;
     }
 }
 
@@ -81,8 +115,15 @@ pub async fn search_files(
     if let Some(semantic) = &semantic {
         retrievers.push(semantic);
     }
-    let results = sift_search::search(&indexing.index, &retrievers, &query, MAX_FILE_HITS)
-        .map_err(|e| AppError::System(e.to_string()))?;
+    let frecency = app.state::<FrecencyCache>().get(&app);
+    let results = sift_search::search_with(
+        &indexing.index,
+        &retrievers,
+        &query,
+        MAX_FILE_HITS,
+        &frecency,
+    )
+    .map_err(|e| AppError::System(e.to_string()))?;
     if !query.trim().is_empty() {
         app.state::<SearchStats>()
             .0
@@ -260,7 +301,10 @@ pub async fn open_file(app: AppHandle, path: String) -> Result<(), AppError> {
             "ese archivo no está en el índice".into(),
         ));
     }
-    let _ = db(&app).record_file_open(&path);
+    if let Err(e) = db(&app).record_file_open(&path) {
+        tracing::warn!("no se pudo apuntar la apertura: {e}");
+    }
+    app.state::<FrecencyCache>().invalidate();
     tauri::async_runtime::spawn_blocking(move || WindowsOpener.open_path(&path))
         .await
         .map_err(|e| AppError::System(e.to_string()))?
