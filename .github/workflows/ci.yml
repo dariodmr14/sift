@@ -1,9 +1,18 @@
 name: CI
 
+# Solo a mano (pestaña Actions → CI → «Run workflow», o `gh workflow run ci.yml --ref <rama>`):
+# los minutos gratis de Actions se agotaron y el presupuesto es 0 $. La CI de cada PR se
+# ejecuta en local con `scripts/ci.ps1`, que hace lo mismo que este archivo.
+#
+# Para reactivarla en cada push a main y en cada PR, cambia el bloque `on:` por:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     pull_request:
+#     workflow_dispatch:
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 # Si llega un push nuevo a la misma rama, cancela la ejecución anterior.
 concurrency:
