@@ -188,17 +188,18 @@ sift/
 - [x] Búsqueda por significado conectada a la UI (marca «Por significado», estado en Carpetas, interruptor en Ajustes).
 - [x] Adelantado de la Fase 5: fusión RRF ponderada por tipo de búsqueda y `eval/` con 34 consultas reales.
 
-**Hecho cuando:** "cómo evitar redundancia en tablas" encuentra el tema de normalización sin compartir palabras. ⏳ **No cumplido**: esa consulta concreta trae apuntes que hablan de «tablas» (hash, SQL) y no los de normalización. En el conjunto, la búsqueda por ideas pasa de 0,12 a 0,56 de recall@10 sin estropear las exactas (1,00) y con p95 de 37 ms. Lo que falta va a la Fase 5.
+**Hecho cuando:** "cómo evitar redundancia en tablas" encuentra el tema de normalización sin compartir palabras. ✅ **Cumplido en la Fase 5**: trae `apuntes_bd_completos.pdf` el 2.º (ver ADR 0010). Al cerrar la Fase 4 no se cumplía: la búsqueda por palabras exigía todas las palabras y no aportaba nada, y HNSW perdía el fragmento bueno.
 
 ### Fase 5 — Ranking híbrido y medición
 - [x] Búsqueda de texto + semántica y fusión con RRF (adelantado a la Fase 4).
-- [ ] Frecencia: lo abierto a menudo y hace poco sube.
+- [x] Frecencia: lo abierto a menudo y hace poco sube (vida media de 14 días, empujón de hasta +25 %, solo reordena; calibrada simulando sobre `eval/`).
 - [x] Carpeta `eval/` con ~30 consultas reales y sus resultados esperados; métrica *recall@10* (adelantado a la Fase 4).
-- [ ] Benchmark de latencia (p50/p95) con `criterion`.
-- [ ] Ajustar pesos con los datos, no a ojo (empezado: peso de la semántica y umbral calibrados con `eval/`).
-- [ ] Mejorar las búsquedas de ideas que aún fallan (p. ej. «cómo evitar redundancia en tablas» → normalización): reordenar los primeros resultados con un *reranker* local, dar a cada fragmento el contexto de su documento (título, asignatura) o ampliar `eval/`. Medir cada cambio.
+- [x] Benchmark de latencia (p50/p95) con `criterion`, reproducible (corpus sintético determinista). Encontró que resaltar era lo más caro: la híbrida pasó de p95 32,6 a 17,0 ms.
+- [x] Ajustar pesos con los datos, no a ojo: `ef` de HNSW, fragmentos que suman por archivo, candidatos semánticos, búsqueda de palabras relajada y peso de la frecencia, cada uno con su rejilla en `eval/` (ADR 0010).
+- [x] Mejorar las búsquedas de ideas que aún fallan: diagnóstico con datos y, sobre todo, búsqueda de palabras relajada para frases. Ideas 0,56 → 0,69; total 0,65 → 0,75. El *reranker* y el contexto del documento, al backlog (ADR 0010).
+- [ ] Ampliar `eval/` con las consultas que fallen en el uso real (continuo: según lo que vaya saliendo).
 
-**Hecho cuando:** hay números en el README (recall y latencia) y mejoran frente a usar cada búsqueda por separado.
+**Hecho cuando:** hay números en el README (recall y latencia) y mejoran frente a usar cada búsqueda por separado. ✅ Híbrida 0,75 frente a 0,62 (solo palabras) y 0,58 (solo significado), con p95 por debajo de 50 ms (ver README).
 
 ### Fase 6 — Espacios completos
 > La versión básica (modelo, acciones, editor, confirmación) se adelantó a la Fase 1.5. Aquí queda lo que se apoya en el indexado.
@@ -251,6 +252,9 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - Firma de código del instalador (evita el aviso de SmartScreen; tiene coste).
 - Icono propio de la app y de la bandeja (ahora es el de Tauri por defecto).
 - Grabar el atajo pulsándolo en Ajustes, en vez de escribirlo como texto.
+- Búsqueda: reordenar los primeros resultados con un *reranker* local, si las ideas siguen fallando y cabe en los 50 ms (ADR 0010).
+- Búsqueda: calcular el vector de cada fragmento con el contexto de su documento (título, asignatura). Obliga a recalcular todos los vectores (ADR 0010).
+- Búsqueda: agrupar copias del mismo archivo en varias carpetas (hoy `clarin.txt` puede salir tres veces seguidas).
 
 ---
 
