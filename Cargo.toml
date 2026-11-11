@@ -40,6 +40,12 @@ zip = { version = "9", default-features = false, features = ["deflate"] }
 quick-xml = "0.42"
 # Sin el renderizado a imagen: solo se extrae texto.
 pdfium-render = { version = "0.9", default-features = false, features = ["pdfium_latest", "thread_safe"] }
+# Embeddings (ADR 0009): ONNX Runtime baja su librería al compilar; el tokenizador sin
+# barras de progreso ni descargas.
+ort = "=2.0.0-rc.15"
+tokenizers = { version = "0.23", default-features = false, features = ["onig"] }
+usearch = "2.26"
+half = "2"
 tantivy = "0.27"
 tauri-plugin-dialog = "2.8"
 anyhow = "1"

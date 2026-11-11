@@ -16,6 +16,8 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+blake3 = { workspace = true }
+half = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
