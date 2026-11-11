@@ -9,8 +9,10 @@ use crate::intent::{Intent, semantic_weight};
 use crate::query::ParsedQuery;
 use crate::vectors::VectorIndex;
 
-/// Vecinos que se piden al índice de vectores.
-pub const SEMANTIC_CANDIDATES: usize = 40;
+/// Vecinos que se piden al índice de vectores. Calibrado con `eval/` (40 o 100, junto con
+/// la suma de fragmentos por archivo): con 100 entra más de un fragmento por apunte y la
+/// suma lo nota (ADR 0010).
+pub const SEMANTIC_CANDIDATES: usize = 100;
 
 pub struct Semantic<'a> {
     pub vectors: &'a VectorIndex,

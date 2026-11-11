@@ -206,9 +206,10 @@ impl TextIndex {
         Ok(())
     }
 
-    /// Construye la consulta: todas las palabras tienen que aparecer (en el nombre o en el
-    /// contenido), cada una exacta o con erratas; la última, también por prefijo.
-    fn build_query(&self, q: &ParsedQuery) -> Box<dyn Query> {
+    /// Construye la consulta: cada palabra tiene que aparecer (en el nombre o en el
+    /// contenido), exacta o con erratas; la última, también por prefijo. Con `missing`, se
+    /// admite que falten hasta tantas palabras (ver [`relaxed_missing`]).
+    fn build_query(&self, q: &ParsedQuery, missing: usize) -> Box<dyn Query> {
         let f = self.fields;
         let boosted = |q: Box<dyn Query>, boost: f32| -> (Occur, Box<dyn Query>) {
             (Occur::Should, Box::new(BoostQuery::new(q, boost)))
@@ -226,14 +227,16 @@ impl TextIndex {
                     Box::new(TermQuery::new(t, IndexRecordOption::WithFreqs)),
                     boost * 2.0,
                 ));
-                // Errata: sobre la palabra entera, nunca sobre la raíz.
+                // Errata: sobre la palabra entera, nunca sobre la raíz. En la consulta
+                // relajada no: con erratas y sin exigir todas las palabras, cada una abre
+                // miles de documentos y la búsqueda pasa de 50 ms (medido con `eval/`).
                 let d = max_typos(term.word.chars().count());
-                if d > 0 {
+                if d > 0 && missing == 0 {
                     let t = Term::from_field_text(folded, &term.word);
                     options.push(boosted(Box::new(FuzzyTermQuery::new(t, d, true)), boost));
                 }
             }
-            musts.push((Occur::Must, Box::new(BooleanQuery::new(options))));
+            musts.push((Occur::Should, Box::new(BooleanQuery::new(options))));
         }
         if let Some(prefix) = &q.prefix {
             // La última palabra, a medio escribir: prefijo sobre la palabra entera.
@@ -244,9 +247,10 @@ impl TextIndex {
                     boosted(Box::new(FuzzyTermQuery::new_prefix(t, 0, true)), boost)
                 })
                 .collect();
-            musts.push((Occur::Must, Box::new(BooleanQuery::new(options))));
+            musts.push((Occur::Should, Box::new(BooleanQuery::new(options))));
         }
-        Box::new(BooleanQuery::new(musts))
+        let required = musts.len().saturating_sub(missing).max(1);
+        Box::new(BooleanQuery::with_minimum_required_clauses(musts, required))
     }
 
     /// Los `k` fragmentos que mejor encajan con la consulta. Solo sus ids (columnas
@@ -256,8 +260,28 @@ impl TextIndex {
             return Ok(Vec::new());
         }
         let searcher = self.reader.searcher();
-        let query = self.build_query(q);
-        let top = searcher.search(&*query, &TopDocs::with_limit(k).order_by_score())?;
+        let mut top = searcher.search(
+            &*self.build_query(q, 0),
+            &TopDocs::with_limit(k).order_by_score(),
+        )?;
+        // Una frase («cómo evitar redundancia en tablas») rara vez tiene todas sus palabras
+        // en el mismo fragmento: sin esto, las palabras no aportan nada. Si faltan
+        // resultados, detrás de los que lo tienen todo van los que tienen casi todo.
+        let words = q.terms.len() + usize::from(q.prefix.is_some());
+        let missing = relaxed_missing(words);
+        if top.len() < k && missing > 0 {
+            let seen: std::collections::HashSet<_> = top.iter().map(|(_, a)| *a).collect();
+            let relaxed = searcher.search(
+                &*self.build_query(q, missing),
+                &TopDocs::with_limit(k).order_by_score(),
+            )?;
+            top.extend(
+                relaxed
+                    .into_iter()
+                    .filter(|(_, a)| !seen.contains(a))
+                    .take(k - seen.len()),
+            );
+        }
         let mut ids = Ids::new(&searcher);
         top.into_iter()
             .map(|(score, address)| {
@@ -457,4 +481,10 @@ impl IndexSink for TextIndex {
     fn commit(&mut self) -> Result<(), String> {
         (&*self).commit()
     }
+}
+
+/// Cuántas palabras pueden faltar en la consulta relajada: una, y solo con tres o más
+/// (con dos, faltar una es buscar cualquiera de las dos). Calibrado con `eval/` (ADR 0010).
+fn relaxed_missing(words: usize) -> usize {
+    if words >= 3 { 1 } else { 0 }
 }
