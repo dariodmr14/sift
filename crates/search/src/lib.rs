@@ -6,10 +6,16 @@ pub mod analyzer;
 pub mod engine;
 pub mod fusion;
 pub mod index;
+pub mod intent;
 pub mod query;
+pub mod semantic;
 pub mod snippet;
+pub mod vectors;
 
 pub use engine::{FileHit, Lexical, Retriever, SearchResults, search};
 pub use index::{IndexError, TextIndex};
+pub use intent::Intent;
 pub use query::ParsedQuery;
+pub use semantic::Semantic;
 pub use snippet::Segment;
+pub use vectors::{VectorError, VectorIndex};

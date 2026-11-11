@@ -1,15 +1,17 @@
 //! El motor de búsqueda: recuperadores → fusión RRF → agrupar por archivo → fragmento.
 //!
-//! Hoy hay un recuperador (el léxico, Tantivy). En la Fase 4 se añade el semántico
-//! implementando [`Retriever`]; el resto no cambia (ver ADR 0006).
+//! Recuperadores: el léxico (Tantivy) y el semántico (vectores, Fase 4). Cada uno pesa
+//! en la fusión según el tipo de búsqueda ([`Intent`]): en una búsqueda exacta («shell-v4.3»)
+//! la semántica no participa. Ver ADR 0006 y 0009.
 
 use std::collections::HashMap;
 use std::time::Instant;
 
 use serde::Serialize;
 
-use crate::fusion::rrf;
+use crate::fusion::rrf_weighted;
 use crate::index::{ChunkHit, IndexError, TextIndex};
+use crate::intent::Intent;
 use crate::query::ParsedQuery;
 use crate::snippet::{Segment, highlight};
 
@@ -21,6 +23,14 @@ const SNIPPET_CHARS: usize = 160;
 /// Un recuperador devuelve fragmentos ordenados, el mejor primero.
 pub trait Retriever: Send + Sync {
     fn name(&self) -> &'static str;
+    /// Cuánto pesa en la fusión para este tipo de búsqueda. 0 = no se le pregunta.
+    fn weight(&self, _intent: Intent) -> f64 {
+        1.0
+    }
+    /// ¿Encuentra por significado? (sus resultados se marcan si solo llegan por aquí)
+    fn by_meaning(&self) -> bool {
+        false
+    }
     fn retrieve(&self, q: &ParsedQuery, k: usize) -> Result<Vec<ChunkHit>, IndexError>;
 }
 
@@ -52,6 +62,9 @@ pub struct FileHit {
     /// Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre).
     pub snippet: Vec<Segment>,
     pub score: f64,
+    /// Encontrado solo por significado (no comparte palabras con la búsqueda): la UI lo
+    /// marca para que se entienda por qué está ahí.
+    pub by_meaning: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -78,15 +91,26 @@ pub fn search(
         });
     }
 
+    let intent = Intent::of(raw);
     let mut lists = Vec::with_capacity(retrievers.len());
     let mut by_chunk: HashMap<(i64, i64), ChunkHit> = HashMap::new();
+    // Archivos que encuentra algún recuperador por palabras.
+    let mut by_words = std::collections::HashSet::new();
     for r in retrievers {
+        let weight = r.weight(intent);
+        if weight <= 0.0 {
+            continue;
+        }
         let hits = r.retrieve(&q, CANDIDATES)?;
-        lists.push(
+        if !r.by_meaning() {
+            by_words.extend(hits.iter().map(|h| h.file_id));
+        }
+        lists.push((
+            weight,
             hits.iter()
                 .map(|h| (h.file_id, h.chunk_id))
                 .collect::<Vec<_>>(),
-        );
+        ));
         for h in hits {
             by_chunk.entry((h.file_id, h.chunk_id)).or_insert(h);
         }
@@ -95,8 +119,8 @@ pub fn search(
     // Un resultado por archivo: su mejor fragmento (el primero tras fusionar).
     let mut seen = HashMap::new();
     let mut hits = Vec::new();
-    for ((file_id, chunk_id), score) in rrf(&lists) {
-        if hits.len() >= limit || seen.insert(file_id, ()).is_some() {
+    for ((file_id, chunk_id), score) in rrf_weighted(&lists) {
+        if seen.insert(file_id, ()).is_some() {
             continue;
         }
         let Some(h) = by_chunk.remove(&(file_id, chunk_id)) else {
@@ -109,6 +133,7 @@ pub fn search(
             } else {
                 highlight(&h.body, &q, SNIPPET_CHARS)
             },
+            by_meaning: !by_words.contains(&h.file_id),
             file_id: h.file_id,
             path: h.path,
             name: h.name,
@@ -116,6 +141,22 @@ pub fn search(
             score,
         });
     }
+    // Lo que nombras va primero: si todas las palabras están en el nombre de un archivo,
+    // ningún resultado que solo llega por significado se le pone delante.
+    let words: Vec<String> = q
+        .terms
+        .iter()
+        .map(|t| t.word.clone())
+        .chain(q.prefix.clone())
+        .collect();
+    if !words.is_empty() {
+        let named = |h: &FileHit| {
+            let name = crate::analyzer::fold(&h.name);
+            words.iter().all(|w| name.contains(w.as_str()))
+        };
+        hits.sort_by_key(|h| !named(h)); // estable: dentro de cada grupo, el orden de la fusión
+    }
+    hits.truncate(limit);
     Ok(SearchResults {
         hits,
         took_ms: started.elapsed().as_secs_f64() * 1000.0,
