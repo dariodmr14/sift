@@ -19,7 +19,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         .show_menu_on_left_click(false) // el menú, solo con clic derecho
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => launcher::show(app),
-            "settings" => settings_window::open(app, false),
+            "settings" => settings_window::open(app, false, crate::settings_window::Origin::Tray),
             "quit" => app.exit(0),
             _ => {}
         })

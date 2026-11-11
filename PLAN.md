@@ -217,6 +217,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 **Hecho cuando:** un Espacio abre VS Code en la mitad derecha y el navegador en la izquierda del monitor elegido, aunque alguna de las dos ya estuviera abierta.
 
 ### Fase 7 — Pulido
+- [ ] Instalar y usar la skill unslop (https://github.com/heydamir/unslop, licencia CC BY 4.0: citar a Damir Sokolovsky en el README) para auditar y rediseñar la interfaz, respetando el sistema de diseño Vidrio y justificando cualquier cambio en un ADR. Usarla también para el vídeo de LinkedIn.
 - [ ] Diseño final: tipografía, espaciado, tema claro/oscuro según Windows.
 - [ ] Animaciones de entrada/salida y de lista (rápidas, sin estorbar).
 - [ ] Vista previa del resultado seleccionado.
