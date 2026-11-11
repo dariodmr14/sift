@@ -22,7 +22,7 @@ Claude hace push, abre el PR y lo fusiona, con `gh` (autenticado con un token qu
 Para cada fase o rama, al terminar:
 1. CI local en verde (fmt, clippy, tests; format, lint, typecheck y tests de la UI).
 2. `git push -u origin <rama>` y `gh pr create` con una descripción clara: qué cambia, cómo probarlo, decisiones importantes y enlaces a los ADR.
-3. `gh pr checks --watch`. Si la CI falla, se arregla y se vuelve a subir.
+3. Esperar a la CI con `gh run list --branch <rama>` (para el id) y `gh run watch <id> --exit-status`. Si falla, se arregla y se vuelve a subir. (`gh pr checks` no sirve: el token no tiene permiso para leer los *checks*, solo las ejecuciones de Actions.)
 4. Con la CI en verde: `gh pr merge --merge --delete-branch`, `git checkout main` y `git pull`.
 5. En el resumen final: el enlace del PR y si quedó fusionado.
 
