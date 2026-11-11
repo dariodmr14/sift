@@ -2,7 +2,7 @@
 
 Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escribes lo que buscas y encuentra tus archivos por su significado, no solo por sus palabras. Todo en local: ni el índice, ni los archivos, ni el modelo de IA salen del ordenador.
 
-> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras) 3 (más formatos e indexado en tiempo real) y 4 (búsqueda por significado) terminadas. Plan completo en [PLAN.md](PLAN.md).
+> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras), 3 (más formatos e indexado en tiempo real), 4 (búsqueda por significado) y 5 (ranking híbrido y medición) terminadas. Plan completo en [PLAN.md](PLAN.md).
 
 ## Qué hace ya
 
@@ -19,6 +19,7 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **Ajustes → Carpetas**: eliges dónde busca Sift y ves su estado en palabras («Al día · 1.240 archivos», «Leyendo 32 de 120 archivos», «En pausa mientras usas el PC»). Solo indexa lo que sirve para buscar: se salta programas, compilados, cachés y dependencias.
 - **Un único vidrio** en toda la app (barra, Ajustes y diálogos), con la opción «Desactivar vidrio».
 - **Búsqueda inteligente (por significado)**: «bases de datos» trae también lo relacionado aunque no use esas palabras. Combina la búsqueda por palabras con un modelo local (`multilingual-e5-small`, en ONNX Runtime) que se descarga una vez (~135 MB, con su hash comprobado) y prepara tus archivos en segundo plano. Los resultados que llegan solo por significado se marcan «Por significado». En las búsquedas de un nombre o un código («shell-v4.3») no interviene. Se puede desactivar en Ajustes → General.
+- **Lo que usas, primero**: lo que abres a menudo y hace poco sube en los resultados (frecencia), sin colar nada que no encaje con lo que buscas.
 
 ### Métricas (Windows 10, build de release)
 
@@ -29,22 +30,37 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 
 | Búsqueda (50.000 fragmentos, índice Tantivy) | < 50 ms | | Fase 2: p50 6,3 ms · p95 12,1 ms |
 
-#### Búsqueda por significado (Fase 4)
+#### Calidad y velocidad de la búsqueda (Fases 4 y 5)
 
 Con 34 consultas reales sobre una carpeta de la carrera (12.871 archivos, 29.477 textos con vector), definidas en [`eval/`](eval/README.md). **recall@10** (de lo esperado, cuánto sale entre los 10 primeros) y, entre paréntesis, **MRR** (lo arriba que sale lo primero que vale):
 
 | Búsqueda | Idea sin sus palabras (26) | Tema (3) | Nombre o código (5) | Total |
 |---|---|---|---|---|
-| Solo palabras (Fase 3) | 0,12 (0,10) | 0,75 (0,57) | 1,00 (1,00) | 0,30 (0,27) |
-| Solo significado | 0,56 (0,41) | 0,75 (0,53) | 0,20 (0,20) | 0,52 (0,39) |
-| **Híbrida (la de Sift)** | **0,56 (0,45)** | **0,83 (0,61)** | **1,00 (1,00)** | **0,65 (0,55)** |
+| Solo palabras (Fase 3) | 0,12 (0,12) | 0,75 (0,57) | 1,00 (1,00) | 0,30 (0,29) |
+| Híbrida de la Fase 4 | 0,56 (0,47) | 0,83 (0,61) | 1,00 (1,00) | 0,65 (0,56) |
+| Solo palabras (Fase 5) | 0,53 (0,44) | 0,83 (0,58) | 1,00 (1,00) | 0,62 (0,53) |
+| Solo significado (Fase 5) | 0,62 (0,50) | 0,58 (0,28) | 0,40 (0,40) | 0,58 (0,46) |
+| **Híbrida (la de Sift, Fase 5)** | **0,69 (0,58)** | **0,83 (0,75)** | **1,00 (1,00)** | **0,75 (0,66)** |
 
-| Latencia de la búsqueda (34 consultas × 5) | p50 | p95 |
+La híbrida gana a cada búsqueda por separado. Lo que más subió en la Fase 5 fue que las palabras dejaran de exigir *todas* las palabras de una frase (ADR 0010). «cómo evitar redundancia en tablas» trae ya los apuntes de normalización (2.º).
+
+| Latencia de la búsqueda completa (34 consultas × 5) | p50 | p95 |
 |---|---|---|
-| Solo palabras | 8,2 ms | 17,8 ms |
-| Híbrida, incluido calcular el vector de la consulta | 22,5 ms | **37,2 ms** (objetivo < 50 ms) |
+| Solo palabras | 7,6 ms | 15,8 ms |
+| Híbrida de la Fase 4 | 25,2 ms | 38,3 ms |
+| **Híbrida (Fase 5)**, incluido calcular el vector de la consulta | **10,3 ms** | **17,5 ms** (objetivo < 50 ms) |
 
-Medido en un i7-7700K con Sift abierto vectorizando en segundo plano; sin nada compilando. Se repite con `cargo test -p sift-search --release --test eval -- --ignored --nocapture` (necesita la base de datos y el modelo).
+Medido en un i7-7700K con el PC en reposo (sin Sift abierto ni nada compilando), dos veces con el mismo resultado. Con la p95 tan por debajo de 50 ms, no hizo falta el plan B de la Fase 4 (enseñar primero los resultados de palabras y añadir los de significado después). Se repite con `cargo test -p sift-search --release --test eval -- --ignored recall_at_10 --nocapture` (necesita la base de datos y el modelo).
+
+**Benchmark reproducible** (`cargo bench -p sift-search --bench search`): corpus sintético determinista del mismo tamaño (100.000 fragmentos, 30.000 con vector), medido con `criterion`. Con el PC en reposo:
+
+| Pieza | Tiempo (mediana) |
+|---|---|
+| Palabras (una palabra · con errata · frase) | 1,9 ms · 4,0 ms · 0,2 ms |
+| 100 vecinos en HNSW | 2,3 ms |
+| Consulta → vector (e5-small) | 4,0 ms |
+| Cargar y resaltar los resultados | 0,3 ms + 4,7 ms |
+| **Búsqueda híbrida completa** | **p50 10,6 ms · p95 13,2 ms** |
 
 20–22 medidas por fila en el atajo. La búsqueda se mide con `cargo test -p sift-search --release -- --ignored`. Se mide desde que el hilo del atajo detecta la pulsación hasta que la UI ha pintado el primer fotograma. La latencia aparece en el log y en Ajustes → Estado.
 
@@ -90,6 +106,7 @@ cargo test --workspace
 - [ADR 0007](docs/adr/0007-que-se-indexa.md): qué se indexa (solo formatos útiles) y qué carpetas se saltan.
 - [ADR 0008](docs/adr/0008-distribucion-de-pdfium.md): PDFium para los PDF y cómo llega `pdfium.dll` (dentro del instalador, versión y hash fijados).
 - [ADR 0009](docs/adr/0009-busqueda-por-significado.md): búsqueda por significado (modelo elegido midiendo, vectores en SQLite, HNSW derivado, fusión y evaluación).
+- [ADR 0010](docs/adr/0010-ranking-hibrido.md): ranking híbrido (diagnóstico, búsqueda de palabras relajada, suma por archivo, frecencia, benchmark).
 
 ## Lo aprendido
 
@@ -128,6 +145,14 @@ cargo test --workspace
 - Lo caro de una búsqueda no era el modelo (4 ms) sino cargar cien documentos de Tantivy para enseñar diez: leer solo ids de las columnas rápidas y cargar el texto al final bajó la p95 de 70 a 37 ms.
 - Un vector por **texto** (hash) y no por fragmento: el 40 % de los fragmentos estaban repetidos, y reindexar un archivo no tira sus vectores.
 - usearch (C++) abre las rutas con la codificación ANSI de Windows: con `C:\Users\Darío` no guardaba el índice. Los tests no lo vieron porque la carpeta temporal se llama `DARO~1`; ahora hay uno con tildes.
+
+**Fase 5**
+- Diagnosticar con datos y no con intuición: la sospecha era el modelo, y la causa grande resultó otra. La búsqueda de palabras devolvía *cero* resultados con frases como «cómo evitar redundancia en tablas» (ningún fragmento tiene todas las palabras), así que la fusión solo veía la semántica. Admitir que falte una palabra subió el total de 0,65 a 0,75.
+- Lo que en la Fase 4 se descartó («alguna de las palabras») y lo que ahora funcionó se parecen, pero no son lo mismo: un recuperador aparte de BM25 puro mete ruido; la misma búsqueda exigiendo casi todas las palabras, detrás de las completas, no.
+- Un índice aproximado (HNSW) se equivoca más de lo que parece: con el esfuerzo por defecto perdía el 12 % de los vecinos de verdad. Medirlo contra la búsqueda exacta costó minutos.
+- Un benchmark por piezas encuentra lo que no esperas: lo más lento de una búsqueda no era el modelo ni el índice, sino **resaltar** el texto (se creaba un analizador por palabra). Arreglarlo bajó la híbrida a la mitad.
+- Cuando no hay datos reales (4 aperturas), se puede calibrar simulando, siempre que el caso que ayuda y el que molesta se midan a la vez.
+- Una métrica que baila ±0,02 entre ejecuciones no sirve para decidir: el baile venía de empates resueltos por el orden interno del índice.
 
 ## Licencia
 [MIT](LICENSE)
