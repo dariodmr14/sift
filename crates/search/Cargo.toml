@@ -24,6 +24,9 @@ specta = ["dep:specta"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
+serde_json = { workspace = true }
+globset = { workspace = true }
+rusqlite = { workspace = true }
 
 [lints]
 workspace = true

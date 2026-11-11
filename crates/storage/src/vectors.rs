@@ -29,17 +29,15 @@ pub struct EmbedPolicy {
 }
 
 impl EmbedPolicy {
-    /// Documentos (hasta 1.000 fragmentos: un libro entero), apuntes y texto (100) y
-    /// código (100). Los formatos de datos (xml, json, html, csv…) no llevan vector.
+    /// Documentos (hasta 1.000 fragmentos: un libro entero), apuntes (100), código (100) y
+    /// texto plano (20). Los formatos de datos (xml, json, html, csv…) no llevan vector.
     pub fn standard() -> EmbedPolicy {
         let list = |exts: &[&str]| exts.iter().map(|e| (*e).to_owned()).collect();
         EmbedPolicy {
             tiers: vec![
                 (list(&["pdf", "docx", "pptx", "odt"]), 1000),
                 (
-                    list(&[
-                        "md", "markdown", "mdx", "txt", "text", "tex", "rst", "adoc", "org",
-                    ]),
+                    list(&["md", "markdown", "mdx", "tex", "rst", "adoc", "org"]),
                     100,
                 ),
                 (
@@ -51,6 +49,10 @@ impl EmbedPolicy {
                     ]),
                     100,
                 ),
+                // Texto plano, lo último y poco por archivo: en una carpeta real eran sobre
+                // todo datos de entrada y salida de prácticas, densos en tokens (lentos de
+                // vectorizar) y con poco «significado» que buscar.
+                (list(&["txt", "text"]), 20),
             ],
         }
     }
@@ -191,11 +193,27 @@ impl Database {
         Ok(n as u64)
     }
 
-    /// Borra los vectores cuyo texto ya no usa ningún fragmento, y los de modelos que no
-    /// son `keep`. Devuelve los hashes borrados de `keep` (para quitarlos del índice).
+    /// Modelos que tienen vectores guardados, con cuántos.
+    pub fn embedding_models(&self) -> Result<Vec<(String, u64)>, StorageError> {
+        Ok(self
+            .conn
+            .prepare("SELECT model, COUNT(*) FROM embeddings GROUP BY model ORDER BY 2 DESC")?
+            .query_map([], |r| Ok((r.get(0)?, r.get::<_, i64>(1)? as u64)))?
+            .collect::<Result<_, _>>()?)
+    }
+
+    /// Borra los vectores de todos los modelos menos `keep` (tras cambiar de modelo, cuando
+    /// el nuevo ya lo cubre todo).
+    pub fn drop_other_models(&mut self, keep: &str) -> Result<usize, StorageError> {
+        Ok(self
+            .conn
+            .execute("DELETE FROM embeddings WHERE model <> ?1", [keep])?)
+    }
+
+    /// Borra los vectores de `model` cuyo texto ya no usa ningún fragmento. Devuelve sus
+    /// hashes (para quitarlos también del índice).
     pub fn prune_embeddings(&mut self, keep: &str) -> Result<Vec<i64>, StorageError> {
         let tx = self.conn.transaction()?;
-        tx.execute("DELETE FROM embeddings WHERE model <> ?1", [keep])?;
         let orphans: Vec<i64> = tx
             .prepare(
                 "SELECT e.text_hash FROM embeddings e WHERE e.model = ?1
@@ -350,11 +368,19 @@ mod tests {
         let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
         let texts: Vec<String> = (0..150).map(|i| format!("línea {i}")).collect();
         let refs: Vec<&str> = texts.iter().map(String::as_str).collect();
-        add(&mut db, root, r"C:\Uni\volcado.txt", "txt", 1, &refs);
+        add(&mut db, root, r"C:\Uni\apuntes.md", "md", 1, &refs);
         let (_, total) = db
             .embedding_progress("m", &EmbedPolicy::standard())
             .unwrap();
         assert_eq!(total, 100);
+        // Un .txt solo aporta sus 20 primeros fragmentos.
+        let other: Vec<String> = (0..150).map(|i| format!("dato {i}")).collect();
+        let refs: Vec<&str> = other.iter().map(String::as_str).collect();
+        add(&mut db, root, r"C:\Uni\volcado.txt", "txt", 1, &refs);
+        let (_, total) = db
+            .embedding_progress("m", &EmbedPolicy::standard())
+            .unwrap();
+        assert_eq!(total, 120);
     }
 
     #[test]
@@ -391,6 +417,13 @@ mod tests {
             .unwrap();
         assert_eq!(db.prune_embeddings("m").unwrap(), [text_hash("ya no está")]);
         assert_eq!(db.count_embeddings("m").unwrap(), 1);
+        // Los del modelo anterior siguen ahí hasta que se cambia de verdad.
+        assert_eq!(db.count_embeddings("viejo").unwrap(), 1);
+        assert_eq!(
+            db.embedding_models().unwrap(),
+            [("m".to_string(), 1), ("viejo".to_string(), 1)]
+        );
+        assert_eq!(db.drop_other_models("m").unwrap(), 1);
         assert_eq!(db.count_embeddings("viejo").unwrap(), 0);
         let mut seen = Vec::new();
         db.for_each_embedding("m", |h, v| seen.push((h, v)))
