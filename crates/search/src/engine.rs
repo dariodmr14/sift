@@ -186,25 +186,26 @@ pub fn search_with(
         .map(|h| ((h.file_id, h.chunk_id), h))
         .collect();
     let mut loaded = loaded;
-    let mut hits = Vec::with_capacity(best.len());
+    // (resultado, texto del fragmento). Se resalta al final, y solo lo que se muestra:
+    // resaltar es lo más caro de preparar un resultado (medido con el benchmark).
+    let mut found: Vec<(FileHit, String)> = Vec::with_capacity(best.len());
     for (key, score) in best {
         let Some(h) = loaded.remove(&key) else {
             continue;
         };
-        hits.push(FileHit {
-            name_segments: highlight(&h.name, &q, 200),
-            snippet: if h.body.is_empty() {
-                Vec::new()
-            } else {
-                highlight(&h.body, &q, SNIPPET_CHARS)
+        found.push((
+            FileHit {
+                name_segments: Vec::new(),
+                snippet: Vec::new(),
+                by_meaning: !by_words.contains(&h.file_id),
+                file_id: h.file_id,
+                path: h.path,
+                name: h.name,
+                ext: h.ext,
+                score,
             },
-            by_meaning: !by_words.contains(&h.file_id),
-            file_id: h.file_id,
-            path: h.path,
-            name: h.name,
-            ext: h.ext,
-            score,
-        });
+            h.body,
+        ));
     }
     // Lo que nombras va primero: si todas las palabras están en el nombre de un archivo,
     // ningún resultado que solo llega por significado se le pone delante.
@@ -219,9 +220,21 @@ pub fn search_with(
             let name = crate::analyzer::fold(&h.name);
             words.iter().all(|w| name.contains(w.as_str()))
         };
-        hits.sort_by_key(|h| !named(h)); // estable: dentro de cada grupo, el orden de la fusión
+        // Estable: dentro de cada grupo, el orden de la fusión. Con la clave en caché, cada
+        // nombre se analiza una vez y no en cada comparación.
+        found.sort_by_cached_key(|(h, _)| !named(h));
     }
-    hits.truncate(limit);
+    found.truncate(limit);
+    let hits = found
+        .into_iter()
+        .map(|(mut h, body)| {
+            h.name_segments = highlight(&h.name, &q, 200);
+            if !body.is_empty() {
+                h.snippet = highlight(&body, &q, SNIPPET_CHARS);
+            }
+            h
+        })
+        .collect();
     Ok(SearchResults {
         hits,
         took_ms: started.elapsed().as_secs_f64() * 1000.0,
