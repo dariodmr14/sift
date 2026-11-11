@@ -74,6 +74,13 @@ export const commands = {
 	unreadFiles: (rootId: number) => typedError<UnreadGroupView[], AppError>(__TAURI_INVOKE("unread_files", { rootId })),
 	/**  ¿Se buscan imágenes y vídeos por su nombre? (Ajustes → Carpetas → Avanzado) */
 	getIndexMedia: () => __TAURI_INVOKE<boolean>("get_index_media"),
+	/**  ¿Está activada la búsqueda inteligente (por significado)? */
+	getSmartSearch: () => __TAURI_INVOKE<boolean>("get_smart_search"),
+	/**
+	 *  Activa o desactiva la búsqueda inteligente. Desactivarla libera el modelo de memoria;
+	 *  los vectores ya calculados se quedan en disco por si se vuelve a activar.
+	 */
+	setSmartSearch: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_smart_search", { enabled })),
 	/**
 	 *  Activa o desactiva buscar imágenes y vídeos por nombre, y revisa las carpetas: los
 	 *  que sobran salen del índice y los que faltan entran.
@@ -268,7 +275,11 @@ export type IndexPhase =
 /**  Leyendo, pero en pausa porque el PC está ocupado. */
 "paused" | 
 /**  Poniendo al día unos pocos archivos que acaban de cambiar. */
-"updating";
+"updating" | 
+/**  Descargando el modelo de la búsqueda inteligente (la primera vez). */
+"downloading" | 
+/**  Calculando vectores («Preparando búsqueda inteligente · `done` de `total`»). */
+"embedding";
 
 /**  Evento: el estado del indexado ha cambiado. */
 export type IndexProgress = IndexProgress_Serialize | IndexProgress_Deserialize;
@@ -301,6 +312,8 @@ export type IndexStatus_Deserialize = {
 	watching: boolean,
 	/**  ¿Se lee el contenido de los PDF? (hace falta `pdfium.dll`) */
 	readsPdf: boolean,
+	/**  Búsqueda inteligente: activada, lista (modelo cargado) y, si algo va mal, por qué. */
+	smart: SmartStatus_Deserialize,
 };
 
 /**  Estado del indexado, para Ajustes → Carpetas. */
@@ -322,6 +335,8 @@ export type IndexStatus_Serialize = {
 	watching: boolean,
 	/**  ¿Se lee el contenido de los PDF? (hace falta `pdfium.dll`) */
 	readsPdf: boolean,
+	/**  Búsqueda inteligente: activada, lista (modelo cargado) y, si algo va mal, por qué. */
+	smart: SmartStatus_Serialize,
 };
 
 /**  Una app instalada, para el selector. */
@@ -457,6 +472,36 @@ export type SettingsView = {
 	iconsHidden: boolean,
 	/**  «Desactivar vidrio»: toda la app opaca. */
 	disableGlass: boolean,
+};
+
+export type SmartStatus = SmartStatus_Serialize | SmartStatus_Deserialize;
+
+export type SmartStatus_Deserialize = {
+	enabled: boolean,
+	/**  Modelo cargado: la búsqueda ya usa el significado (aunque falten vectores). */
+	ready: boolean,
+	/**  Vectores calculados y los que tendría que haber. */
+	done: number,
+	total: number,
+	/**  Descarga del modelo, en MB. */
+	downloadedMb: number,
+	downloadMb: number,
+	/**  Por qué no está lista (sin conexión, etc.), en palabras. */
+	note?: string | null,
+};
+
+export type SmartStatus_Serialize = {
+	enabled: boolean,
+	/**  Modelo cargado: la búsqueda ya usa el significado (aunque falten vectores). */
+	ready: boolean,
+	/**  Vectores calculados y los que tendría que haber. */
+	done: number,
+	total: number,
+	/**  Descarga del modelo, en MB. */
+	downloadedMb: number,
+	downloadMb: number,
+	/**  Por qué no está lista (sin conexión, etc.), en palabras. */
+	note: string | null,
 };
 
 /**  Un Espacio guardado (con su id de la base de datos). */

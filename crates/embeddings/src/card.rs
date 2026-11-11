@@ -23,7 +23,7 @@ pub struct ModelFile {
     pub bytes: u64,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct ModelCard {
     /// Identificador estable: es lo que se guarda en la base de datos junto a cada vector.
     pub id: &'static str,
@@ -34,6 +34,9 @@ pub struct ModelCard {
     pub max_tokens: usize,
     pub query_prefix: &'static str,
     pub document_prefix: &'static str,
+    /// Parecido mínimo para que un resultado entre por significado. Depende del modelo
+    /// (e5 da similitudes en una franja estrecha y alta); se calibra con `eval/`.
+    pub min_similarity: f32,
     pub model: ModelFile,
     pub tokenizer: ModelFile,
 }
@@ -59,6 +62,7 @@ pub const GRANITE_97M_R2: ModelCard = ModelCard {
     max_tokens: 512,
     query_prefix: "",
     document_prefix: "",
+    min_similarity: 0.6,
     model: ModelFile {
         name: "model.onnx",
         url: "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2/resolve/main/onnx/model_quint8_avx2.onnx",
@@ -83,6 +87,7 @@ pub const E5_SMALL: ModelCard = ModelCard {
     max_tokens: 512,
     query_prefix: "query: ",
     document_prefix: "passage: ",
+    min_similarity: 0.8,
     model: ModelFile {
         name: "model.onnx",
         url: "https://huggingface.co/Xenova/multilingual-e5-small/resolve/main/onnx/model_quantized.onnx",
