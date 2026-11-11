@@ -29,11 +29,17 @@ Se comparan tres configuraciones sobre el mismo índice: **solo palabras** (lo q
 
 ## Cómo se ejecuta
 
-Llega con la implementación de la Fase 4 (un test `#[ignore]` que lee la base de datos real en solo lectura):
+Tests `#[ignore]` que trabajan sobre una **copia** de la base de datos real (en `target/eval/`, hecha con `VACUUM INTO`) y el modelo descargado:
 
 ```bash
-cargo test -p sift-search --release --test eval -- --ignored --nocapture
+cargo test -p sift-search --release --test eval -- --ignored recall_at_10 --nocapture
 ```
+
+- `recall_at_10…`: la tabla (palabras / semántica / híbrida), la latencia y los fallos. Los vectores calculados se quedan en la copia: la segunda vez tarda segundos.
+- `calibrate_weights`: prueba pesos de la semántica en la fusión.
+- `show_one` (con `SIFT_EVAL_QUERY="…"`): los 10 primeros de una consulta y lo que trae la semántica sola.
+
+Resultados actuales: en el README y en el ADR 0009.
 
 ## Privacidad
 

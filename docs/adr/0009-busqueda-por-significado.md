@@ -199,7 +199,7 @@ Métrica: **recall@10** (de lo esperado, cuánto sale entre los 10 primeros), gl
 - El texto de los fragmentos está en SQLite: nunca hay que volver a leer los archivos.
 - `eval/` dice si el cambio mereció la pena antes de hacerlo definitivo.
 
-## Orden de trabajo (cuando haya visto bueno)
+## Orden de trabajo (seguido)
 
 1. **Medir antes de construir**: `Embedder` con `ort`, los dos modelos sobre `eval/`, velocidad en este PC. Sale la elección de modelo y las cifras reales de la sección 5. Si algo se desvía mucho de lo estimado, se para y se revisa este ADR.
 2. Migración v5 y vectores en SQLite (con el ahorro por texto repetido).
@@ -213,6 +213,38 @@ Métrica: **recall@10** (de lo esperado, cuánto sale entre los 10 primeros), gl
 
 - La fusión RRF y `eval/` estaban en la Fase 5; se adelantan a la 4, porque sin ellas no se puede decidir ni comprobar nada de lo anterior. En la Fase 5 queda la frecencia y el ajuste fino.
 - El modelo deja de ser `multilingual-e5-small` «porque sí»: lo decide la medición.
+
+## Resultados (2026-11-13)
+
+Medido con `eval/` (34 consultas) sobre la carpeta real, con la política de la app (29.477 textos con vector).
+
+**Elección del modelo.** Primera ronda, solo documentos y apuntes (la de la tabla que se le enseñó a Darío antes de decidir):
+
+| Híbrida | concept | topic | exact | total | p95 |
+|---|---|---|---|---|---|
+| Granite 97M R2 | 0,58 (0,38) | 0,75 (0,42) | 1,00 (1,00) | 0,65 (0,48) | 115 ms |
+| e5-small | 0,62 (0,43) | 0,83 (0,78) | 1,00 (1,00) | 0,69 (0,55) | 70 ms |
+
+e5-small gana en calidad (la regla) y además es más rápido: es el modelo por defecto. Vectorizar a 2 hilos: e5 21 textos/s, Granite 12.
+
+**Definitivo, con e5-small y toda la política** (código incluido, `.txt` hasta 20):
+
+| | concept | topic | exact | total |
+|---|---|---|---|---|
+| Solo palabras | 0,12 (0,10) | 0,75 (0,57) | 1,00 (1,00) | 0,30 (0,27) |
+| Solo semántica | 0,56 (0,41) | 0,75 (0,53) | 0,20 (0,20) | 0,52 (0,39) |
+| Híbrida | 0,56 (0,45) | 0,83 (0,61) | 1,00 (1,00) | 0,65 (0,55) |
+
+Latencia de la búsqueda completa (34 consultas × 5, vector de la consulta incluido): **p50 22,5 ms · p95 37,2 ms**; solo palabras p50 8,2 · p95 17,8.
+
+**Lo que cambió respecto al diseño, por los datos:**
+- **Umbral de parecido: ninguno.** Ningún umbral mejoraba la híbrida. Lo que evita el ruido en búsquedas exactas es el tipo de búsqueda, que deja la semántica fuera (exactas: 1,00).
+- **Peso de la semántica: 0,5** (no 0,7): mismo recall, mejor MRR.
+- **Probado y descartado**: un tercer recuperador «alguna de las palabras» (BM25 con cualquiera de los términos), con pesos de 0 a 1. No mejoraba nada: con RRF (k = 60) una lista con menos peso queda entera por debajo de las otras.
+- **Rendimiento**: la primera versión tenía p95 de 70 ms. El modelo no era el problema (4 ms por consulta), sino cargar de Tantivy hasta 400 documentos para enseñar 10. Ahora los recuperadores leen solo ids de las columnas rápidas, se piden 40 vecinos en vez de 100 y solo se carga el texto de los ~20 primeros. Con eso, **el plan B** (enseñar primero las palabras y añadir la semántica al llegar) **no hizo falta**.
+- **`.txt` aparte**: los `.txt` de la carpeta eran sobre todo datos de prácticas (56 % pasaban de 512 tokens). Van al final y con 20 fragmentos por archivo.
+
+**Lo que no se ha conseguido**: el criterio de la fase, «cómo evitar redundancia en tablas» → apuntes de normalización. Con los dos modelos, esa consulta trae apuntes que hablan de «tablas» (hash, SQL). Queda en la Fase 5 (reordenar con un *reranker*, dar contexto de documento a cada fragmento) y se medirá con `eval/`.
 
 ## Consecuencias
 
