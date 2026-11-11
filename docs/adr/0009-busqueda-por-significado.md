@@ -1,6 +1,6 @@
 # ADR 0009 — Búsqueda por significado (Fase 4)
 
-- **Estado:** propuesta, pendiente del visto bueno de Darío
+- **Estado:** aceptada (2026-11-13), con la regla de elección del modelo revisada por Darío
 - **Fecha:** 2026-11-13
 
 ## Contexto
@@ -54,7 +54,9 @@ Granite saca 9 puntos más que e5-small con el mismo tamaño de vector, pesa men
 
 Los dos dan vectores de 384 dimensiones, así que todo lo demás (tabla, índice, fusión) es idéntico. Por eso la decisión se puede tomar **midiendo**: el primer paso de la implementación calcula los vectores de `eval/` con los dos y elige con esta regla:
 
-> Granite, salvo que su recall@10 híbrido no supere al de e5-small en al menos 2 puntos, o que sea más de un 40 % más lento en este PC.
+> **Decide la calidad**: el modelo con mejor recall@10 y MRR en `eval/` (híbrida), siempre que la búsqueda completa, **incluido calcular el vector de la consulta**, se quede por debajo de 50 ms de p95. Si Granite gana en calidad y cumple esa latencia, Granite.
+
+La velocidad de vectorizar en segundo plano **no decide**: es una sola vez, va con prioridad baja y no se nota (revisión de Darío al aprobar el diseño; la regla anterior también descartaba un modelo más de un 40 % más lento al vectorizar).
 
 ### `fastembed` frente a `ort` directamente
 
