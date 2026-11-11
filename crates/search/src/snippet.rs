@@ -10,7 +10,11 @@
 
 use serde::Serialize;
 
-use crate::analyzer::{fold, spanish, tokens};
+use std::cell::RefCell;
+
+use tantivy::tokenizer::TextAnalyzer;
+
+use crate::analyzer::{fold_analyzer, spanish, tokens};
 use crate::query::ParsedQuery;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -32,10 +36,14 @@ pub fn max_typos(len: usize) -> u8 {
 /// ¿Encaja una palabra del texto con la consulta? La misma regla que la búsqueda: raíz
 /// exacta, errata sobre la palabra entera, o prefijo de la última palabra.
 fn matches(stem: &str, folded_word: &str, q: &ParsedQuery) -> bool {
+    let len = folded_word.chars().count();
     q.terms.iter().any(|t| {
         stem == t.stem || {
-            let d = max_typos(t.word.chars().count());
-            d > 0 && levenshtein(folded_word, &t.word) <= d as usize
+            let word_len = t.word.chars().count();
+            let d = max_typos(word_len) as usize;
+            // Si las longitudes ya se llevan más que las erratas permitidas, no hace falta
+            // calcular la distancia (es lo caro, y casi ninguna palabra pasa de aquí).
+            d > 0 && len.abs_diff(word_len) <= d && levenshtein(folded_word, &t.word) <= d
         }
     }) || q
         .prefix
@@ -46,11 +54,17 @@ fn matches(stem: &str, folded_word: &str, q: &ParsedQuery) -> bool {
 /// Resalta `text` y, si es más largo que `max_chars`, recorta una ventana alrededor de
 /// la primera coincidencia (con «…» donde se corta).
 pub fn highlight(text: &str, q: &ParsedQuery, max_chars: usize) -> Vec<Segment> {
-    let hits: Vec<(usize, usize)> = tokens(&mut spanish(), text)
-        .into_iter()
-        .filter(|t| matches(&t.text, &fold(&text[t.from..t.to]), q))
-        .map(|t| (t.from, t.to))
-        .collect();
+    let hits: Vec<(usize, usize)> = ANALYZERS.with_borrow_mut(|(stemmer, folder)| {
+        tokens(stemmer, text)
+            .into_iter()
+            .filter(|t| {
+                let word = tokens(folder, &text[t.from..t.to]);
+                let folded = word.first().map_or("", |w| w.text.as_str());
+                matches(&t.text, folded, q)
+            })
+            .map(|t| (t.from, t.to))
+            .collect()
+    });
 
     let (start, end) = window(text, hits.first().map(|h| h.0), max_chars);
     let mut segments = Vec::new();
@@ -76,6 +90,13 @@ pub fn highlight(text: &str, q: &ParsedQuery, max_chars: usize) -> Vec<Segment> 
         push("…", false);
     }
     segments
+}
+
+thread_local! {
+    /// Los analizadores, uno por hilo y no uno por palabra: crearlos (con la lista de
+    /// palabras vacías) costaba más que analizar el fragmento (medido con el benchmark).
+    static ANALYZERS: RefCell<(TextAnalyzer, TextAnalyzer)> =
+        RefCell::new((spanish(), fold_analyzer()));
 }
 
 /// Ventana de `max_chars` caracteres que empieza un poco antes de `first_hit` (en bytes),

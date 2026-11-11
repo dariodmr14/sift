@@ -4,6 +4,7 @@
 
 pub mod analyzer;
 pub mod engine;
+pub mod frecency;
 pub mod fusion;
 pub mod index;
 pub mod intent;
@@ -12,7 +13,8 @@ pub mod semantic;
 pub mod snippet;
 pub mod vectors;
 
-pub use engine::{FileHit, Lexical, Retriever, SearchResults, search};
+pub use engine::{FileHit, Lexical, Retriever, SearchResults, search, search_with};
+pub use frecency::Frecency;
 pub use index::{Candidate, IndexError, TextIndex};
 pub use intent::Intent;
 pub use query::ParsedQuery;
