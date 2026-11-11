@@ -92,6 +92,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	glassMoving: makeEvent<GlassMoving, GlassMoving>("glass-moving"),
 	indexProgress: makeEvent<IndexProgress_Serialize, IndexProgress_Deserialize>("index-progress"),
 	launcherHidden: makeEvent<LauncherHidden, LauncherHidden>("launcher-hidden"),
 	launcherShown: makeEvent<LauncherShown, LauncherShown>("launcher-shown"),
@@ -216,6 +217,13 @@ export type FileHit = {
 	snippet: Segment[],
 	score: number | null,
 };
+
+/**
+ *  Evento para la UI de una ventana: se está moviendo (`true`) o ya ha parado (`false`).
+ *  Con él la página echa o levanta un **velo** del color del fondo que tapa el cambio de
+ *  material, para que no se vea el salto entre Acrylic y blur.
+ */
+export type GlassMoving = boolean;
 
 /**  Icono de un Espacio. */
 export type Icon = 

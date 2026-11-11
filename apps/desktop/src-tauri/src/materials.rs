@@ -33,6 +33,9 @@ pub enum Material {
 
 /// Tiempo sin moverse tras el que una ventana vuelve a Acrylic.
 const SETTLE: Duration = Duration::from_millis(200);
+/// Lo que tarda la UI en echar el velo (`--dur-veil-in` en index.css) antes de cambiar
+/// de material.
+const VEIL_IN: Duration = Duration::from_millis(100);
 
 /// Tinte (RGBA) bajo el desenfoque: **el mismo** en todas las ventanas y materiales.
 /// Bastante opaco: el texto tiene que leerse sobre cualquier fondo de escritorio.
@@ -176,9 +179,25 @@ pub fn refresh(app: &AppHandle, window: &WebviewWindow) {
     }
 }
 
-/// La ventana se está moviendo o redimensionando: Acrylic → blur (`moving_tint`) hasta que
-/// pare. Se llama con cada evento `Moved`/`Resized` de las ventanas que se pueden mover.
+/// Evento para la UI de una ventana: se está moviendo (`true`) o ya ha parado (`false`).
+/// Con él la página echa o levanta un **velo** del color del fondo que tapa el cambio de
+/// material, para que no se vea el salto entre Acrylic y blur.
+#[derive(Debug, Clone, Serialize, serde::Deserialize, specta::Type, tauri_specta::Event)]
+pub struct GlassMoving(pub bool);
+
+/// La ventana se está moviendo o redimensionando. Se llama con cada evento
+/// `Moved`/`Resized` de las ventanas que se pueden mover.
+///
+/// El cambio de material es brusco (Windows no lo funde), así que se hace **tapado**:
+///
+/// 1. Al empezar: se avisa a la UI, que echa el velo en `VEIL_IN`. El Acrylic aguanta
+///    esos pocos fotogramas sin que se noten los tirones.
+/// 2. Con el velo echado: Acrylic → blur (`moving_tint`), que no da tirones.
+/// 3. Al parar (`SETTLE` sin moverse): blur → Acrylic, todavía bajo el velo, y se avisa
+///    a la UI, que lo levanta con un fundido. Lo que aparece ya es el Acrylic.
 pub fn on_moved(app: &AppHandle, window: &WebviewWindow) {
+    use tauri_specta::Event;
+
     let label = window.label().to_owned();
     let start_watch = {
         let materials = app.state::<Materials>();
@@ -194,40 +213,44 @@ pub fn on_moved(app: &AppHandle, window: &WebviewWindow) {
         first
     };
     if !start_watch {
-        return; // ya está en blur y vigilado: solo se ha actualizado la hora
+        return; // ya está vigilado: solo se ha actualizado la hora
     }
-    let theme = appearance::theme();
-    if let Err(e) = try_apply(window, Material::Blur, theme) {
-        tracing::debug!(error = %e, "no se pudo pasar a blur al mover");
-        return;
-    }
-    // Un hilo espera a que la ventana lleve `SETTLE` quieta y devuelve el Acrylic.
+    let _ = GlassMoving(true).emit_to(app, label.as_str());
+
     let app = app.clone();
     std::thread::spawn(move || {
+        let swap = |material: Material| {
+            let (handle, label) = (app.clone(), label.clone());
+            let _ = app.run_on_main_thread(move || {
+                if let Some(w) = handle.get_webview_window(&label)
+                    && let Err(e) = try_apply(&w, material, appearance::theme())
+                {
+                    tracing::debug!(error = %e, ?material, "no se pudo cambiar el material");
+                }
+            });
+        };
+        std::thread::sleep(VEIL_IN);
+        swap(Material::Blur);
         loop {
             std::thread::sleep(SETTLE / 2);
-            let settled = {
-                let materials = app.state::<Materials>();
-                let mut map = materials.lock();
-                match map.get_mut(&label) {
-                    Some(g) if g.moving_since.is_some_and(|t| t.elapsed() >= SETTLE) => {
-                        g.moving_since = None;
-                        g.material == Material::Acrylic
+            let materials = app.state::<Materials>();
+            let mut map = materials.lock();
+            match map.get_mut(&label) {
+                Some(g) if g.moving_since.is_some_and(|t| t.elapsed() >= SETTLE) => {
+                    g.moving_since = None;
+                    if g.material != Material::Acrylic {
+                        return; // se desactivó el vidrio mientras se movía
                     }
-                    Some(g) if g.moving_since.is_some() => continue,
-                    _ => false, // la ventana ya no existe o cambió de material
+                    break;
                 }
-            };
-            if settled {
-                let handle = app.clone();
-                let _ = app.run_on_main_thread(move || {
-                    if let Some(w) = handle.get_webview_window(&label) {
-                        let _ = try_apply(&w, Material::Acrylic, appearance::theme());
-                    }
-                });
+                Some(g) if g.moving_since.is_some() => continue,
+                _ => return, // la ventana ya no existe
             }
-            break;
         }
+        swap(Material::Acrylic);
+        // Un par de fotogramas para que Windows componga el Acrylic antes de destaparlo.
+        std::thread::sleep(Duration::from_millis(48));
+        let _ = GlassMoving(false).emit_to(&app, label.as_str());
     });
 }
 

@@ -59,6 +59,11 @@
   --accent: rgb(96 205 255);
   --accent-fg: rgb(0 0 0);
 
+  --surface-solid: rgb(
+    32 32 36
+  ); /* el fondo sin transparencia: el velo al mover */
+  --dur-veil-in: 100ms; /* = VEIL_IN en materials.rs */
+  --dur-veil-out: 260ms;
   --dur-enter: 120ms;
   --dur-exit: 80ms;
   --ease-enter: cubic-bezier(0, 0, 0, 1); /* "decelerate" de Fluent */
@@ -70,6 +75,7 @@
 
 :root[data-theme="light"] {
   --surface: rgb(243 243 245);
+  --surface-solid: rgb(243 243 245);
   --fg: rgb(27 27 31);
   --muted: rgb(92 99 112);
   --line: rgb(0 0 0 / 0.08);
@@ -130,6 +136,36 @@
 :root.sift-sorting * {
   cursor: grabbing !important;
   user-select: none !important;
+}
+
+/*
+ * Velo: mientras una ventana se mueve, Windows cambia su Acrylic por blur (el Acrylic da
+ * tirones) y ese cambio es brusco. Se tapa con una capa del color del fondo, detrás del
+ * contenido, que se funde solo con `opacity`: entra rápido al empezar a mover y sale
+ * despacio al soltar, cuando el Acrylic ya está puesto debajo. Lo marca `data-moving`
+ * en <html> (evento `GlassMoving` de Rust).
+ */
+#root {
+  isolation: isolate; /* para que el velo quede detrás del contenido y no de la página */
+}
+#root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--surface-solid);
+  opacity: 0;
+  transition: opacity var(--dur-veil-out) ease-out;
+}
+:root[data-glass="true"][data-moving="true"] #root::before {
+  opacity: 0.9;
+  transition: opacity var(--dur-veil-in) ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  #root::before {
+    transition: none !important;
+  }
 }
 
 html,
