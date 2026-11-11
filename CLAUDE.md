@@ -9,7 +9,7 @@ El plan completo, con fases y criterios de "hecho", está en [PLAN.md](PLAN.md).
 
 ## Cómo trabajamos
 - Una rama y un PR por tarea o grupo pequeño de tareas; nunca todo de golpe.
-- Cada PR con tests y la CI en verde antes de fusionar.
+- Cada PR con tests y la CI local (`scripts/ci.ps1`) en verde antes de fusionar.
 - Commits pequeños con [Conventional Commits](https://www.conventionalcommits.org/es/): `feat:`, `fix:`, `chore:`, `docs:`, `ci:`, `refactor:`, `test:`…
 - Claude Code explica cada decisión importante; Darío revisa y entiende el código antes de aceptarlo. Explicar el *porqué*, no solo el *qué*.
 - Decisiones de arquitectura nuevas → un ADR corto en `docs/adr/` (plantilla: `docs/adr/0001-*.md`).
@@ -19,15 +19,16 @@ El plan completo, con fases y criterios de "hecho", está en [PLAN.md](PLAN.md).
 ## Flujo de GitHub
 Claude hace push, abre el PR y lo fusiona, con `gh` (autenticado con un token que solo tiene acceso a este repo). El push usa un *credential helper* **local de este repo** (`.git/config`) que llama a `gh auth git-credential`; la configuración global de git y el gestor de credenciales de Windows no se tocan.
 
+**La CI se ejecuta en local.** El presupuesto de Actions es 0 $ y los minutos gratis se agotaron, así que el workflow de GitHub solo corre a mano (`workflow_dispatch`; cómo reactivarlo, en `.github/workflows/ci.yml`). GitHub sigue guardando ramas y PR (gratis, y es la copia de seguridad).
+
 Para cada fase o rama, al terminar:
-1. CI local en verde (fmt, clippy, tests; format, lint, typecheck y tests de la UI).
-2. `git push -u origin <rama>` y `gh pr create` con una descripción clara: qué cambia, cómo probarlo, decisiones importantes y enlaces a los ADR.
-3. Esperar a la CI con `gh run list --branch <rama>` (para el id) y `gh run watch <id> --exit-status`. Si falla, se arregla y se vuelve a subir. (`gh pr checks` no sirve: el token no tiene permiso para leer los *checks*, solo las ejecuciones de Actions.)
-4. Con la CI en verde: `gh pr merge --merge --delete-branch`, `git checkout main` y `git pull`.
-5. En el resumen final: el enlace del PR y si quedó fusionado.
+1. `powershell -ExecutionPolicy Bypass -File scripts/ci.ps1`, **completa** (sin `-SkipInstall` ni `-SkipBuild`): fmt, PDFium, clippy, tests de Rust, `npm ci`, prettier, eslint, tsc, vitest y build de la app, lo mismo que el workflow. Para al primer error; se arregla y se vuelve a ejecutar hasta verlo todo en verde.
+2. `git push -u origin <rama>` y `gh pr create` con una descripción clara: qué cambia, cómo probarlo, decisiones importantes, enlaces a los ADR y **el resumen de la CI local** (la tabla final del script).
+3. `gh pr merge --merge --delete-branch`, `git checkout main` y `git pull`. No se espera a la CI de GitHub.
+4. En el resumen final: el enlace del PR y si quedó fusionado.
 
 Nunca:
-- Merge con la CI en rojo.
+- Merge con la CI local en rojo, a medias o sin ejecutar.
 - Force push (`--force`, `-f`, `--force-with-lease`, `+rama`), y menos a `main`: lo bloquea `.claude/settings.json`.
 - Si algo de git se complica (historiales que divergen, conflictos, un push rechazado), **parar y avisar a Darío antes de tocar nada**.
 
@@ -41,6 +42,7 @@ Desde la raíz del repo:
 - Rust: `cargo fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`
 - UI (desde `apps/desktop/`): `npm run lint`, `npm run format`, `npm run typecheck`, `npm test`
 - App en desarrollo: `npm run tauri dev` (desde `apps/desktop/`)
+- CI local completa (lo mismo que el workflow): `powershell -ExecutionPolicy Bypass -File scripts/ci.ps1`
 
 ## Diseño
 - Sistema de diseño «Vidrio»: lee [docs/design-system.md](docs/design-system.md) antes de tocar la UI.
@@ -53,6 +55,6 @@ Desde la raíz del repo:
 - Logs con `tracing`. Sin telemetría.
 - Los comandos de los Espacios se ejecutan con programa y argumentos separados, nunca concatenando en una shell.
 - Todo es local: nada de red salvo descargar el modelo de embeddings la primera vez.
-- Antes de dar una tarea por terminada: fmt, clippy y tests en verde.
+- Antes de dar una tarea por terminada: fmt, clippy y tests en verde (y `scripts/ci.ps1` completa antes de cada merge).
 - Al empezar cada fase o rama nueva, lee FEEDBACK.md. Resuelve los puntos pendientes que encajen con el trabajo actual o con poco coste, y del resto di cuáles dejas para más adelante y por qué. Marca como resueltos los que hagas.
 - Antes de dar por buena una pantalla, revisa alineación, espaciado y jerarquía visual siguiendo el sistema de diseño.
