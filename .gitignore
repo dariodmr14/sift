@@ -15,3 +15,7 @@ Thumbs.db
 
 # Ajustes locales de Claude Code (los compartidos van en .claude/settings.json)
 .claude/settings.local.json
+
+# PDFium: se descarga con scripts/fetch-pdfium.ps1 (ver ADR 0008)
+apps/desktop/src-tauri/pdfium/*
+!apps/desktop/src-tauri/pdfium/README.md
