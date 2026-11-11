@@ -34,6 +34,8 @@ export const commands = {
 	 *  barra y los ajustes). Devuelve si ha quedado desactivado.
 	 */
 	setGlassDisabled: (disabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_glass_disabled", { disabled })),
+	/**  La UI de ajustes ya ha pintado: se puede mostrar su ventana (se crea oculta). */
+	settingsReady: () => __TAURI_INVOKE<void>("settings_ready"),
 	listSpaces: () => typedError<SpaceView_Serialize[], AppError>(__TAURI_INVOKE("list_spaces")),
 	createSpace: (draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("create_space", { draft })),
 	updateSpace: (id: number, draft: SpaceDraft_Deserialize) => typedError<Space_Serialize, AppError>(__TAURI_INVOKE("update_space", { id, draft })),
@@ -65,6 +67,18 @@ export const commands = {
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
 	searchFiles: (query: string, seq: number) => typedError<SearchResponse, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
 	listRoots: () => typedError<RootView_Serialize[], AppError>(__TAURI_INVOKE("list_roots")),
+	/**
+	 *  Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
+	 *  listan todos).
+	 */
+	unreadFiles: (rootId: number) => typedError<UnreadGroupView[], AppError>(__TAURI_INVOKE("unread_files", { rootId })),
+	/**  ¿Se buscan imágenes y vídeos por su nombre? (Ajustes → Carpetas → Avanzado) */
+	getIndexMedia: () => __TAURI_INVOKE<boolean>("get_index_media"),
+	/**
+	 *  Activa o desactiva buscar imágenes y vídeos por nombre, y revisa las carpetas: los
+	 *  que sobran salen del índice y los que faltan entran.
+	 */
+	setIndexMedia: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_index_media", { enabled })),
 	/**  Elige una carpeta con el diálogo de Windows y empieza a indexarla. */
 	addRoot: () => typedError<string | null, AppError>(__TAURI_INVOKE("add_root")),
 	/**  Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan). */
@@ -88,6 +102,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	glassMoving: makeEvent<GlassMoving, GlassMoving>("glass-moving"),
 	indexProgress: makeEvent<IndexProgress_Serialize, IndexProgress_Deserialize>("index-progress"),
 	launcherHidden: makeEvent<LauncherHidden, LauncherHidden>("launcher-hidden"),
 	launcherShown: makeEvent<LauncherShown, LauncherShown>("launcher-shown"),
@@ -213,6 +228,13 @@ export type FileHit = {
 	score: number | null,
 };
 
+/**
+ *  Evento para la UI de una ventana: se está moviendo (`true`) o ya ha parado (`false`).
+ *  Con él la página echa o levanta un **velo** del color del fondo que tapa el cambio de
+ *  material, para que no se vea el salto entre Acrylic y blur.
+ */
+export type GlassMoving = boolean;
+
 /**  Icono de un Espacio. */
 export type Icon = 
 /**  El icono real de Windows de la primera app, archivo o carpeta del Espacio. */
@@ -237,7 +259,11 @@ export type IndexPhase =
 /**  Recorriendo las carpetas para ver qué ha cambiado («Buscando cambios…»). */
 "scanning" | 
 /**  Leyendo lo nuevo o cambiado («Leyendo `done` de `total` archivos»). */
-"reading";
+"reading" | 
+/**  Leyendo, pero en pausa porque el PC está ocupado. */
+"paused" | 
+/**  Poniendo al día unos pocos archivos que acaban de cambiar. */
+"updating";
 
 /**  Evento: el estado del indexado ha cambiado. */
 export type IndexProgress = IndexProgress_Serialize | IndexProgress_Deserialize;
@@ -263,9 +289,13 @@ export type IndexStatus_Deserialize = {
 	done: number,
 	/**  Leyendo: archivos nuevos o cambiados que hay que leer en esta pasada. */
 	total: number,
-	/**  Resumen de la última pasada completa. */
+	/**  Resumen de la última revisión completa. */
 	last?: LastRun | null,
 	error?: string | null,
+	/**  ¿Se vigilan las carpetas en tiempo real? (si no, solo se revisan al arrancar) */
+	watching: boolean,
+	/**  ¿Se lee el contenido de los PDF? (hace falta `pdfium.dll`) */
+	readsPdf: boolean,
 };
 
 /**  Estado del indexado, para Ajustes → Carpetas. */
@@ -280,9 +310,13 @@ export type IndexStatus_Serialize = {
 	done: number,
 	/**  Leyendo: archivos nuevos o cambiados que hay que leer en esta pasada. */
 	total: number,
-	/**  Resumen de la última pasada completa. */
+	/**  Resumen de la última revisión completa. */
 	last: LastRun | null,
 	error: string | null,
+	/**  ¿Se vigilan las carpetas en tiempo real? (si no, solo se revisan al arrancar) */
+	watching: boolean,
+	/**  ¿Se lee el contenido de los PDF? (hace falta `pdfium.dll`) */
+	readsPdf: boolean,
 };
 
 /**  Una app instalada, para el selector. */
@@ -512,6 +546,14 @@ export type Status_Serialize = {
 };
 
 export type Theme = "light" | "dark";
+
+/**  Archivos que no se pudieron leer por un mismo motivo, con unos pocos ejemplos. */
+export type UnreadGroupView = {
+	/**  `unsupported`, `tooLarge`, `noPermission`, `protected`, `damaged` u `other`. */
+	kind: string,
+	count: number,
+	examples: string[],
+};
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

@@ -102,6 +102,60 @@ const MIGRATIONS: &[&str] = &[
     );
     CREATE INDEX opens_file ON opens(file_id);
     "#,
+    // v3: por qué no se pudo leer un archivo, en categorías («formato no compatible»,
+    // «demasiado grande»…), y más patrones a ignorar por defecto: carpetas de compilación,
+    // entornos, cachés y carpetas de trabajo de editores (Eclipse, Visual Studio…).
+    r#"
+    ALTER TABLE files ADD COLUMN error_kind TEXT;   -- código de `UnreadReason`
+    UPDATE files SET error_kind = CASE
+        WHEN error LIKE 'parece un archivo binario%' THEN 'unsupported'
+        WHEN error LIKE 'demasiado grande%'          THEN 'tooLarge'
+        ELSE 'other' END
+    WHERE error IS NOT NULL;
+    CREATE INDEX files_error_kind ON files(error_kind) WHERE error_kind IS NOT NULL;
+
+    -- Solo se añaden los que falten, detrás de los que ya hubiera (tuyos o por defecto).
+    WITH new(pattern, n) AS (VALUES
+            ('bin', 1),
+            ('obj', 2),
+            ('out', 3),
+            ('.next', 4),
+            ('.nuxt', 5),
+            ('.gradle', 6),
+            ('*.egg-info', 7),
+            ('site-packages', 8),
+            ('.tox', 9),
+            ('bower_components', 10),
+            ('Pods', 11),
+            ('.cache', 12),
+            ('.pytest_cache', 13),
+            ('.mypy_cache', 14),
+            ('.ruff_cache', 15),
+            ('.ipynb_checkpoints', 16),
+            ('.metadata', 17),
+            ('.settings', 18),
+            ('.vs', 19),
+            ('.history', 20),
+            ('.svn', 21),
+            ('.hg', 22))
+    INSERT INTO ignore_patterns (position, pattern)
+    SELECT (SELECT COALESCE(MAX(position), -1) FROM ignore_patterns) + n, pattern
+    FROM new
+    WHERE pattern NOT IN (SELECT pattern FROM ignore_patterns);
+    "#,
+    // v4: recuperación ante cierres a mitad de indexado (Fase 3). SQLite se guarda archivo
+    // a archivo, pero el índice de búsqueda se confirma por lotes: si la app muere entre
+    // medias, estas dos marcas dicen qué falta por llevar al índice al volver a arrancar.
+    r#"
+    -- 0 = guardado en SQLite pero aún no confirmado en el índice de búsqueda.
+    ALTER TABLE files ADD COLUMN search_synced INTEGER NOT NULL DEFAULT 1;
+    CREATE INDEX files_unsynced ON files(search_synced) WHERE search_synced = 0;
+
+    -- Archivos borrados de SQLite que aún hay que quitar del índice de búsqueda.
+    CREATE TABLE index_removals (
+        file_id INTEGER PRIMARY KEY
+    );
+    "#,
 ];
 
 pub struct Database {
@@ -132,6 +186,13 @@ impl Database {
         let mut db = Database { conn };
         db.migrate()?;
         Ok(db)
+    }
+
+    /// Devuelve al disco el espacio de lo borrado (SQLite no encoge el fichero solo).
+    /// Tarda en bases de datos grandes: solo tras borrados masivos.
+    pub fn compact(&self) -> Result<(), StorageError> {
+        self.conn.execute_batch("VACUUM")?;
+        Ok(())
     }
 
     pub fn schema_version(&self) -> Result<u32, StorageError> {
@@ -197,6 +258,52 @@ mod tests {
         assert_eq!(db.list_spaces().unwrap()[0].draft.name, "Uni");
         assert!(db.list_roots().unwrap().is_empty());
         assert!(!db.ignore_patterns().unwrap().is_empty());
+    }
+
+    #[test]
+    fn v3_classifies_old_errors_and_adds_patterns_without_touching_yours() {
+        // Una base de datos de la Fase 2 (v2), con errores sin clasificar y un patrón
+        // propio; uno de los nuevos por defecto («bin») ya lo había puesto el usuario.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("sift.db");
+        {
+            let conn = Connection::open(&path).unwrap();
+            conn.execute_batch(MIGRATIONS[0]).unwrap();
+            conn.execute_batch(MIGRATIONS[1]).unwrap();
+            conn.pragma_update(None, "user_version", 2).unwrap();
+            conn.execute_batch(
+                "INSERT INTO roots (id, path) VALUES (1, 'C:\\Uni');
+                 INSERT INTO files (root_id, path, name, ext, size, mtime, error) VALUES
+                    (1, 'a', 'a', 'txt', 1, 1, 'parece un archivo binario'),
+                    (1, 'b', 'b', 'txt', 1, 1, 'demasiado grande para leer su contenido (9 bytes)'),
+                    (1, 'c', 'c', 'txt', 1, 1, 'no se pudo leer: acceso denegado'),
+                    (1, 'd', 'd', 'txt', 1, 1, NULL);
+                 INSERT INTO ignore_patterns (position, pattern) VALUES (15, 'Antiguo'), (16, 'bin');",
+            )
+            .unwrap();
+        }
+        let db = Database::open(&path).unwrap();
+        let kinds: Vec<Option<String>> = db
+            .conn
+            .prepare("SELECT error_kind FROM files ORDER BY path")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(
+            kinds,
+            [
+                Some("unsupported".into()),
+                Some("tooLarge".into()),
+                Some("other".into()),
+                None
+            ]
+        );
+        let patterns = db.ignore_patterns().unwrap();
+        assert!(patterns.contains(&"Antiguo".to_string()));
+        assert!(patterns.contains(&".metadata".to_string()));
+        assert_eq!(patterns.iter().filter(|p| *p == "bin").count(), 1);
     }
 
     #[test]

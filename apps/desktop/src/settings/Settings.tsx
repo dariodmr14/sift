@@ -3,6 +3,7 @@ import { commands, type SettingsView, type Status } from "../bindings";
 import { applyWindowMaterial } from "../appearance";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
+import { TitleBar } from "./TitleBar";
 
 const BACKEND_LABEL = {
   registerHotKey: "RegisterHotKey (vía principal)",
@@ -11,15 +12,22 @@ const BACKEND_LABEL = {
 
 type Page = "spaces" | "folders" | "general" | "status";
 
+/** ¿Se abrió desde la barra con «Crear Espacio»? Entonces se empieza en Espacios. */
+const startsWithNew = new URLSearchParams(window.location.search).has("new");
+
+// El orden de las apps de Windows (Configuración, Terminal, PowerToys): lo general
+// primero, después lo propio de la app, y la información («Estado») al final, abajo.
 const PAGES: { id: Page; label: string }[] = [
+  { id: "general", label: "General" },
   { id: "spaces", label: "Espacios" },
   { id: "folders", label: "Carpetas" },
-  { id: "general", label: "General" },
+];
+const FOOTER_PAGES: { id: Page; label: string }[] = [
   { id: "status", label: "Estado" },
 ];
 
 function Settings() {
-  const [page, setPage] = useState<Page>("spaces");
+  const [page, setPage] = useState<Page>(startsWithNew ? "spaces" : "general");
   const [status, setStatus] = useState<Status | null>(null);
   const [settings, setSettings] = useState<SettingsView | null>(null);
 
@@ -30,60 +38,70 @@ function Settings() {
     void commands.getSettings().then(setSettings);
   }, []);
 
-  return (
-    <div className="flex h-full bg-surface">
-      <nav
-        aria-label="Secciones"
-        className="flex w-44 shrink-0 flex-col gap-1 border-r border-line p-3"
-      >
-        <h1 className="mb-3 px-2 text-lg font-semibold">Ajustes</h1>
-        {PAGES.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            aria-current={page === p.id ? "page" : undefined}
-            onClick={() => {
-              setPage(p.id);
-              if (p.id === "status") refreshStatus();
-            }}
-            className="sift-option px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            {p.label}
-          </button>
-        ))}
-        {status?.storageError && (
-          <p role="alert" className="mt-auto px-2 text-xs text-danger">
-            La base de datos no se pudo abrir: los cambios no se guardarán. Mira
-            «Estado».
-          </p>
-        )}
-      </nav>
+  const navButton = (p: { id: Page; label: string }) => (
+    <button
+      key={p.id}
+      type="button"
+      aria-current={page === p.id ? "page" : undefined}
+      onClick={() => {
+        setPage(p.id);
+        if (p.id === "status") refreshStatus();
+      }}
+      className="sift-option px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      {p.label}
+    </button>
+  );
 
-      <main className="min-w-0 flex-1 select-text">
-        {page === "spaces" && <SpacesSection />}
-        {page === "folders" && <FoldersSection />}
-        {page === "general" && (
-          <div className="h-full space-y-8 overflow-y-auto p-6">
-            {settings ? (
-              <>
-                <HotkeyForm initial={settings.hotkey} onSaved={refreshStatus} />
-                <StartupToggle initial={settings.launchAtStartup} />
-                <IconsToggle initial={settings.iconsHidden} />
-                <GlassToggle initial={settings.disableGlass} />
-              </>
-            ) : (
-              <p>Cargando…</p>
-            )}
-          </div>
-        )}
-        {page === "status" && (
-          <div className="h-full overflow-y-auto p-6">
-            <Section title="Estado">
-              {status ? <StatusList status={status} /> : <p>Cargando…</p>}
-            </Section>
-          </div>
-        )}
-      </main>
+  return (
+    <div className="flex h-full flex-col bg-surface">
+      <TitleBar title="Ajustes de Sift" />
+      <div className="flex min-h-0 flex-1">
+        <nav
+          aria-label="Secciones"
+          className="flex w-44 shrink-0 flex-col gap-1 border-r border-line px-3 pb-3"
+        >
+          <h1 className="mb-3 px-2 text-lg font-semibold">Ajustes</h1>
+          {PAGES.map(navButton)}
+          <span className="flex-1" />
+          {status?.storageError && (
+            <p role="alert" className="px-2 text-xs text-danger">
+              La base de datos no se pudo abrir: los cambios no se guardarán.
+              Mira «Estado».
+            </p>
+          )}
+          {FOOTER_PAGES.map(navButton)}
+        </nav>
+
+        <main className="min-w-0 flex-1 select-text">
+          {page === "spaces" && <SpacesSection />}
+          {page === "folders" && <FoldersSection />}
+          {page === "general" && (
+            <div className="h-full space-y-8 overflow-y-auto p-6">
+              {settings ? (
+                <>
+                  <HotkeyForm
+                    initial={settings.hotkey}
+                    onSaved={refreshStatus}
+                  />
+                  <StartupToggle initial={settings.launchAtStartup} />
+                  <IconsToggle initial={settings.iconsHidden} />
+                  <GlassToggle initial={settings.disableGlass} />
+                </>
+              ) : (
+                <p>Cargando…</p>
+              )}
+            </div>
+          )}
+          {page === "status" && (
+            <div className="h-full overflow-y-auto p-6">
+              <Section title="Estado">
+                {status ? <StatusList status={status} /> : <p>Cargando…</p>}
+              </Section>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

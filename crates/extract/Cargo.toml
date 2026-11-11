@@ -12,6 +12,9 @@ authors.workspace = true
 encoding_rs = { workspace = true }
 blake3 = { workspace = true }
 thiserror = { workspace = true }
+zip = { workspace = true }
+quick-xml = { workspace = true }
+pdfium-render = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

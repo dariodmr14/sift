@@ -19,6 +19,16 @@ pub struct Settings {
     /// Apariencia. Bloque propio para que crezca (tema, intensidad del vidrio…) sin
     /// llenar de campos sueltos el nivel de arriba.
     pub appearance: AppearanceSettings,
+    /// Qué se indexa además de textos, código y documentos.
+    pub indexing: IndexingSettings,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+pub struct IndexingSettings {
+    /// No indexar imágenes ni vídeos. Por defecto se pueden buscar por su nombre (su
+    /// contenido nunca se lee).
+    pub skip_media: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -82,6 +92,7 @@ mod tests {
             appearance: AppearanceSettings {
                 disable_glass: true,
             },
+            indexing: IndexingSettings { skip_media: true },
         };
         s.save(&path).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), s);

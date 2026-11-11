@@ -21,6 +21,7 @@ tauri-build = { workspace = true }
 sift-core = { workspace = true }
 sift-spaces = { workspace = true, features = ["specta"] }
 sift-storage = { workspace = true }
+sift-extract = { workspace = true }
 sift-indexer = { workspace = true }
 sift-search = { workspace = true, features = ["specta"] }
 tauri = { workspace = true }
@@ -39,6 +40,7 @@ window-vibrancy = { workspace = true }
 tauri-specta = { workspace = true }
 specta = { workspace = true }
 specta-typescript = { workspace = true }
+notify = "8"
 
 [dev-dependencies]
 tempfile = { workspace = true }

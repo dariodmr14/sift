@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { commands, events } from "../bindings";
 import { SpaceIcon } from "../components/SpaceIcon";
+import { arrayMove } from "@dnd-kit/sortable";
+import { SortableList, useSortableItem } from "./Sortable";
 import { SpaceEditor } from "./SpaceEditor";
 import { emptyDraft, move, toDraft, type SpaceView } from "./draft";
 import { Button, ErrorText } from "./ui";
@@ -10,6 +12,57 @@ type Selection = { kind: "space"; id: number } | { kind: "new" } | null;
 
 /** ¿Hay que empezar creando un Espacio? (se abrió desde la barra con "Crear Espacio") */
 const startsWithNew = new URLSearchParams(window.location.search).has("new");
+
+/**
+ * Un Espacio en la lista. Se coge por la fila entera para arrastrarlo (un clic sin
+ * mover sigue seleccionándolo); Alt+↑/↓ lo mueve con el teclado.
+ */
+function SpaceRow({
+  view,
+  active,
+  onSelect,
+  onMove,
+}: {
+  view: SpaceView;
+  active: boolean;
+  onSelect: () => void;
+  onMove: (delta: -1 | 1) => void;
+}) {
+  const { dragging, itemProps, handleProps } = useSortableItem(
+    String(view.space.id),
+  );
+  return (
+    <li
+      {...itemProps}
+      className={`flex items-center rounded-item ${
+        dragging ? "relative z-10 bg-glass shadow-window" : ""
+      }`}
+    >
+      <button
+        type="button"
+        {...handleProps}
+        title="Arrastra para cambiar el orden (o Alt+↑/↓)"
+        aria-current={active}
+        onClick={onSelect}
+        onKeyDown={(e) => {
+          if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+            e.preventDefault();
+            onMove(e.key === "ArrowUp" ? -1 : 1);
+          }
+        }}
+        className="sift-option flex min-w-0 flex-1 touch-none items-center gap-2 px-3 py-1.5 text-left text-sm outline-none select-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <SpaceIcon
+          icon={view.space.icon}
+          autoIcon={view.autoIcon}
+          name={view.space.name}
+          size={20}
+        />
+        <span className="truncate">{view.space.name}</span>
+      </button>
+    </li>
+  );
+}
 
 export function SpacesSection() {
   const [spaces, setSpaces] = useState<SpaceView[] | null>(null);
@@ -109,41 +162,27 @@ export function SpacesSection() {
           {spaces?.length === 0 && (
             <li className="p-2 text-sm text-muted">Aún no hay Espacios.</li>
           )}
-          {spaces?.map((view, i) => {
-            const active =
-              selection?.kind === "space" && selection.id === view.space.id;
-            return (
-              <li key={view.space.id} className="flex items-center">
-                <button
-                  type="button"
-                  title="Alt+↑/↓ para cambiar el orden"
-                  aria-current={active}
-                  onClick={() =>
-                    setSelection({ kind: "space", id: view.space.id })
-                  }
-                  // Alt+↑/↓ reordena con el teclado.
-                  onKeyDown={(e) => {
-                    if (
-                      e.altKey &&
-                      (e.key === "ArrowUp" || e.key === "ArrowDown")
-                    ) {
-                      e.preventDefault();
-                      void reorder(i, e.key === "ArrowUp" ? -1 : 1);
-                    }
-                  }}
-                  className="sift-option flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  <SpaceIcon
-                    icon={view.space.icon}
-                    autoIcon={view.autoIcon}
-                    name={view.space.name}
-                    size={20}
-                  />
-                  <span className="truncate">{view.space.name}</span>
-                </button>
-              </li>
-            );
-          })}
+          <SortableList
+            ids={(spaces ?? []).map((v) => String(v.space.id))}
+            onMove={(from, to) => {
+              if (spaces)
+                void saveOrder(arrayMove(spaces, from, to), spaces[from]);
+            }}
+          >
+            {spaces?.map((view, i) => (
+              <SpaceRow
+                key={view.space.id}
+                view={view}
+                active={
+                  selection?.kind === "space" && selection.id === view.space.id
+                }
+                onSelect={() =>
+                  setSelection({ kind: "space", id: view.space.id })
+                }
+                onMove={(delta) => reorder(i, delta)}
+              />
+            ))}
+          </SortableList>
         </ul>
         <div className="space-y-2 border-t border-line p-3">
           {/* Fijo encima de Importar/Exportar: con muchos Espacios, siempre a mano. */}
@@ -177,7 +216,7 @@ export function SpacesSection() {
         </div>
       </aside>
 
-      <section className="min-w-0 flex-1 overflow-y-auto px-6 pt-6">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
         {selection?.kind === "new" && (
           <SpaceEditor
             key={`new-${version}`}
@@ -216,7 +255,7 @@ export function SpacesSection() {
           />
         )}
         {!selection && spaces?.length === 0 && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="text-lg">Crea tu primer Espacio</p>
             <p className="max-w-sm text-sm text-muted">
               Por ejemplo «Bases de datos»: la carpeta de la asignatura, los

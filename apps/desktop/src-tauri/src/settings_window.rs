@@ -1,5 +1,11 @@
 //! Ventana de ajustes. Al revés que el lanzador, se crea solo cuando se abre y se
 //! destruye al cerrarla: se usa poco y así no ocupa memoria el resto del tiempo.
+//!
+//! Se crea **oculta** y solo se muestra cuando la UI avisa de que ya ha pintado
+//! (`settings_ready`): así el primer fotograma que se ve ya tiene el contenido y el
+//! vidrio, y no una ventana vacía y transparente.
+
+use std::time::Duration;
 
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_specta::Event;
@@ -8,6 +14,25 @@ use crate::commands::NewSpaceRequested;
 use crate::materials;
 
 pub const LABEL: &str = "settings";
+
+/// Tiempo máximo que la ventana espera oculta a que la UI pinte.
+const REVEAL_TIMEOUT: Duration = Duration::from_millis(1500);
+
+/// Muestra la ventana de ajustes si aún está oculta (la UI ya ha pintado).
+pub fn reveal(app: &AppHandle) {
+    let Some(window) = app.get_webview_window(LABEL) else {
+        return;
+    };
+    if window.is_visible().unwrap_or(false) {
+        return;
+    }
+    if let Err(e) = window.show().and_then(|()| window.set_focus()) {
+        tracing::warn!(error = %e, "no se pudo mostrar la ventana de ajustes");
+    }
+    // Windows 10 no pinta bien el Acrylic aplicado a una ventana que aún no se había
+    // mostrado (queda mucho más transparente hasta que se mueve): se reaplica ya visible.
+    materials::refresh(app, &window);
+}
 
 /// Abre los ajustes. Con `new_space`, directamente en "crear Espacio".
 pub fn open(app: &AppHandle, new_space: bool) {
@@ -33,12 +58,26 @@ pub fn open(app: &AppHandle, new_space: bool) {
         .center()
         // Transparente para que se vea el material de Windows (el vidrio) detrás.
         .transparent(true)
+        // Sin barra de título nativa: en Windows 10 es negra y no admite vidrio. La pinta
+        // la UI (`TitleBar.tsx`); el arrastre, el doble clic y el ajuste a los bordes
+        // siguen siendo los de Windows porque el arrastre lo inicia el sistema.
+        .decorations(false)
+        .shadow(true)
+        // Oculta hasta que tenga el vidrio: si no, el primer fotograma sale sin tinte.
+        .visible(false)
         .build();
     match built {
         Ok(window) => {
             // El mismo vidrio que la barra, salvo con «Desactivar vidrio».
             let glass = !crate::load_settings(app).appearance.disable_glass;
             materials::set_glass(app, &window, glass);
+            // Por si la UI no llegara a avisar (un error al cargar): se muestra igualmente.
+            let app = app.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(REVEAL_TIMEOUT);
+                let handle = app.clone();
+                let _ = app.run_on_main_thread(move || reveal(&handle));
+            });
         }
         Err(e) => tracing::error!(error = %e, "no se pudo abrir la ventana de ajustes"),
     }

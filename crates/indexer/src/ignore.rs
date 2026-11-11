@@ -21,6 +21,8 @@ pub struct PatternError {
 pub struct IgnoreRules {
     by_name: GlobSet,
     by_path: GlobSet,
+    /// ¿Se indexan imágenes y vídeos por su nombre? (sí por defecto)
+    media: bool,
 }
 
 fn glob(pattern: &str) -> Result<Glob, PatternError> {
@@ -55,7 +57,19 @@ impl IgnoreRules {
         Ok(IgnoreRules {
             by_name: build(by_name)?,
             by_path: build(by_path)?,
+            media: true,
         })
+    }
+
+    /// Con `false`, las imágenes y los vídeos no se indexan ni por nombre.
+    pub fn with_media(mut self, media: bool) -> IgnoreRules {
+        self.media = media;
+        self
+    }
+
+    /// ¿Es un archivo de los que se indexan? (formato útil, según `sift_extract`)
+    pub fn indexes(&self, path: &Path) -> bool {
+        sift_extract::is_indexable(path, self.media)
     }
 
     /// ¿Se ignora esta ruta (relativa a la carpeta indexada)?

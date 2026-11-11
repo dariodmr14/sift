@@ -6,6 +6,7 @@ mod hotkey;
 mod indexing;
 mod latency;
 mod launcher;
+mod load;
 mod logging;
 mod materials;
 mod search_commands;
@@ -13,6 +14,7 @@ mod settings_window;
 mod shell;
 mod spaces_commands;
 mod tray;
+mod watcher;
 
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -182,7 +184,9 @@ pub fn run() {
             app.manage(spaces_commands::Db(Mutex::new(db)));
             app.manage(StorageStatus(storage_error));
             let index = open_search_index(handle);
-            app.manage(indexing::Indexing::start(handle, index));
+            // `pdfium.dll` viaja con la app como recurso (ver ADR 0008).
+            let pdfium_dir = app.path().resource_dir().ok().map(|d| d.join("pdfium"));
+            app.manage(indexing::Indexing::start(handle, index, pdfium_dir));
             launcher::init_glass(handle);
             tray::create(handle)?;
 
