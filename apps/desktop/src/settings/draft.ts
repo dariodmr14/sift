@@ -12,6 +12,8 @@ export type Draft = Omit<Space, "id">;
 export type Action = Draft["actions"][number];
 export type ActionKind = Action["kind"];
 export type Icon = Draft["icon"];
+export type WaitAction = Extract<Action, { kind: "wait" }>;
+export type WaitKind = WaitAction["until"]["kind"];
 
 export const ACTION_LABELS: Record<ActionKind, string> = {
   openFolder: "Abrir carpeta",
@@ -19,7 +21,46 @@ export const ACTION_LABELS: Record<ActionKind, string> = {
   openUrl: "Abrir web",
   openApp: "Abrir aplicación",
   runCommand: "Ejecutar comando",
+  wait: "Esperar…",
 };
+
+/** «Esperar a que…» + esto, en lenguaje normal (el desplegable del editor). */
+export const WAIT_LABELS: Record<WaitKind, string> = {
+  webResponds: "responda una web de tu equipo",
+  serviceAccepts:
+    "un servicio de tu equipo acepte conexiones (como una base de datos)",
+  commandFinished: "termine el comando anterior",
+  seconds: "pasen unos segundos",
+};
+
+/** Tiempo límite por defecto: un comando (instalar, arrancar contenedores) tarda más. */
+export const DEFAULT_TIMEOUT: Record<WaitKind, number> = {
+  webResponds: 60,
+  serviceAccepts: 60,
+  commandFinished: 120,
+  seconds: 60,
+};
+
+/**
+ * Cambia a qué se espera. Si el tiempo límite seguía siendo el de antes por defecto, pasa
+ * al del tipo nuevo; si lo habías cambiado tú, se respeta.
+ */
+export function withWaitKind(action: WaitAction, kind: WaitKind): WaitAction {
+  const untouched = action.timeoutSecs === DEFAULT_TIMEOUT[action.until.kind];
+  const until: WaitAction["until"] =
+    kind === "webResponds"
+      ? { kind, url: "http://localhost:" }
+      : kind === "serviceAccepts"
+        ? { kind, port: 0 }
+        : kind === "seconds"
+          ? { kind, secs: 5 }
+          : { kind };
+  return {
+    ...action,
+    until,
+    timeoutSecs: untouched ? DEFAULT_TIMEOUT[kind] : action.timeoutSecs,
+  };
+}
 
 export function emptyDraft(): Draft {
   return { name: "", aliases: [], icon: { kind: "auto" }, actions: [] };
@@ -41,6 +82,13 @@ export function newAction(kind: ActionKind): Action {
       return { kind, appId: "", name: "" };
     case "runCommand":
       return { kind, program: "", args: [], cwd: null };
+    case "wait":
+      return {
+        kind,
+        until: { kind: "webResponds", url: "http://localhost:" },
+        timeoutSecs: DEFAULT_TIMEOUT.webResponds,
+        onTimeout: "stop",
+      };
   }
 }
 

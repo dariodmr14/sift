@@ -5,11 +5,13 @@ import { AppPicker } from "./AppPicker";
 import { PathField } from "./PathField";
 import { useSortableItem } from "./Sortable";
 import { Button, ErrorText, Field, TextInput } from "./ui";
+import { canCheckNow, WaitEditor } from "./WaitEditor";
 
 type TestState =
   | { kind: "idle" }
   | { kind: "running" }
-  | { kind: "ok" }
+  /** Fue bien; en una espera, lo que se ha visto («responde ahora mismo»). */
+  | { kind: "ok"; message?: string }
   | { kind: "error"; message: string }
   /** Es un comando que nunca se ha ejecutado: se muestra y se pide confirmar. */
   | { kind: "confirm"; display: string };
@@ -48,6 +50,15 @@ export function ActionEditor({
 
   async function runTest(approve: boolean) {
     setTest({ kind: "running" });
+    // Una espera no se ejecuta: se comprueba una vez, ahora, sin lanzar el Espacio.
+    if (action.kind === "wait") {
+      const r = await commands.checkWait(action);
+      return setTest(
+        r.status === "ok"
+          ? { kind: "ok", message: r.data }
+          : { kind: "error", message: r.error.message },
+      );
+    }
     const r = await commands.testAction(action, approve);
     if (r.status === "error")
       return setTest({ kind: "error", message: r.error.message });
@@ -96,7 +107,17 @@ export function ActionEditor({
         </span>
         <Button
           onClick={() => void runTest(false)}
-          disabled={test.kind === "running"}
+          disabled={
+            test.kind === "running" ||
+            (action.kind === "wait" && !canCheckNow(action))
+          }
+          title={
+            action.kind === "wait"
+              ? canCheckNow(action)
+                ? "Comprueba una vez si ya se cumple, sin abrir el Espacio"
+                : "Esta espera no tiene nada que comprobar por adelantado"
+              : undefined
+          }
         >
           {test.kind === "running" ? "Probando…" : "Probar"}
         </Button>
@@ -208,7 +229,13 @@ export function ActionEditor({
         </div>
       )}
 
-      {test.kind === "ok" && <p className="text-sm text-success">Funciona.</p>}
+      {action.kind === "wait" && (
+        <WaitEditor action={action} onChange={change} />
+      )}
+
+      {test.kind === "ok" && (
+        <p className="text-sm text-success">{test.message ?? "Funciona."}</p>
+      )}
       {test.kind === "error" && <ErrorText>{test.message}</ErrorText>}
       {test.kind === "confirm" && (
         <div
