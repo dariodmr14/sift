@@ -182,8 +182,13 @@ fn set_hotkey(app: AppHandle, hotkey: String) -> Result<String, AppError> {
     let parsed: Hotkey = hotkey
         .parse()
         .map_err(|e: sift_core::HotkeyParseError| AppError::InvalidHotkey(e.to_string()))?;
-    crate::change_hotkey(&app, parsed)
-        .map_err(|e| AppError::HotkeyUnavailable(format!("{e:#}")))?;
+    crate::change_hotkey(&app, parsed).map_err(|e| {
+        tracing::warn!(error = format!("{e:#}"), "no se pudo activar el atajo");
+        AppError::HotkeyUnavailable(format!(
+            "No se pudo activar {parsed}: Windows no lo permite ahora mismo. \
+             Prueba con otra combinación."
+        ))
+    })?;
     Ok(parsed.to_string()) // forma canónica: "ctrl + k" → "Ctrl+K"
 }
 
@@ -238,6 +243,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::import_spaces,
             search::search_files,
             search::suggest_paths,
+            search::recent_files,
             search::list_roots,
             search::unread_files,
             search::get_index_media,

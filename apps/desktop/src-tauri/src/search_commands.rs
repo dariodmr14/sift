@@ -99,6 +99,7 @@ pub async fn search_files(
     app: AppHandle,
     query: String,
     seq: u32,
+    filter: Option<String>,
 ) -> Result<SearchResponse, AppError> {
     let indexing = app.state::<Indexing>();
     let lexical = Lexical(&indexing.index);
@@ -116,14 +117,38 @@ pub async fn search_files(
         retrievers.push(semantic);
     }
     let frecency = app.state::<FrecencyCache>().get(&app);
-    let results = sift_search::search_with(
+    // Filtro rápido de la barra («pdf …»): un id que no existe se ignora.
+    let exts = filter
+        .as_deref()
+        .and_then(sift_extract::type_filter)
+        .unwrap_or(&[]);
+    let mut results = sift_search::search_with(
         &indexing.index,
         &retrievers,
         &query,
         MAX_FILE_HITS,
         &frecency,
+        exts,
     )
     .map_err(|e| AppError::System(e.to_string()))?;
+    // La página de los PDF, para enseñarla («pág. 37») y abrir ahí. Son pocos: una
+    // consulta por resultado a la clave primaria.
+    let pdf_chunks: Vec<i64> = results
+        .hits
+        .iter()
+        .filter(|h| h.ext.eq_ignore_ascii_case("pdf"))
+        .map(|h| h.chunk_id)
+        .collect();
+    if !pdf_chunks.is_empty() {
+        match db(&app).chunk_pages(&pdf_chunks) {
+            Ok(pages) => {
+                for hit in &mut results.hits {
+                    hit.page = pages.get(&hit.chunk_id).map(|p| *p as u32);
+                }
+            }
+            Err(e) => tracing::warn!("no se pudieron leer las páginas: {e}"),
+        }
+    }
     if !query.trim().is_empty() {
         app.state::<SearchStats>()
             .0
@@ -290,6 +315,35 @@ pub fn reindex(app: AppHandle) {
     app.state::<Indexing>().sync();
 }
 
+/// Un archivo abierto hace poco desde Sift (para la barra vacía).
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentFile {
+    pub file_id: i32,
+    pub path: String,
+    pub name: String,
+    pub ext: String,
+}
+
+/// «Abierto recientemente»: lo último que abriste desde Sift. Se pide al abrir la barra,
+/// después de pintarla, así que no cuenta en los < 100 ms.
+#[tauri::command]
+#[specta::specta]
+pub fn recent_files(app: AppHandle) -> Result<Vec<RecentFile>, AppError> {
+    /// Los que caben en la barra con los Espacios.
+    const LIMIT: usize = 8;
+    Ok(db(&app)
+        .recent_files(LIMIT)?
+        .into_iter()
+        .map(|(id, path, name, ext)| RecentFile {
+            file_id: id as i32,
+            path,
+            name,
+            ext,
+        })
+        .collect())
+}
+
 /// Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
 /// nombre; ver `sift_search::paths`). Lo que más abres va primero.
 #[tauri::command]
@@ -318,21 +372,26 @@ pub async fn suggest_paths(
 /// abrir cualquier cosa (abrir un .exe sería ejecutarlo).
 #[tauri::command]
 #[specta::specta]
-pub async fn open_file(app: AppHandle, path: String) -> Result<(), AppError> {
+pub async fn open_file(app: AppHandle, path: String, page: Option<u32>) -> Result<(), AppError> {
     let path = PathBuf::from(path);
     if !db(&app).is_indexed(&path)? {
         return Err(AppError::NotFound(
-            "ese archivo no está en el índice".into(),
+            "Sift ya no tiene este archivo: puede que se haya movido o borrado.".into(),
         ));
     }
     if let Err(e) = db(&app).record_file_open(&path) {
         tracing::warn!("no se pudo apuntar la apertura: {e}");
     }
     app.state::<FrecencyCache>().invalidate();
-    tauri::async_runtime::spawn_blocking(move || WindowsOpener.open_path(&path))
-        .await
-        .map_err(|e| AppError::System(e.to_string()))?
-        .map_err(AppError::System)
+    // Un PDF con página, en esa página si el lector lo permite (si no, normal).
+    let is_pdf = sift_extract::extension(&path) == "pdf";
+    tauri::async_runtime::spawn_blocking(move || match page {
+        Some(page) if is_pdf => crate::pdf_page::open_pdf_at(&path, page),
+        _ => WindowsOpener.open_path(&path),
+    })
+    .await
+    .map_err(|e| AppError::System(e.to_string()))?
+    .map_err(AppError::System)
 }
 
 /// Abre la carpeta que contiene el archivo, con él seleccionado (como «Abrir ubicación»).
@@ -342,7 +401,7 @@ pub fn reveal_file(app: AppHandle, path: String) -> Result<(), AppError> {
     let path = PathBuf::from(path);
     if !db(&app).is_indexed(&path)? {
         return Err(AppError::NotFound(
-            "ese archivo no está en el índice".into(),
+            "Sift ya no tiene este archivo: puede que se haya movido o borrado.".into(),
         ));
     }
     crate::shell::reveal_in_explorer(&path).map_err(AppError::System)

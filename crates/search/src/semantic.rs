@@ -58,7 +58,7 @@ impl Retriever for Semantic<'_> {
             .into_iter()
             .filter(|(_, similarity)| *similarity >= self.min_similarity)
             .collect();
-        self.text.chunks_by_hashes(&nearest, k)
+        self.text.chunks_by_hashes(&nearest, k, &q.exts)
     }
 }
 

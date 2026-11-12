@@ -62,6 +62,8 @@ pub struct NewChunk {
     /// Desplazamiento en caracteres desde el principio del texto.
     pub start: i64,
     pub text: String,
+    /// Página del PDF en la que cae (desde 1); `None` si no es un PDF.
+    pub page: Option<i64>,
 }
 
 /// (id del fragmento, texto).
@@ -274,9 +276,16 @@ impl Database {
         let mut chunk_ids = Vec::with_capacity(chunks.len());
         for c in chunks {
             tx.execute(
-                "INSERT INTO chunks (file_id, ordinal, start, text, text_hash)
-                 VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![id, c.ordinal, c.start, c.text, crate::text_hash(&c.text)],
+                "INSERT INTO chunks (file_id, ordinal, start, text, text_hash, page)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    id,
+                    c.ordinal,
+                    c.start,
+                    c.text,
+                    crate::text_hash(&c.text),
+                    c.page
+                ],
             )?;
             chunk_ids.push(tx.last_insert_rowid());
         }
@@ -565,6 +574,41 @@ impl Database {
         Ok(())
     }
 
+    /// Los últimos archivos que abriste desde Sift, el más reciente primero, sin repetir
+    /// y solo los que siguen en el índice: (id, ruta, nombre, extensión).
+    pub fn recent_files(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<(i64, String, String, String)>, StorageError> {
+        let mut stmt = self.conn.prepare(
+            // Por el id de la apertura y no por la hora: dos aperturas en el mismo
+            // milisegundo empatarían.
+            "SELECT f.id, f.path, f.name, f.ext
+             FROM opens o JOIN files f ON f.id = o.file_id
+             GROUP BY f.id ORDER BY MAX(o.id) DESC LIMIT ?1",
+        )?;
+        let rows = stmt
+            .query_map([limit as i64], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+            })?
+            .collect::<Result<_, _>>()?;
+        Ok(rows)
+    }
+
+    /// La página de unos fragmentos (los que tienen): id del fragmento → página.
+    pub fn chunk_pages(&self, ids: &[i64]) -> Result<HashMap<i64, i64>, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare_cached("SELECT page FROM chunks WHERE id = ?1 AND page IS NOT NULL")?;
+        let mut pages = HashMap::new();
+        for id in ids {
+            if let Some(page) = stmt.query_row([id], |r| r.get(0)).optional()? {
+                pages.insert(*id, page);
+            }
+        }
+        Ok(pages)
+    }
+
     /// Todos los archivos del índice: (id, ruta). Para sugerir rutas en el editor de
     /// acciones (unos miles: se lee en pocos milisegundos).
     pub fn file_paths(&self) -> Result<Vec<(i64, String)>, StorageError> {
@@ -623,6 +667,7 @@ mod tests {
 
     fn chunk(i: i64, text: &str) -> NewChunk {
         NewChunk {
+            page: None,
             ordinal: i,
             start: i * 100,
             text: text.into(),
@@ -696,6 +741,38 @@ mod tests {
     }
 
     #[test]
+    fn chunk_pages_are_kept() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        let mut with_page = chunk(0, "uno");
+        with_page.page = Some(37);
+        let (_, ids) = db
+            .upsert_file(&file(root, r"C:\Uni\a.pdf"), &[with_page, chunk(1, "dos")])
+            .unwrap();
+        let pages = db.chunk_pages(&ids).unwrap();
+        assert_eq!(pages.get(&ids[0]), Some(&37));
+        assert_eq!(pages.get(&ids[1]), None);
+    }
+
+    #[test]
+    fn recent_files_are_latest_first_without_repeats() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        let mut ids = Vec::new();
+        for name in ["a.md", "b.md", "c.md"] {
+            let path = format!(r"C:\Uni\{name}");
+            ids.push(db.upsert_file(&file(root, &path), &[]).unwrap().0);
+        }
+        for name in ["a.md", "b.md", "a.md", "c.md", "a.md"] {
+            db.record_file_open(Path::new(&format!(r"C:\Uni\{name}")))
+                .unwrap();
+        }
+        let order: Vec<i64> = db.recent_files(10).unwrap().iter().map(|r| r.0).collect();
+        assert_eq!(order, vec![ids[0], ids[2], ids[1]]);
+        assert_eq!(db.recent_files(2).unwrap().len(), 2);
+    }
+
+    #[test]
     fn removing_a_root_cascades_and_reports_files() {
         let mut db = Database::open_in_memory().unwrap();
         let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
@@ -707,6 +784,9 @@ mod tests {
             db.file_paths().unwrap(),
             vec![(a, r"C:\Uni\a.md".to_string())]
         );
+        let recent = db.recent_files(10).unwrap();
+        assert_eq!(recent.len(), 1);
+        assert_eq!((recent[0].0, recent[0].2.as_str()), (a, "a.md"));
         let ages = db.file_open_ages(30.0).unwrap();
         assert_eq!(ages.len(), 1);
         assert_eq!(ages[0].0, a);
