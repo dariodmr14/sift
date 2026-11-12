@@ -576,6 +576,7 @@ mod tests {
             check(id, Zone::LeftThird, other);
         }
         let _ = notepad.kill();
+        let _ = notepad.wait();
 
         // 2. Todo el camino de Sift: una carpeta en el Explorador, en la mitad derecha.
         let dir = tempfile::tempdir().unwrap();
@@ -590,7 +591,7 @@ mod tests {
             }),
         };
         let out = sift_spaces::run_actions(
-            &[action.clone()],
+            std::slice::from_ref(&action),
             &crate::shell::WindowsOpener,
             &crate::waits::LocalWaiter::new(),
             Some(&wm),
