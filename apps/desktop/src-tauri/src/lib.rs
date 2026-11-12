@@ -20,6 +20,7 @@ mod spaces_commands;
 mod tray;
 mod waits;
 mod watcher;
+mod window_manager;
 
 use std::path::PathBuf;
 use std::sync::Mutex;

@@ -63,6 +63,8 @@ export const commands = {
 	 *  lo que faltaba no se ejecuta.
 	 */
 	cancelSpaceRun: () => __TAURI_INVOKE<void>("cancel_space_run"),
+	/**  Las pantallas conectadas, para elegir dónde colocar una ventana en el editor. */
+	listMonitors: () => typedError<MonitorInfo[], AppError>(__TAURI_INVOKE("list_monitors")),
 	listApps: () => typedError<InstalledApp[], AppError>(__TAURI_INVOKE("list_apps")),
 	/**  Iconos de Windows para varias claves a la vez (`app:<id>` o una ruta). */
 	getIcons: (keys: string[]) => typedError<(string | null)[], AppError>(__TAURI_INVOKE("get_icons", { keys })),
@@ -153,6 +155,11 @@ export type ActionOutcome_Deserialize = {
 	error?: string | null,
 	/**  `false` si no llegó a ejecutarse (se paró antes o se canceló). */
 	ran: boolean,
+	/**
+	 *  Un aviso que no es un fallo: se abrió, pero algo no salió del todo («no encontré
+	 *  su ventana para colocarla»).
+	 */
+	note?: string | null,
 };
 
 /**  Resultado de una acción, para mostrarlo en la UI. */
@@ -164,15 +171,28 @@ export type ActionOutcome_Serialize = {
 	error: string | null,
 	/**  `false` si no llegó a ejecutarse (se paró antes o se canceló). */
 	ran: boolean,
+	/**
+	 *  Un aviso que no es un fallo: se abrió, pero algo no salió del todo («no encontré
+	 *  su ventana para colocarla»).
+	 */
+	note: string | null,
 };
 
 /**  Una acción de un Espacio. Se ejecutan en orden. */
-export type Action_Deserialize = ({ kind: "openFolder"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openFile"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openUrl"; url: string }) & { appId?: never; name?: never; path?: never } | 
+export type Action_Deserialize = ({ kind: "openFolder"; path: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Deserialize | null }) & { appId?: never; name?: never; url?: never } | ({ kind: "openFile"; path: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Deserialize | null }) & { appId?: never; name?: never; url?: never } | ({ kind: "openUrl"; url: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Deserialize | null }) & { appId?: never; name?: never; path?: never } | 
 /**
  *  Una app instalada, elegida en el selector. `app_id` es su identificador en la
  *  carpeta de aplicaciones de Windows (`shell:AppsFolder`): una ruta o un AUMID.
  */
-({ kind: "openApp"; appId: string; name: string }) & { path?: never; url?: never } | {
+({ kind: "openApp"; appId: string; name: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Deserialize | null }) & { path?: never; url?: never } | {
 	kind: "runCommand",
 } & CommandSpec_Deserialize | 
 /**  Un paso que espera a que algo esté listo antes de seguir (Fase 6, ADR 0012). */
@@ -181,12 +201,20 @@ export type Action_Deserialize = ({ kind: "openFolder"; path: string }) & { appI
 } & WaitSpec_Deserialize;
 
 /**  Una acción de un Espacio. Se ejecutan en orden. */
-export type Action_Serialize = ({ kind: "openFolder"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openFile"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openUrl"; url: string }) & { appId?: never; name?: never; path?: never } | 
+export type Action_Serialize = ({ kind: "openFolder"; path: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Serialize }) & { appId?: never; name?: never; url?: never } | ({ kind: "openFile"; path: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Serialize }) & { appId?: never; name?: never; url?: never } | ({ kind: "openUrl"; url: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Serialize }) & { appId?: never; name?: never; path?: never } | 
 /**
  *  Una app instalada, elegida en el selector. `app_id` es su identificador en la
  *  carpeta de aplicaciones de Windows (`shell:AppsFolder`): una ruta o un AUMID.
  */
-({ kind: "openApp"; appId: string; name: string }) & { path?: never; url?: never } | {
+({ kind: "openApp"; appId: string; name: string; 
+/**  Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows. */
+place?: Placement_Serialize }) & { path?: never; url?: never } | {
 	kind: "runCommand",
 } & CommandSpec_Serialize | 
 /**  Un paso que espera a que algo esté listo antes de seguir (Fase 6, ADR 0012). */
@@ -456,6 +484,28 @@ export type Material = "acrylic" | "blur" |
 /**  Sin material: fondo opaco. */
 "none";
 
+/**  En qué pantalla. */
+export type MonitorChoice = 
+/**  La principal de Windows. */
+{ kind: "primary" } | 
+/**  Donde esté el ratón al abrir el Espacio. */
+{ kind: "underMouse" } | 
+/**
+ *  Una concreta: por su nombre («DELL U2720Q») y, si hay dos con el mismo nombre o
+ *  cambia, por dónde estaba (su esquina de arriba a la izquierda).
+ */
+{ kind: "specific"; name: string; left: number; top: number };
+
+/**  Una pantalla. */
+export type MonitorInfo = {
+	/**  Nombre del modelo si Windows lo sabe («DELL U2720Q»); si no, «Pantalla 2». */
+	name: string,
+	/**  La pantalla entera y el área útil (sin la barra de tareas). */
+	bounds: Rect,
+	work: Rect,
+	primary: boolean,
+};
+
 /**  Se pidió "crear Espacio" desde la barra con la ventana de ajustes ya abierta. */
 export type NewSpaceRequested = null;
 
@@ -486,12 +536,39 @@ export type PendingCommand_Serialize = {
 	display: string,
 };
 
+/**  Dónde se coloca una ventana al abrir una acción. */
+export type Placement = Placement_Serialize | Placement_Deserialize;
+
+/**  Dónde se coloca una ventana al abrir una acción. */
+export type Placement_Deserialize = {
+	zone: Zone,
+	monitor?: MonitorChoice,
+	/**  «Si ya está abierta, moverla en vez de abrir otra». */
+	reuseWindow?: boolean,
+};
+
+/**  Dónde se coloca una ventana al abrir una acción. */
+export type Placement_Serialize = {
+	zone: Zone,
+	monitor: MonitorChoice,
+	/**  «Si ya está abierta, moverla en vez de abrir otra». */
+	reuseWindow: boolean,
+};
+
 /**  Un archivo abierto hace poco desde Sift (para la barra vacía). */
 export type RecentFile = {
 	fileId: number,
 	path: string,
 	name: string,
 	ext: string,
+};
+
+/**  Un rectángulo en píxeles de la pantalla (el escritorio virtual entero). */
+export type Rect = {
+	left: number,
+	top: number,
+	right: number,
+	bottom: number,
 };
 
 export type RootView = RootView_Serialize | RootView_Deserialize;
@@ -781,6 +858,9 @@ export type WaitUntil =
 { kind: "commandFinished" } | 
 /**  Unos segundos, sin comprobar nada. */
 { kind: "seconds"; secs: number };
+
+/**  Zonas predefinidas (las propias, al backlog). */
+export type Zone = "maximized" | "leftHalf" | "rightHalf" | "topHalf" | "bottomHalf" | "leftThird" | "centerThird" | "rightThird" | "leftTwoThirds" | "rightTwoThirds" | "topLeft" | "topRight" | "bottomLeft" | "bottomRight";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

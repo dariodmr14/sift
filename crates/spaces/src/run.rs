@@ -17,6 +17,7 @@ use std::time::Duration;
 use serde::Serialize;
 
 use crate::model::{Action, CommandSpec, OnTimeout, WaitSpec, WaitUntil};
+use crate::placement::{Placement, WindowManager, pick_monitor, pick_window};
 use crate::validate::validate_action;
 
 /// Lo que sabe hacer el sistema operativo. Cada método lanza una sola cosa.
@@ -81,6 +82,25 @@ pub struct ActionOutcome {
     pub error: Option<String>,
     /// `false` si no llegó a ejecutarse (se paró antes o se canceló).
     pub ran: bool,
+    /// Un aviso que no es un fallo: se abrió, pero algo no salió del todo («no encontré
+    /// su ventana para colocarla»).
+    pub note: Option<String>,
+}
+
+/// Cuánto se espera a que aparezca la ventana de lo que se abrió, para colocarla.
+pub const WINDOW_TIMEOUT: Duration = Duration::from_secs(15);
+/// Cada cuánto se mira si ya ha aparecido.
+const WINDOW_POLL: Duration = Duration::from_millis(250);
+
+/// Dónde colocar lo que abre una acción, si se ha pedido.
+pub fn placement_of(action: &Action) -> Option<&Placement> {
+    match action {
+        Action::OpenFolder { place, .. }
+        | Action::OpenFile { place, .. }
+        | Action::OpenUrl { place, .. }
+        | Action::OpenApp { place, .. } => place.as_ref(),
+        _ => None,
+    }
 }
 
 /// Comandos de `actions` que aún no se han aprobado, sin repetidos y en orden.
@@ -116,6 +136,7 @@ pub fn run_actions(
     actions: &[Action],
     opener: &dyn Opener,
     waiter: &dyn Waiter,
+    windows: Option<&dyn WindowManager>,
     progress: &dyn Progress,
 ) -> Vec<ActionOutcome> {
     let mut out = Vec::with_capacity(actions.len());
@@ -130,6 +151,7 @@ pub fn run_actions(
             break;
         }
         progress.step(index, &label, None);
+        let mut note = None;
         let (error, ran, stop) = match action {
             Action::Wait(spec) => match wait(spec, child.take(), waiter, progress, index, &label) {
                 Ok(()) => (None, true, false),
@@ -150,13 +172,29 @@ pub fn run_actions(
                     Err(e) => (Some(e), true, false),
                 }
             }
-            _ => (run_action(action, opener).err(), true, false),
+            _ => match (placement_of(action), windows) {
+                (Some(place), Some(wm)) => {
+                    let placed =
+                        open_and_place(action, place, opener, wm, waiter, progress, index, &label);
+                    match placed {
+                        Ok(n) => {
+                            note = n;
+                            (None, true, false)
+                        }
+                        Err(e) => (Some(e), true, false),
+                    }
+                }
+                _ => (run_action(action, opener).err(), true, false),
+            },
         };
+        // Cancelar mientras se buscaba la ventana: lo abierto sigue, lo demás no se hace.
+        let stop = stop || progress.cancelled();
         out.push(ActionOutcome {
             index,
             label,
             error,
             ran,
+            note,
         });
         if stop {
             stop_at = Some(i + 1);
@@ -171,10 +209,66 @@ pub fn run_actions(
                 label: label(action),
                 error: None,
                 ran: false,
+                note: None,
             });
         }
     }
     out
+}
+
+/// Abre `action` y coloca su ventana. `Ok(aviso)` si se abrió (el aviso, si no se pudo
+/// colocar); `Err` si no se pudo abrir.
+#[allow(clippy::too_many_arguments)]
+fn open_and_place(
+    action: &Action,
+    place: &Placement,
+    opener: &dyn Opener,
+    wm: &dyn WindowManager,
+    waiter: &dyn Waiter,
+    progress: &dyn Progress,
+    index: u32,
+    label: &str,
+) -> Result<Option<String>, String> {
+    let target = wm.target(action);
+    let put = |window: isize| -> Option<String> {
+        let monitors = wm.monitors();
+        let Some(monitor) = pick_monitor(&place.monitor, &monitors, wm.mouse()) else {
+            return Some("no encontré ninguna pantalla para colocarla".into());
+        };
+        wm.place(window, place.zone, monitor)
+            .err()
+            .map(|e| format!("se abrió, pero no se pudo colocar: {e}"))
+    };
+    // «Si ya está abierta, moverla en vez de abrir otra».
+    if place.reuse_window
+        && let Some(existing) = pick_window(&wm.windows(), &[], &target)
+    {
+        return Ok(put(existing.id));
+    }
+    let before: Vec<isize> = wm.windows().iter().map(|w| w.id).collect();
+    run_action(action, opener)?;
+    let started = waiter.now();
+    let mut reported = None;
+    loop {
+        if let Some(window) = pick_window(&wm.windows(), &before, &target) {
+            return Ok(put(window.id));
+        }
+        let waited = waiter.now().saturating_sub(started);
+        if waited >= WINDOW_TIMEOUT {
+            return Ok(Some(
+                "se abrió, pero no encontré su ventana para colocarla".into(),
+            ));
+        }
+        if progress.cancelled() {
+            return Ok(Some("cancelado antes de colocar su ventana".into()));
+        }
+        let secs = waited.as_secs() as u32;
+        if reported != Some(secs) {
+            progress.step(index, label, Some(secs));
+            reported = Some(secs);
+        }
+        waiter.sleep(WINDOW_POLL);
+    }
 }
 
 fn next_waits_for_command(actions: &[Action], i: usize) -> bool {
@@ -310,13 +404,13 @@ pub fn run_action(action: &Action, opener: &dyn Opener) -> Result<(), String> {
     let mut checked = action.clone();
     validate_action(&mut checked)?;
     match &checked {
-        Action::OpenFolder { path } | Action::OpenFile { path } => {
+        Action::OpenFolder { path, .. } | Action::OpenFile { path, .. } => {
             if !path.exists() {
                 return Err(format!("no existe: {}", path.display()));
             }
             opener.open_path(path)
         }
-        Action::OpenUrl { url } => opener.open_url(url),
+        Action::OpenUrl { url, .. } => opener.open_url(url),
         Action::OpenApp { app_id, .. } => opener.open_app(app_id),
         Action::RunCommand(cmd) => {
             check_command(cmd)?;
@@ -336,9 +430,9 @@ pub fn label(action: &Action) -> String {
         )
     };
     match action {
-        Action::OpenFolder { path } => format!("Abrir carpeta {}", file_name(path)),
-        Action::OpenFile { path } => format!("Abrir {}", file_name(path)),
-        Action::OpenUrl { url } => format!("Abrir {url}"),
+        Action::OpenFolder { path, .. } => format!("Abrir carpeta {}", file_name(path)),
+        Action::OpenFile { path, .. } => format!("Abrir {}", file_name(path)),
+        Action::OpenUrl { url, .. } => format!("Abrir {url}"),
         Action::OpenApp { name, .. } => format!("Abrir {name}"),
         Action::RunCommand(c) => format!("Ejecutar {}", display_command(c)),
         Action::Wait(w) => match &w.until {
@@ -508,7 +602,7 @@ mod tests {
     }
 
     fn run(actions: &[Action], rec: &Recorder, waiter: &FakeWaiter) -> Vec<ActionOutcome> {
-        run_actions(actions, rec, waiter, &NoProgress)
+        run_actions(actions, rec, waiter, None, &NoProgress)
     }
 
     fn cmd(program: &str, args: &[&str]) -> CommandSpec {
@@ -529,13 +623,16 @@ mod tests {
         let actions = vec![
             Action::OpenUrl {
                 url: "https://campus.es".into(),
+                place: None,
             },
             Action::OpenFolder {
                 path: dir.path().to_path_buf(),
+                place: None,
             },
             Action::OpenApp {
                 app_id: "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App".into(),
                 name: "Calculadora".into(),
+                place: None,
             },
         ];
         let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
@@ -556,6 +653,7 @@ mod tests {
         let r = run_action(
             &Action::OpenFile {
                 path: PathBuf::from(r"C:\no\existe.pdf"),
+                place: None,
             },
             &rec,
         );
@@ -570,7 +668,8 @@ mod tests {
         assert!(
             run_action(
                 &Action::OpenUrl {
-                    url: "file:///C:/x.exe".into()
+                    url: "file:///C:/x.exe".into(),
+                    place: None,
                 },
                 &rec
             )
@@ -579,7 +678,8 @@ mod tests {
         assert!(
             run_action(
                 &Action::OpenFile {
-                    path: PathBuf::from(r"C:\x\a.exe")
+                    path: PathBuf::from(r"C:\x\a.exe"),
+                    place: None,
                 },
                 &rec
             )
@@ -620,6 +720,7 @@ mod tests {
             Action::RunCommand(up.clone()),
             Action::OpenUrl {
                 url: "https://x.es".into(),
+                place: None,
             },
             Action::RunCommand(down.clone()),
             Action::RunCommand(up.clone()),
@@ -649,6 +750,7 @@ mod tests {
             wait_for(web("http://localhost:8080"), 60, OnTimeout::Stop),
             Action::OpenUrl {
                 url: "http://localhost:8080".into(),
+                place: None,
             },
         ];
         let out = run(&actions, &rec, &waiter);
@@ -664,10 +766,12 @@ mod tests {
             Action::OpenApp {
                 app_id: "code".into(),
                 name: "VS Code".into(),
+                place: None,
             },
             wait_for(web("http://localhost:8080"), 30, OnTimeout::Stop),
             Action::OpenUrl {
                 url: "http://localhost:8080".into(),
+                place: None,
             },
         ];
         let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
@@ -689,6 +793,7 @@ mod tests {
             wait_for(web("http://localhost:8080"), 5, OnTimeout::Continue),
             Action::OpenUrl {
                 url: "http://localhost:8080".into(),
+                place: None,
             },
         ];
         let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
@@ -741,6 +846,7 @@ mod tests {
             wait_for(WaitUntil::CommandFinished, 120, OnTimeout::Stop),
             Action::OpenUrl {
                 url: "http://localhost:8080".into(),
+                place: None,
             },
         ];
         let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
@@ -759,13 +865,15 @@ mod tests {
             Action::OpenApp {
                 app_id: "code".into(),
                 name: "VS Code".into(),
+                place: None,
             },
             wait_for(web("http://localhost:8080"), 60, OnTimeout::Continue),
             Action::OpenUrl {
                 url: "http://localhost:8080".into(),
+                place: None,
             },
         ];
-        let out = run_actions(&actions, &rec, &FakeWaiter::ready_after(None), &steps);
+        let out = run_actions(&actions, &rec, &FakeWaiter::ready_after(None), None, &steps);
         assert!(out[0].ran);
         assert!(!out[1].ran);
         assert_eq!(out[1].error.as_deref(), Some("cancelado mientras esperaba"));
@@ -810,5 +918,204 @@ mod tests {
         assert!(check_wait_now(&spec(WaitUntil::ServiceAccepts { port: 5432 }), &down).is_ok());
         assert!(check_wait_now(&spec(WaitUntil::ServiceAccepts { port: 1 }), &down).is_err());
         assert!(check_wait_now(&spec(WaitUntil::CommandFinished), &up).is_err());
+    }
+
+    // --- Colocar ventanas (Fase 6.5) ---
+
+    use crate::placement::{
+        MonitorChoice, MonitorInfo, Placement, Rect, WindowInfo, WindowTarget, Zone,
+    };
+
+    /// Ventanas de mentira: la nueva «aparece» tras `appear_after` consultas.
+    struct FakeWindows {
+        existing: Vec<WindowInfo>,
+        new_window: Option<WindowInfo>,
+        appear_after: Cell<u32>,
+        placed: RefCell<Vec<(isize, Zone, String)>>,
+    }
+
+    impl FakeWindows {
+        fn new(
+            existing: Vec<WindowInfo>,
+            new_window: Option<WindowInfo>,
+            appear_after: u32,
+        ) -> Self {
+            FakeWindows {
+                existing,
+                new_window,
+                appear_after: Cell::new(appear_after),
+                placed: RefCell::new(Vec::new()),
+            }
+        }
+    }
+
+    impl WindowManager for FakeWindows {
+        fn windows(&self) -> Vec<WindowInfo> {
+            let mut all = self.existing.clone();
+            match self.appear_after.get() {
+                0 => all.extend(self.new_window.clone()),
+                n => self.appear_after.set(n - 1),
+            }
+            all
+        }
+        fn monitors(&self) -> Vec<MonitorInfo> {
+            let bounds = Rect {
+                left: 0,
+                top: 0,
+                right: 1920,
+                bottom: 1080,
+            };
+            vec![MonitorInfo {
+                name: "DELL".into(),
+                bounds,
+                work: bounds,
+                primary: true,
+            }]
+        }
+        fn mouse(&self) -> Option<(i32, i32)> {
+            None
+        }
+        fn target(&self, _: &Action) -> WindowTarget {
+            WindowTarget {
+                exe: Some("code.exe".into()),
+                title_hint: None,
+            }
+        }
+        fn place(&self, window: isize, zone: Zone, monitor: &MonitorInfo) -> Result<(), String> {
+            self.placed
+                .borrow_mut()
+                .push((window, zone, monitor.name.clone()));
+            Ok(())
+        }
+    }
+
+    fn code(zone: Zone, reuse_window: bool) -> Action {
+        Action::OpenApp {
+            app_id: "code".into(),
+            name: "VS Code".into(),
+            place: Some(Placement {
+                zone,
+                monitor: MonitorChoice::Primary,
+                reuse_window,
+            }),
+        }
+    }
+
+    fn code_window(id: isize) -> WindowInfo {
+        WindowInfo {
+            id,
+            exe: "code.exe".into(),
+            title: "Visual Studio Code".into(),
+        }
+    }
+
+    #[test]
+    fn opens_then_places_the_new_window_when_it_appears() {
+        let rec = Recorder::default();
+        let wm = FakeWindows::new(vec![code_window(1)], Some(code_window(2)), 6);
+        let out = run_actions(
+            &[code(Zone::RightHalf, false)],
+            &rec,
+            &FakeWaiter::ready_after(None),
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(
+            out[0].ran && out[0].error.is_none() && out[0].note.is_none(),
+            "{out:?}"
+        );
+        assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
+        // La nueva (2), no la que ya estaba abierta (1).
+        assert_eq!(
+            *wm.placed.borrow(),
+            vec![(2, Zone::RightHalf, "DELL".to_string())]
+        );
+    }
+
+    #[test]
+    fn if_the_window_never_appears_it_goes_on_and_says_so() {
+        let rec = Recorder::default();
+        let wm = FakeWindows::new(vec![], None, 0);
+        let waiter = FakeWaiter::ready_after(None);
+        let actions = [
+            code(Zone::LeftHalf, false),
+            Action::OpenUrl {
+                url: "https://x.es".into(),
+                place: None,
+            },
+        ];
+        let out = run_actions(&actions, &rec, &waiter, Some(&wm), &NoProgress);
+        assert!(out[0].ran && out[0].error.is_none());
+        assert!(
+            out[0]
+                .note
+                .as_deref()
+                .unwrap()
+                .contains("no encontré su ventana")
+        );
+        assert_eq!(waiter.now(), WINDOW_TIMEOUT);
+        // Seguir y avisar: lo siguiente se abre igual.
+        assert!(out[1].ran && out[1].error.is_none());
+    }
+
+    #[test]
+    fn an_already_open_window_is_moved_instead_of_opening_another() {
+        let rec = Recorder::default();
+        let wm = FakeWindows::new(vec![code_window(7)], None, 0);
+        let out = run_actions(
+            &[code(Zone::Maximized, true)],
+            &rec,
+            &FakeWaiter::ready_after(None),
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out[0].error.is_none());
+        assert!(rec.calls.borrow().is_empty(), "no se abre otra");
+        assert_eq!(
+            *wm.placed.borrow(),
+            vec![(7, Zone::Maximized, "DELL".to_string())]
+        );
+    }
+
+    #[test]
+    fn without_a_window_manager_it_just_opens() {
+        let rec = Recorder::default();
+        let out = run_actions(
+            &[code(Zone::LeftHalf, false)],
+            &rec,
+            &FakeWaiter::ready_after(None),
+            None,
+            &NoProgress,
+        );
+        assert!(out[0].error.is_none() && out[0].note.is_none());
+        assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
+    }
+
+    #[test]
+    fn cancelling_while_looking_for_the_window_stops_the_rest() {
+        let rec = Recorder::default();
+        let wm = FakeWindows::new(vec![], None, 0);
+        let steps = Steps {
+            cancel_at: Some(2),
+            ..Default::default()
+        };
+        let actions = [
+            code(Zone::LeftHalf, false),
+            Action::OpenUrl {
+                url: "https://x.es".into(),
+                place: None,
+            },
+        ];
+        let out = run_actions(
+            &actions,
+            &rec,
+            &FakeWaiter::ready_after(None),
+            Some(&wm),
+            &steps,
+        );
+        assert!(out[0].ran);
+        assert!(out[0].note.as_deref().unwrap().contains("cancelado"));
+        assert!(!out[1].ran);
+        assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
     }
 }
