@@ -101,8 +101,8 @@ pub fn validate(mut draft: SpaceDraft) -> Result<SpaceDraft, ValidationError> {
 /// Valida una acción suelta (también se usa al pulsar "probar" en el editor).
 pub fn validate_action(action: &mut Action) -> Result<(), String> {
     match action {
-        Action::OpenFolder { path } => check_path(path),
-        Action::OpenFile { path } => {
+        Action::OpenFolder { path, .. } => check_path(path),
+        Action::OpenFile { path, .. } => {
             check_path(path)?;
             let ext = path
                 .extension()
@@ -117,7 +117,7 @@ pub fn validate_action(action: &mut Action) -> Result<(), String> {
             }
             Ok(())
         }
-        Action::OpenUrl { url } => {
+        Action::OpenUrl { url, .. } => {
             *url = url.trim().to_owned();
             let lower = url.to_ascii_lowercase();
             // Solo web: con `ShellExecute`, otros esquemas (file:, ms-…:) podrían abrir o
@@ -131,7 +131,7 @@ pub fn validate_action(action: &mut Action) -> Result<(), String> {
                 Err("la dirección web tiene que empezar por https:// o http://".into())
             }
         }
-        Action::OpenApp { app_id, name } => {
+        Action::OpenApp { app_id, name, .. } => {
             if app_id.trim().is_empty() || name.trim().is_empty() {
                 return Err("elige una aplicación".into());
             }
@@ -330,7 +330,13 @@ mod tests {
 
     #[test]
     fn urls_must_be_web() {
-        let ok = |u: &str| validate_action(&mut Action::OpenUrl { url: u.into() }).is_ok();
+        let ok = |u: &str| {
+            validate_action(&mut Action::OpenUrl {
+                url: u.into(),
+                place: None,
+            })
+            .is_ok()
+        };
         assert!(ok(" https://campusvirtual.uniovi.es "));
         assert!(ok("http://localhost:8080"));
         assert!(!ok("file:///C:/Windows/System32/calc.exe"));
@@ -341,7 +347,12 @@ mod tests {
 
     #[test]
     fn open_file_rejects_executables() {
-        let check = |p: &str| validate_action(&mut Action::OpenFile { path: abs(p) });
+        let check = |p: &str| {
+            validate_action(&mut Action::OpenFile {
+                path: abs(p),
+                place: None,
+            })
+        };
         assert!(check(r"C:\Apuntes\tema4.pdf").is_ok());
         assert!(check(r"C:\x\setup.EXE").unwrap_err().contains("ejecutable"));
         assert!(check(r"C:\x\run.bat").is_err());
@@ -352,6 +363,7 @@ mod tests {
     fn paths_must_be_absolute() {
         let mut a = Action::OpenFolder {
             path: abs(r"Documentos\Uni"),
+            place: None,
         };
         assert!(validate_action(&mut a).unwrap_err().contains("completa"));
     }
@@ -390,9 +402,11 @@ mod tests {
         d.actions = vec![
             Action::OpenUrl {
                 url: "https://ok.es".into(),
+                place: None,
             },
             Action::OpenUrl {
                 url: "ftp://no".into(),
+                place: None,
             },
         ];
         assert!(matches!(

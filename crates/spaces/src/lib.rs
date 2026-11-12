@@ -3,6 +3,7 @@
 
 pub mod export;
 pub mod model;
+pub mod placement;
 pub mod run;
 pub mod validate;
 

@@ -7,9 +7,11 @@ export interface Outcome {
   error: string | null;
   /** `false` si no llegó a ejecutarse (se paró antes o se canceló). */
   ran: boolean;
+  /** Un aviso que no es un fallo («se abrió, pero no encontré su ventana…»). */
+  note?: string | null;
 }
 
-export type LineState = "ok" | "failed" | "cancelled" | "notRun";
+export type LineState = "ok" | "warning" | "failed" | "cancelled" | "notRun";
 
 export interface SummaryLine {
   label: string;
@@ -26,6 +28,8 @@ export interface Summary {
 }
 
 function lineFor(o: Outcome): SummaryLine {
+  if (o.ran && !o.error && o.note)
+    return { label: o.label, state: "warning", detail: o.note };
   if (o.ran && !o.error) return { label: o.label, state: "ok" };
   if (o.ran) return { label: o.label, state: "failed", detail: o.error! };
   if (o.error) return { label: o.label, state: "cancelled", detail: o.error };
@@ -53,10 +57,15 @@ export function summarize(outcomes: Outcome[], cancelled: boolean): Summary {
       needsAttention: true,
     };
   }
+  const warned = lines.some((l) => l.state === "warning");
   return {
-    headline: failed ? "Algo no se pudo abrir" : "Abierto",
+    headline: failed
+      ? "Algo no se pudo abrir"
+      : warned
+        ? "Abierto, con avisos"
+        : "Abierto",
     lines,
-    needsAttention: failed,
+    needsAttention: failed || warned,
   };
 }
 

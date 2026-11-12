@@ -2,7 +2,7 @@
 
 Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escribes lo que buscas y encuentra tus archivos por su significado, no solo por sus palabras. Todo en local: ni el índice, ni los archivos, ni el modelo de IA salen del ordenador.
 
-> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras), 3 (más formatos e indexado en tiempo real), 4 (búsqueda por significado), 5 (ranking híbrido y medición) y 6 (Espacios completos) terminadas. Plan completo en [PLAN.md](PLAN.md).
+> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras), 3 (más formatos e indexado en tiempo real), 4 (búsqueda por significado), 5 (ranking híbrido y medición), 6 (Espacios completos) y 6.5 (colocar ventanas) terminadas. Plan completo en [PLAN.md](PLAN.md).
 
 ## Qué hace ya
 
@@ -24,6 +24,7 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **Filtros rápidos**: «pdf contrato», «código árbol», «imagen playa»… buscan solo ese tipo de archivo (la palabra queda como etiqueta; Retroceso la quita).
 - **PDF en su página**: un PDF se abre en la página que encaja con tu búsqueda («pág. 37»), con el lector que tengas (Edge, Chrome, Adobe, Sumatra…).
 - **Espacios y archivos en la misma lista**: si escribes el nombre o un alias de un Espacio, sale el primero; si encaja a medias, se coloca entre los archivos según lo que más uses.
+- **Colocar ventanas**: cada cosa que abre un Espacio puede ir a una zona de la pantalla (mitades, tercios, cuartos o toda la pantalla), en la pantalla que elijas; si ya estaba abierta, se mueve en vez de abrir otra.
 - **Esperas en los Espacios**: «Esperar a que responda una web de tu equipo», «…un servicio acepte conexiones (como una base de datos)», «…termine el comando anterior» o unos segundos, con «Si no ocurre en X segundos: no seguir y avisarme / seguir igualmente». La barra dice por qué paso va, Esc cancela (lo ya abierto sigue abierto) y al final cuenta qué se ejecutó y qué no.
 - **Rutas sugeridas** en el editor de Espacios: escribe el nombre de un archivo o carpeta y Sift te la sugiere desde su índice (o elígela con el diálogo de Windows).
 
@@ -117,6 +118,7 @@ powershell -ExecutionPolicy Bypass -File scripts/ci.ps1
 - [ADR 0008](docs/adr/0008-distribucion-de-pdfium.md): PDFium para los PDF y cómo llega `pdfium.dll` (dentro del instalador, versión y hash fijados).
 - [ADR 0009](docs/adr/0009-busqueda-por-significado.md): búsqueda por significado (modelo elegido midiendo, vectores en SQLite, HNSW derivado, fusión y evaluación).
 - [ADR 0010](docs/adr/0010-ranking-hibrido.md): ranking híbrido (diagnóstico, búsqueda de palabras relajada, suma por archivo, frecencia, benchmark).
+- [ADR 0014](docs/adr/0014-colocar-ventanas.md): colocar ventanas en zonas (encontrar la ventana nueva, bordes invisibles, varias pantallas).
 - [ADR 0013](docs/adr/0013-pdf-en-su-pagina-y-filtros.md): PDF en su página, filtros rápidos por tipo y barra vacía con lo reciente.
 - [ADR 0012](docs/adr/0012-esperas-en-los-espacios.md): esperas en los Espacios (solo cosas de tu equipo, el comando esperado sin ventana, cancelar sin cerrar nada).
 - [ADR 0011](docs/adr/0011-espacios-en-los-resultados.md): Espacios mezclados con los archivos (exactos primero, parciales en la escala de los archivos) y rutas sugeridas del índice.
@@ -173,6 +175,11 @@ powershell -ExecutionPolicy Bypass -File scripts/ci.ps1
 - Para que una espera se pruebe en milisegundos, el reloj y el «dormir» van detrás de un trait: en los tests, esperar 60 s es sumar 60 a un número.
 - Un detalle que lo cambia todo: los comandos se abrían en su propia consola, que se cierra al terminar. Para poder decir por qué falló uno, el comando que se espera se lanza sin ventana y se lee su salida mientras se produce (si nadie la lee, el programa se bloquea).
 - «Solo cosas de tu equipo» hay que comprobarlo por el host exacto, sin seguir redirecciones ni usar proxies: `localhost.ejemplo.com` también empieza por «localhost».
+
+**Fase 6.5**
+- Las apps más usadas (VS Code, navegadores, el Explorador) no abren un proceso nuevo: le piden al que ya tienen que abra otra ventana. Seguir el proceso lanzado no sirve; lo que funciona es buscar una ventana **nueva** del programa esperado.
+- Windows 10 rodea las ventanas de un borde invisible de unos 7 px: si se mueve la ventana a la zona tal cual, quedan huecos. Hay que preguntar a DWM qué parte se ve y compensar.
+- Probar ventanas sin tocar el ratón: una prueba abre ventanas de verdad, las coloca y mide dónde quedan. Para la interfaz, el protocolo de DevTools del WebView permite manejar la app real por script y hacer capturas.
 
 ## Licencia
 [MIT](LICENSE)

@@ -89,7 +89,10 @@ pub fn seed(db: &mut sift_storage::Database) {
         name: "Sift (desarrollo)".into(),
         aliases: vec!["dev".into()],
         icon: Icon::Auto,
-        actions: vec![Action::OpenFolder { path: plain(&repo) }],
+        actions: vec![Action::OpenFolder {
+            path: plain(&repo),
+            place: None,
+        }],
     };
     if let Err(e) = db.create_space(draft) {
         tracing::warn!("datos de prueba: no se pudo crear el Espacio: {e}");
