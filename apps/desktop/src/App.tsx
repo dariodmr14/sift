@@ -7,10 +7,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { commands, type FileHit, type Segment } from "./bindings";
+import {
+  commands,
+  events,
+  type FileHit,
+  type Segment,
+  type SpaceProgress_Deserialize as SpaceProgress,
+} from "./bindings";
 import { dismissLauncher, useLauncher } from "./useLauncher";
 import { matchBuiltins, type BuiltinId } from "./launcher/builtins";
 import { mixResults } from "./launcher/mix";
+import {
+  progressText,
+  summarize,
+  type SummaryLine,
+} from "./launcher/runSummary";
 import { moveSelection } from "./launcher/selection";
 import { SpaceIcon } from "./components/SpaceIcon";
 import {
@@ -80,8 +91,15 @@ type Mode =
   | { kind: "list" }
   /** Un Espacio va a ejecutar comandos por primera vez: hay que confirmarlos. */
   | { kind: "confirm"; space: SpaceView; commands: PendingCommand[] }
-  /** Alguna acción falló (o el Espacio no se pudo ejecutar): se explica qué. */
-  | { kind: "result"; title: string; errors: string[] };
+  /** Un Espacio en marcha (con esperas puede tardar): por qué paso va. Esc cancela. */
+  | {
+      kind: "running";
+      title: string;
+      progress: SpaceProgress | null;
+      cancelling: boolean;
+    }
+  /** Algo falló, se paró o se canceló: qué se ejecutó y qué no. */
+  | { kind: "result"; title: string; headline: string; lines: SummaryLine[] };
 
 const openSettings = (newSpace = false) => void commands.openSettings(newSpace);
 
@@ -174,24 +192,62 @@ function App() {
     setMode({ kind: "list" });
   };
 
+  // Un Espacio con esperas puede seguir en marcha con la barra oculta. Mientras tanto no
+  // se limpia nada, y si al acabar hay algo que contar, se enseña al volver a abrirla.
+  const running = useRef(false);
+  const visible = useRef(true);
+  const keepResult = useRef(false);
+  const cancelRequested = useRef(false);
+
   useLauncher(
     rootRef,
     () => {
-      reset();
+      visible.current = true;
+      if (running.current || keepResult.current) {
+        keepResult.current = false;
+      } else {
+        reset();
+      }
       inputRef.current?.focus();
       void refresh();
     },
     // Al ocultarse se limpia ya, con la ventana invisible: al volver no se ve lo de antes.
-    reset,
+    () => {
+      visible.current = false;
+      if (!running.current) reset();
+    },
   );
 
+  // Por qué paso va el Espacio en marcha.
+  useEffect(() => {
+    const stop = events.spaceProgress.listen(({ payload }) =>
+      setMode((m) => (m.kind === "running" ? { ...m, progress: payload } : m)),
+    );
+    return () => void stop.then((f) => f());
+  }, []);
+
   const launch = useCallback(async (view: SpaceView, approve: boolean) => {
+    const title = view.space.name;
+    running.current = true;
+    cancelRequested.current = false;
+    // El panel «en marcha» solo si tarda: un Espacio normal se abre al instante y no
+    // debe parpadear.
+    const slow = setTimeout(
+      () =>
+        setMode({ kind: "running", title, progress: null, cancelling: false }),
+      300,
+    );
     const result = await commands.runSpace(view.space.id, approve);
+    clearTimeout(slow);
+    running.current = false;
     if (result.status === "error") {
       setMode({
         kind: "result",
-        title: view.space.name,
-        errors: [result.error.message],
+        title,
+        headline: "No se pudo abrir",
+        lines: [
+          { label: title, state: "failed", detail: result.error.message },
+        ],
       });
       return;
     }
@@ -200,13 +256,15 @@ function App() {
       setMode({ kind: "confirm", space: view, commands: report.commands });
       return;
     }
-    const errors = report.outcomes
-      .filter((o) => o.error)
-      .map((o) => `${o.label}: ${o.error}`);
-    if (errors.length) {
-      setMode({ kind: "result", title: view.space.name, errors });
-    } else {
+    const summary = summarize(report.outcomes, cancelRequested.current);
+    if (summary.needsAttention) {
+      setMode({ kind: "result", title, ...summary });
+      // Con la barra oculta, que lo vea al volver a abrirla.
+      if (!visible.current) keepResult.current = true;
+    } else if (visible.current) {
       dismissLauncher(rootRef.current);
+    } else {
+      reset();
     }
   }, []);
 
@@ -273,7 +331,13 @@ function App() {
       activate: () =>
         void openFile(
           hit,
-          (msg) => setMode({ kind: "result", title: hit.name, errors: [msg] }),
+          (msg) =>
+            setMode({
+              kind: "result",
+              title: hit.name,
+              headline: "No se pudo abrir",
+              lines: [{ label: hit.name, state: "failed", detail: msg }],
+            }),
           () => dismissLauncher(rootRef.current),
         ),
     });
@@ -351,6 +415,16 @@ function App() {
       }
       return;
     }
+    if (mode.kind === "running") {
+      // Esc cancela: lo ya abierto sigue abierto; al acabar, el resumen.
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelRequested.current = true;
+        void commands.cancelSpaceRun();
+        setMode({ ...mode, cancelling: true });
+      }
+      return;
+    }
     if (mode.kind === "result") {
       if (e.key === "Enter" || e.key === "Escape") {
         e.preventDefault();
@@ -395,6 +469,8 @@ function App() {
           setMode({ kind: "list" });
         }}
         onKeyDown={onKeyDown}
+        // Mientras se abre un Espacio, escribir no cambia nada (Esc sigue cancelando).
+        readOnly={mode.kind === "running"}
         placeholder="Buscar en Sift…"
         spellCheck={false}
         role="combobox"
@@ -411,8 +487,18 @@ function App() {
             space={mode.space.space.name}
             commands={mode.commands}
           />
+        ) : mode.kind === "running" ? (
+          <RunningPanel
+            title={mode.title}
+            progress={mode.progress}
+            cancelling={mode.cancelling}
+          />
         ) : mode.kind === "result" ? (
-          <ResultPanel title={mode.title} errors={mode.errors} />
+          <ResultPanel
+            title={mode.title}
+            headline={mode.headline}
+            lines={mode.lines}
+          />
         ) : isEmpty ? (
           <EmptyState />
         ) : items.length > 0 ? (
@@ -488,6 +574,10 @@ function App() {
             <span>↵ ejecutar</span>
             <span>Esc volver</span>
           </>
+        ) : mode.kind === "running" ? (
+          <span>Esc cancelar (lo ya abierto sigue abierto)</span>
+        ) : mode.kind === "result" ? (
+          <span>Esc cerrar</span>
         ) : (
           <>
             <span>↑↓ moverse</span>
@@ -580,17 +670,79 @@ function ConfirmPanel({
   );
 }
 
-function ResultPanel({ title, errors }: { title: string; errors: string[] }) {
+function RunningPanel({
+  title,
+  progress,
+  cancelling,
+}: {
+  title: string;
+  progress: SpaceProgress | null;
+  cancelling: boolean;
+}) {
+  return (
+    <div role="status" aria-live="polite" className="h-full p-5">
+      <p className="mb-1 text-[15px]">Abriendo «{title}»</p>
+      <p className="text-sm text-muted">
+        {cancelling
+          ? "Cancelando…"
+          : progress
+            ? progressText({ ...progress, waited: progress.waited ?? null })
+            : "Empezando…"}
+      </p>
+    </div>
+  );
+}
+
+const LINE_MARK: Record<SummaryLine["state"], { mark: string; cls: string }> = {
+  ok: { mark: "✓", cls: "text-success" },
+  failed: { mark: "✕", cls: "text-danger" },
+  cancelled: { mark: "✕", cls: "text-muted" },
+  notRun: { mark: "–", cls: "text-muted" },
+};
+
+function ResultPanel({
+  title,
+  headline,
+  lines,
+}: {
+  title: string;
+  headline: string;
+  lines: SummaryLine[];
+}) {
   return (
     <div role="alert" className="h-full overflow-y-auto p-5">
-      <p className="mb-3 text-[15px]">«{title}»: algo no se pudo abrir</p>
-      <ul className="space-y-1 text-sm text-danger select-text">
-        {errors.map((e) => (
-          <li key={e}>{e}</li>
+      <p className="mb-3 text-[15px]">
+        «{title}»: {headline}
+      </p>
+      <ul className="space-y-1.5 text-sm select-text">
+        {lines.map((l, i) => (
+          <li key={i} className="flex gap-2">
+            <span
+              aria-hidden
+              className={`w-4 shrink-0 text-center ${LINE_MARK[l.state].cls}`}
+            >
+              {LINE_MARK[l.state].mark}
+            </span>
+            <span className="min-w-0">
+              <span className={l.state === "notRun" ? "text-muted" : ""}>
+                {l.label}
+                {l.state === "notRun" && " (no se ejecutó)"}
+              </span>
+              {l.detail && (
+                <span
+                  className={`block font-mono text-xs whitespace-pre-wrap ${
+                    l.state === "failed" ? "text-danger" : "text-muted"
+                  }`}
+                >
+                  {l.detail}
+                </span>
+              )}
+            </span>
+          </li>
         ))}
       </ul>
       <p className="mt-4 text-xs text-muted">
-        Revisa el Espacio en Ajustes. Esc para cerrar.
+        Revisa el Espacio en Ajustes si hace falta.
       </p>
     </div>
   );
