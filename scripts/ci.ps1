@@ -37,6 +37,23 @@ $Results = @()
 $Failed = $false
 $Started = Get-Date
 
+# `npm ci` borra node_modules entero y lo vuelve a instalar. Si algo lo tiene abierto
+# (`npm run tauri dev`, que deja Vite en marcha), Windows no deja borrar algunos archivos
+# y npm se para A MEDIAS: node_modules queda roto también para lo que está en marcha. Mejor
+# avisar antes y no tocar nada.
+if (-not $SkipInstall) {
+    $modules = Join-Path $Desktop "node_modules"
+    $using = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -and $_.CommandLine.Contains($modules) }
+    if ($using) {
+        Write-Host ""
+        Write-Host "Hay procesos usando $modules (¿npm run tauri dev abierto?):" -ForegroundColor Red
+        $using | ForEach-Object { Write-Host "  PID $($_.ProcessId)" -ForegroundColor Red }
+        Write-Host "Ciérralos y vuelve a ejecutar la CI: npm ci no puede reinstalar mientras tanto." -ForegroundColor Red
+        exit 1
+    }
+}
+
 foreach ($Step in $Steps) {
     if ($Failed) {
         $Results += [pscustomobject]@{ Paso = $Step.Name; Estado = "sin ejecutar"; Tiempo = "" }

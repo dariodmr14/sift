@@ -10,6 +10,7 @@ mod load;
 mod logging;
 mod materials;
 mod models;
+mod pdf_page;
 mod search_commands;
 mod settings_window;
 mod shell;

@@ -187,7 +187,7 @@ export function ActionEditor({
         <div className="grid grid-cols-2 gap-3">
           <Field
             label="Programa"
-            hint="Un .exe del PATH (docker, git) o la ruta completa. Los .cmd con extensión: code.cmd"
+            hint="Su nombre, si Windows ya sabe dónde está (como git), o su ruta completa. Si termina en .cmd o .bat, escríbelo también: code.cmd"
           >
             <TextInput
               placeholder="docker"
@@ -209,7 +209,7 @@ export function ActionEditor({
           <div className="col-span-2">
             <Field
               label="Argumentos, uno por línea"
-              hint="Cada línea llega al programa tal cual, sin pasar por una shell: no hacen falta comillas."
+              hint="Cada línea llega al programa tal cual, como una sola pieza: no hacen falta comillas."
             >
               <textarea
                 spellCheck={false}

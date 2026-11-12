@@ -24,6 +24,8 @@ pub struct ParsedQuery {
     /// Última palabra a medio escribir (sin tildes), para buscar por prefijo. `None` si la
     /// consulta acaba en espacio: entonces la última palabra ya está completa.
     pub prefix: Option<String>,
+    /// Solo archivos con estas extensiones (un filtro rápido: «pdf …»). Vacío = todos.
+    pub exts: Vec<String>,
 }
 
 impl ParsedQuery {
@@ -50,6 +52,7 @@ impl ParsedQuery {
             raw: raw.to_owned(),
             terms,
             prefix,
+            exts: Vec::new(),
         }
     }
 

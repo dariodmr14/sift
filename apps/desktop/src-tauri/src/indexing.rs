@@ -747,11 +747,19 @@ impl Worker {
                 self.update_throttled(|s| s.smart.downloaded_mb = (done / 1_000_000) as u32);
             });
             if let Err(e) = result {
+                // El detalle técnico, al log; a la persona, qué pasa y qué hará Sift.
+                tracing::warn!(error = %e, "no se pudo descargar la búsqueda inteligente");
                 return Err(match e {
                     crate::models::DownloadError::Network(_) => {
                         "Sin conexión: se descargará cuando la haya.".to_owned()
                     }
-                    other => other.to_string(),
+                    crate::models::DownloadError::Corrupt(_) => {
+                        "La descarga llegó dañada: se volverá a intentar.".to_owned()
+                    }
+                    crate::models::DownloadError::Io(_) => {
+                        "No se pudo guardar la descarga. ¿Queda espacio en el disco?".to_owned()
+                    }
+                    crate::models::DownloadError::Cancelled => "Descarga cancelada.".to_owned(),
                 });
             }
             tracing::info!(
@@ -761,7 +769,12 @@ impl Worker {
             );
         }
         let load = |threads| {
-            sift_embeddings::OnnxEmbedder::load(card, &dir, threads).map_err(|e| e.to_string())
+            sift_embeddings::OnnxEmbedder::load(card, &dir, threads).map_err(|e| {
+                tracing::warn!(error = %e, "no se pudo cargar el modelo");
+                "No se pudo poner en marcha. Prueba a desactivarla y volver a activarla \
+                 en Ajustes → General."
+                    .to_owned()
+            })
         };
         let background = load(crate::smart::BACKGROUND_THREADS)?;
         let vectors = Arc::new(self.open_vectors(&app_data, card)?);

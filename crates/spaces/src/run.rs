@@ -786,7 +786,9 @@ mod tests {
             OnTimeout::Stop,
         )];
         let out = run(&actions, &rec, &waiter);
-        assert!(out[0].error.as_deref().unwrap().contains("de tu equipo"));
+        let reason = out[0].error.as_deref().unwrap();
+        assert!(reason.contains("en tu equipo"), "{reason}");
+        assert!(!reason.contains("  "), "sin espacios repetidos: {reason}");
         assert_eq!(waiter.now(), Duration::ZERO);
     }
 

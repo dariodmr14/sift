@@ -85,8 +85,11 @@ pub fn validate(mut draft: SpaceDraft) -> Result<SpaceDraft, ValidationError> {
         {
             return Err(ValidationError::Action {
                 index: i + 1,
-                reason: "«esperar a que termine el comando anterior» tiene que ir justo                          después de un comando"
-                    .into(),
+                reason: concat!(
+                    "«esperar a que termine el comando anterior» tiene que ir ",
+                    "justo después de un comando"
+                )
+                .into(),
             });
         }
     }
@@ -121,11 +124,11 @@ pub fn validate_action(action: &mut Action) -> Result<(), String> {
             // ejecutar cosas que no son una página.
             if lower.starts_with("https://") || lower.starts_with("http://") {
                 if url.len() > 2048 || url.chars().any(char::is_whitespace) {
-                    return Err("la URL no es válida".into());
+                    return Err("la dirección web no es válida".into());
                 }
                 Ok(())
             } else {
-                Err("la URL tiene que empezar por https:// o http://".into())
+                Err("la dirección web tiene que empezar por https:// o http://".into())
             }
         }
         Action::OpenApp { app_id, name } => {
@@ -220,8 +223,11 @@ fn validate_wait(spec: &mut WaitSpec) -> Result<(), String> {
         WaitUntil::WebResponds { url } => {
             *url = url.trim().to_owned();
             if !is_local_web(url) {
-                return Err("la web tiene que ser de tu equipo (http://localhost:…):                      Sift no se conecta a internet"
-                    .into());
+                return Err(concat!(
+                    "la web tiene que estar en tu equipo (empieza por http://localhost): ",
+                    "Sift no se conecta a internet"
+                )
+                .into());
             }
         }
         WaitUntil::ServiceAccepts { port } => {
@@ -512,10 +518,12 @@ mod tests {
         d.actions = vec![command.clone(), wait(WaitUntil::CommandFinished, 120)];
         assert!(validate(d.clone()).is_ok());
         d.actions = vec![wait(WaitUntil::CommandFinished, 120)];
-        assert!(matches!(
-            validate(d.clone()),
-            Err(ValidationError::Action { index: 1, .. })
-        ));
+        let err = validate(d.clone()).unwrap_err();
+        assert!(matches!(err, ValidationError::Action { index: 1, .. }));
+        assert!(
+            !err.to_string().contains("  "),
+            "sin espacios repetidos: {err}"
+        );
         d.actions = vec![
             command,
             wait(WaitUntil::Seconds { secs: 2 }, 60),

@@ -928,7 +928,7 @@ fn calibrate_frecency() {
         for (q, globs, helps, noise) in &cases {
             for (i, opens) in [&Vec::new(), helps, noise].into_iter().enumerate() {
                 let f = Frecency::from_opens(opens.iter().copied()).with_weight(weight);
-                let hits = search_with(&text, &retrievers, &q.query, 10, &f)
+                let hits = search_with(&text, &retrievers, &q.query, 10, &f, &[])
                     .unwrap()
                     .hits;
                 let found: Vec<String> = hits.iter().map(|h| relative(&h.path)).collect();
