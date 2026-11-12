@@ -288,6 +288,7 @@ mod tests {
             .iter()
             .enumerate()
             .map(|(i, t)| NewChunk {
+                page: None,
                 ordinal: i as i64,
                 start: 0,
                 text: (*t).into(),

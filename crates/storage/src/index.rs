@@ -62,6 +62,8 @@ pub struct NewChunk {
     /// Desplazamiento en caracteres desde el principio del texto.
     pub start: i64,
     pub text: String,
+    /// Página del PDF en la que cae (desde 1); `None` si no es un PDF.
+    pub page: Option<i64>,
 }
 
 /// (id del fragmento, texto).
@@ -274,9 +276,16 @@ impl Database {
         let mut chunk_ids = Vec::with_capacity(chunks.len());
         for c in chunks {
             tx.execute(
-                "INSERT INTO chunks (file_id, ordinal, start, text, text_hash)
-                 VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![id, c.ordinal, c.start, c.text, crate::text_hash(&c.text)],
+                "INSERT INTO chunks (file_id, ordinal, start, text, text_hash, page)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    id,
+                    c.ordinal,
+                    c.start,
+                    c.text,
+                    crate::text_hash(&c.text),
+                    c.page
+                ],
             )?;
             chunk_ids.push(tx.last_insert_rowid());
         }
@@ -586,6 +595,20 @@ impl Database {
         Ok(rows)
     }
 
+    /// La página de unos fragmentos (los que tienen): id del fragmento → página.
+    pub fn chunk_pages(&self, ids: &[i64]) -> Result<HashMap<i64, i64>, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare_cached("SELECT page FROM chunks WHERE id = ?1 AND page IS NOT NULL")?;
+        let mut pages = HashMap::new();
+        for id in ids {
+            if let Some(page) = stmt.query_row([id], |r| r.get(0)).optional()? {
+                pages.insert(*id, page);
+            }
+        }
+        Ok(pages)
+    }
+
     /// Todos los archivos del índice: (id, ruta). Para sugerir rutas en el editor de
     /// acciones (unos miles: se lee en pocos milisegundos).
     pub fn file_paths(&self) -> Result<Vec<(i64, String)>, StorageError> {
@@ -644,6 +667,7 @@ mod tests {
 
     fn chunk(i: i64, text: &str) -> NewChunk {
         NewChunk {
+            page: None,
             ordinal: i,
             start: i * 100,
             text: text.into(),
@@ -714,6 +738,20 @@ mod tests {
             (s.id, s.size, s.mtime, s.content_hash.as_deref()),
             (id, 20, 5, Some("h1"))
         );
+    }
+
+    #[test]
+    fn chunk_pages_are_kept() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        let mut with_page = chunk(0, "uno");
+        with_page.page = Some(37);
+        let (_, ids) = db
+            .upsert_file(&file(root, r"C:\Uni\a.pdf"), &[with_page, chunk(1, "dos")])
+            .unwrap();
+        let pages = db.chunk_pages(&ids).unwrap();
+        assert_eq!(pages.get(&ids[0]), Some(&37));
+        assert_eq!(pages.get(&ids[1]), None);
     }
 
     #[test]

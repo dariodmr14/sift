@@ -171,6 +171,14 @@ const MIGRATIONS: &[&str] = &[
         PRIMARY KEY (model, text_hash)
     ) WITHOUT ROWID;
     "#,
+    // v6: la página de cada fragmento de un PDF, para abrirlo ahí. Los PDF ya leídos se
+    // vuelven a leer en segundo plano: se borra su hash de contenido (si solo cambiara la
+    // fecha, Sift vería el mismo contenido y no volvería a trocearlo). Su texto no cambia,
+    // así que sus vectores se reutilizan.
+    r#"
+    ALTER TABLE chunks ADD COLUMN page INTEGER;
+    UPDATE files SET content_hash = NULL, mtime = -1 WHERE ext = 'pdf';
+    "#,
 ];
 
 pub struct Database {
@@ -255,6 +263,35 @@ mod tests {
         // Si volviera a aplicar la v1, fallaría con "table spaces already exists".
         let db = Database::open(&path).unwrap();
         assert_eq!(db.schema_version().unwrap() as usize, MIGRATIONS.len());
+    }
+
+    #[test]
+    fn v6_marks_only_pdfs_to_be_read_again() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("sift.db");
+        {
+            let conn = Connection::open(&path).unwrap();
+            for sql in &MIGRATIONS[..5] {
+                conn.execute_batch(sql).unwrap();
+            }
+            conn.pragma_update(None, "user_version", 5).unwrap();
+            conn.execute(r"INSERT INTO roots (path) VALUES ('C:\Uni')", [])
+                .unwrap();
+            for (path, ext) in [(r"C:\Uni\tema.pdf", "pdf"), (r"C:\Uni\notas.md", "md")] {
+                conn.execute(
+                    "INSERT INTO files (root_id, path, name, ext, size, mtime, content_hash)
+                     VALUES (1, ?1, 'x', ?2, 10, 123, 'h')",
+                    [path, ext],
+                )
+                .unwrap();
+            }
+        }
+        let db = Database::open(&path).unwrap();
+        let state = |p: &str| db.file_state(Path::new(p)).unwrap().unwrap();
+        let pdf = state(r"C:\Uni\tema.pdf");
+        assert_eq!((pdf.mtime, pdf.content_hash), (-1, None));
+        let md = state(r"C:\Uni\notas.md");
+        assert_eq!((md.mtime, md.content_hash.as_deref()), (123, Some("h")));
     }
 
     #[test]

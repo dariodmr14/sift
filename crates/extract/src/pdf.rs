@@ -31,25 +31,36 @@ impl Engine {
         })
     }
 
-    /// Texto de todas las páginas, separadas por una línea en blanco. Deja de leer al
-    /// llegar a `max_bytes` (un PDF de 2.000 páginas no hace falta entero).
-    pub fn text(&self, path: &Path, max_bytes: usize) -> Result<String, ExtractError> {
+    /// Texto de todas las páginas, separadas por una línea en blanco, y dónde empieza
+    /// cada una: (carácter, número de página desde 1). Deja de leer al llegar a
+    /// `max_bytes` (un PDF de 2.000 páginas no hace falta entero).
+    pub fn text(
+        &self,
+        path: &Path,
+        max_bytes: usize,
+    ) -> Result<(String, Vec<(usize, u32)>), ExtractError> {
         let document = self
             .pdfium
             .load_pdf_from_file(path, None)
             .map_err(to_extract_error)?;
         let mut text = String::new();
-        for page in document.pages().iter() {
+        let mut pages = Vec::new();
+        // En caracteres (no bytes), como los `start` de los fragmentos.
+        let mut chars = 0;
+        for (index, page) in document.pages().iter().enumerate() {
             // Una página que no se deja leer no invalida las demás.
             if let Ok(page_text) = page.text() {
-                text.push_str(&page_text.all());
+                let page_text = page_text.all();
+                pages.push((chars, index as u32 + 1));
+                chars += page_text.chars().count() + 2;
+                text.push_str(&page_text);
                 text.push_str("\n\n");
             }
             if text.len() >= max_bytes {
                 break;
             }
         }
-        Ok(text)
+        Ok((text, pages))
     }
 }
 
@@ -84,18 +95,37 @@ mod tests {
     /// Un PDF mínimo de una página con `text` (Helvetica), con su tabla de referencias
     /// calculada a mano: así el test no necesita archivos de muestra.
     fn tiny_pdf(text: &str) -> Vec<u8> {
-        let stream = format!("BT /F1 18 Tf 72 720 Td ({text}) Tj ET");
-        let objects = [
+        tiny_pdf_pages(&[text])
+    }
+
+    /// Como `tiny_pdf`, con una página por texto.
+    fn tiny_pdf_pages(texts: &[&str]) -> Vec<u8> {
+        // 1 catálogo, 2 páginas, 3 fuente; después, por cada página, la página y su
+        // contenido (4 y 5, 6 y 7…).
+        let kids: Vec<String> = (0..texts.len())
+            .map(|i| format!("{} 0 R", 4 + 2 * i))
+            .collect();
+        let mut objects = vec![
             "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
-            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R              /Resources << /Font << /F1 5 0 R >> >> >>"
-                .to_string(),
-            format!("<< /Length {} >>
-stream
-{stream}
-endstream", stream.len()),
+            format!(
+                "<< /Type /Pages /Kids [{}] /Count {} >>",
+                kids.join(" "),
+                texts.len()
+            ),
             "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".to_string(),
         ];
+        for (i, text) in texts.iter().enumerate() {
+            let stream = format!("BT /F1 18 Tf 72 720 Td ({text}) Tj ET");
+            objects.push(format!(
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents {} 0 R \
+                 /Resources << /Font << /F1 3 0 R >> >> >>",
+                5 + 2 * i
+            ));
+            objects.push(format!(
+                "<< /Length {} >>\nstream\n{stream}\nendstream",
+                stream.len()
+            ));
+        }
         let mut pdf = b"%PDF-1.4
 "
         .to_vec();
@@ -167,8 +197,27 @@ startxref
         let dir = tempfile::tempdir().unwrap();
         let good = dir.path().join("tema.pdf");
         std::fs::write(&good, tiny_pdf("Normalizacion y formas normales")).unwrap();
-        let text = engine.text(&good, 1024).unwrap();
+        let (text, pages) = engine.text(&good, 1024).unwrap();
         assert!(text.contains("Normalizacion y formas normales"), "{text:?}");
+        assert_eq!(pages, vec![(0, 1)]);
+
+        // Varias páginas: cada una empieza donde dice (en caracteres).
+        let three = dir.path().join("tres.pdf");
+        std::fs::write(&three, tiny_pdf_pages(&["Uno", "Dos", "Tres"])).unwrap();
+        let (text, pages) = engine.text(&three, 1024).unwrap();
+        assert_eq!(pages.len(), 3, "{text:?}");
+        for ((start, page), word) in pages.iter().zip(["Uno", "Dos", "Tres"]) {
+            let from: String = text.chars().skip(*start).collect();
+            assert!(from.starts_with(word), "página {page}: {from:?}");
+            assert_eq!(
+                *page,
+                ["Uno", "Dos", "Tres"]
+                    .iter()
+                    .position(|w| *w == word)
+                    .unwrap() as u32
+                    + 1
+            );
+        }
 
         let broken = dir.path().join("roto.pdf");
         std::fs::write(&broken, b"%PDF-1.4 esto se corta aqui").unwrap();

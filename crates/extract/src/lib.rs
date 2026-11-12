@@ -157,6 +157,22 @@ pub struct Extracted {
     pub text: String,
     /// blake3 del contenido en bytes: si no cambia, no hace falta reprocesar.
     pub hash: String,
+    /// Dónde empieza cada página en `text`: (carácter, página desde 1). Solo PDF; vacío
+    /// en lo demás.
+    pub pages: Vec<(usize, u32)>,
+}
+
+impl Extracted {
+    /// La página en la que cae el carácter `at` (`None` si no hay páginas).
+    pub fn page_at(&self, at: usize) -> Option<u32> {
+        page_at(&self.pages, at)
+    }
+}
+
+/// La página en la que cae el carácter `at`, según dónde empieza cada una.
+pub fn page_at(pages: &[(usize, u32)], at: usize) -> Option<u32> {
+    let i = pages.partition_point(|(start, _)| *start <= at);
+    pages.get(i.checked_sub(1)?).map(|(_, page)| *page)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -298,7 +314,11 @@ impl Extractor {
                 file.take(max_bytes).read_to_end(&mut bytes)?;
                 let hash = blake3::hash(&bytes).to_hex().to_string();
                 let text = decode(&bytes)?;
-                Ok(Some(Extracted { text, hash }))
+                Ok(Some(Extracted {
+                    text,
+                    hash,
+                    pages: Vec::new(),
+                }))
             }
         }
     }
@@ -326,16 +346,20 @@ impl Extractor {
         std::io::copy(&mut std::fs::File::open(path)?, &mut hasher)?;
         let hash = hasher.finalize().to_hex().to_string();
 
-        let text = match (&self.pdf, ext) {
+        let (text, pages) = match (&self.pdf, ext) {
             (Some(engine), "pdf") => engine.text(path, max_text as usize)?,
             _ => {
                 let file = std::io::BufReader::new(std::fs::File::open(path)?);
-                office::extract_text(file, ext)?.unwrap_or_default()
+                (
+                    office::extract_text(file, ext)?.unwrap_or_default(),
+                    Vec::new(),
+                )
             }
         };
         Ok(Some(Extracted {
             text: truncate_at_char(text, max_text as usize),
             hash,
+            pages,
         }))
     }
 }
@@ -379,6 +403,16 @@ pub fn decode(bytes: &[u8]) -> Result<String, ExtractError> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn page_at_finds_the_page_of_a_character() {
+        let pages = [(0, 1), (100, 2), (250, 4)]; // la 3 no se pudo leer
+        assert_eq!(page_at(&pages, 0), Some(1));
+        assert_eq!(page_at(&pages, 99), Some(1));
+        assert_eq!(page_at(&pages, 100), Some(2));
+        assert_eq!(page_at(&pages, 5_000), Some(4));
+        assert_eq!(page_at(&[], 10), None);
+    }
+
     use super::*;
 
     #[test]
