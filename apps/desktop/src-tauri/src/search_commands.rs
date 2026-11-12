@@ -99,6 +99,7 @@ pub async fn search_files(
     app: AppHandle,
     query: String,
     seq: u32,
+    filter: Option<String>,
 ) -> Result<SearchResponse, AppError> {
     let indexing = app.state::<Indexing>();
     let lexical = Lexical(&indexing.index);
@@ -116,12 +117,18 @@ pub async fn search_files(
         retrievers.push(semantic);
     }
     let frecency = app.state::<FrecencyCache>().get(&app);
+    // Filtro rápido de la barra («pdf …»): un id que no existe se ignora.
+    let exts = filter
+        .as_deref()
+        .and_then(sift_extract::type_filter)
+        .unwrap_or(&[]);
     let mut results = sift_search::search_with(
         &indexing.index,
         &retrievers,
         &query,
         MAX_FILE_HITS,
         &frecency,
+        exts,
     )
     .map_err(|e| AppError::System(e.to_string()))?;
     // La página de los PDF, para enseñarla («pág. 37») y abrir ahí. Son pocos: una

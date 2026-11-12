@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { commands, type SettingsView, type Status } from "../bindings";
 import { applyWindowMaterial } from "../appearance";
+import { TYPE_FILTERS } from "../launcher/filters";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
@@ -141,7 +142,41 @@ function SmartSearchToggle() {
           </span>
         </span>
       </label>
+      <QuickFilters />
     </Section>
+  );
+}
+
+/** Cómo buscar solo un tipo de archivo, sacado de la misma lista que usa la barra. */
+function QuickFilters() {
+  // Las palabras, como se escriben (con tilde donde la lleva: «código», «vídeo»).
+  const spoken: Record<string, string> = { codigo: "código", video: "vídeo" };
+  return (
+    <div className="space-y-2 pt-2">
+      <h3 className="text-sm font-medium">Buscar solo un tipo de archivo</h3>
+      <p className="text-xs text-muted">
+        Empieza con una de estas palabras y un espacio; por ejemplo, «pdf
+        contrato» busca «contrato» solo en tus PDF. La palabra se queda como
+        etiqueta junto a la caja; Retroceso la quita.
+      </p>
+      <ul className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        {TYPE_FILTERS.map((f) => (
+          <li key={f.id} className="contents">
+            <span className="font-mono text-xs leading-5">
+              {f.keywords
+                // Sin los plurales de otra palabra («fotos» si ya está «foto»).
+                .filter(
+                  (k) =>
+                    !f.keywords.some((o) => k === `${o}s` || k === `${o}es`),
+                )
+                .map((k) => spoken[k] ?? k)
+                .join(" · ")}
+            </span>
+            <span className="text-muted">{f.plural}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

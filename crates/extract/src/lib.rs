@@ -39,10 +39,27 @@ const DOCUMENT: &[&str] = &[
     "pdf", "doc", "docx", "odt", "ppt", "pptx", "odp", "xls", "xlsx", "ods", "epub",
 ];
 /// Imágenes y vídeos: solo por nombre, y solo si el usuario no lo desactiva.
-const MEDIA: &[&str] = &[
-    "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "tif", "tiff", "heic", "heif", "mp4", "mkv",
-    "mov", "avi", "webm", "wmv", "m4v", "mpg", "mpeg",
+const IMAGE: &[&str] = &[
+    "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "tif", "tiff", "heic", "heif",
 ];
+const VIDEO: &[&str] = &[
+    "mp4", "mkv", "mov", "avi", "webm", "wmv", "m4v", "mpg", "mpeg",
+];
+
+/// Las extensiones de un filtro rápido de la barra («pdf …», «código …»). `None` si el
+/// filtro no existe. Los ids los manda la UI (`launcher/filters.ts`).
+pub fn type_filter(id: &str) -> Option<&'static [&'static str]> {
+    Some(match id {
+        "pdf" => &["pdf"],
+        "word" => &["doc", "docx", "odt", "rtf"],
+        "slides" => &["ppt", "pptx", "odp"],
+        "sheet" => &["xls", "xlsx", "ods", "csv"],
+        "code" => CODE,
+        "image" => IMAGE,
+        "video" => VIDEO,
+        _ => return None,
+    })
+}
 const MARKDOWN: &[&str] = &["md", "markdown", "mdx", "rst", "adoc", "org", "tex"];
 const CODE: &[&str] = &[
     "rs",
@@ -114,7 +131,7 @@ pub fn kind_for(ext: &str) -> Kind {
         Kind::Text
     } else if DOCUMENT.contains(&ext) {
         Kind::Document
-    } else if MEDIA.contains(&ext) {
+    } else if IMAGE.contains(&ext) || VIDEO.contains(&ext) {
         Kind::Media
     } else {
         Kind::Other
