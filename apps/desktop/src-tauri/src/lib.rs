@@ -2,6 +2,7 @@
 
 mod appearance;
 mod commands;
+mod dev;
 mod hotkey;
 mod indexing;
 mod latency;
@@ -49,8 +50,20 @@ fn settings_path(app: &AppHandle) -> anyhow::Result<PathBuf> {
     Ok(app.path().app_config_dir()?.join("settings.json"))
 }
 
+/// Ajustes de un fichero; si aún no existe, los de por defecto (en desarrollo, con su
+/// propio atajo: ver `dev`).
+fn read_settings(path: &std::path::Path) -> anyhow::Result<Settings> {
+    if !path.exists() {
+        return Ok(Settings {
+            hotkey: dev::default_hotkey(),
+            ..Settings::default()
+        });
+    }
+    Ok(Settings::load(path)?)
+}
+
 pub(crate) fn load_settings(app: &AppHandle) -> Settings {
-    let loaded = settings_path(app).and_then(|p| Ok(Settings::load(&p)?));
+    let loaded = settings_path(app).and_then(|p| read_settings(&p));
     loaded.unwrap_or_else(|e| {
         tracing::warn!(error = %e, "no se pudieron cargar los ajustes; se usan los de por defecto");
         Settings::default()
@@ -78,7 +91,7 @@ pub(crate) fn update_settings(
     change: impl FnOnce(&mut Settings),
 ) -> anyhow::Result<()> {
     let path = settings_path(app)?;
-    let mut settings = Settings::load(&path).unwrap_or_default();
+    let mut settings = read_settings(&path).unwrap_or_default();
     change(&mut settings);
     settings.save(&path)?;
     Ok(())
@@ -187,7 +200,9 @@ pub fn run() {
             tracing::info!(version = sift_core::VERSION, "Sift arrancando");
 
             let handle = app.handle();
-            let (db, storage_error) = open_database(handle);
+            let (mut db, storage_error) = open_database(handle);
+            // En desarrollo, datos de prueba la primera vez (ver `dev`).
+            dev::seed(&mut db);
             app.manage(spaces_commands::Db(Mutex::new(db)));
             app.manage(StorageStatus(storage_error));
             let index = open_search_index(handle);
@@ -246,6 +261,11 @@ pub fn run() {
                 _ => {}
             }
         })
-        .run(tauri::generate_context!())
+        .run({
+            // En desarrollo, otro identificador: datos, logs e instancia aparte (ver `dev`).
+            let mut context = tauri::generate_context!();
+            dev::apply(&mut context);
+            context
+        })
         .expect("error al arrancar la aplicación Tauri");
 }
