@@ -209,6 +209,12 @@ sift/
 
 **Hecho cuando:** "bases de datos" + Enter abre todo tu entorno de la asignatura. ✅ El nombre o alias exacto sale el primero, y con las esperas el entorno se abre en orden (contenedores → web cuando responde), diciendo qué falló si algo falla.
 
+### Mejoras antes de la Fase 6.5 (adelantadas)
+- [x] Textos para cualquiera: sin jerga ni ejemplos de los apuntes; lo técnico, en «Avanzado» y explicado.
+- [x] Barra vacía con «Espacios» y «Abierto recientemente».
+- [x] Abrir el PDF en la página del fragmento que encaja («pág. 37»), con el lector predeterminado (ADR 0013).
+- [x] Filtros rápidos por tipo («pdf …», «código …», «imagen …») con etiqueta que se quita con Retroceso.
+
 ### Fase 6.5 — Colocar ventanas (zonas)
 Acciones que, además de abrir una app, colocan su ventana en una posición o zona de la pantalla (p. ej. "abrir VS Code en la mitad derecha"), como hacen los FancyZones de PowerToys.
 - [ ] Zonas predefinidas (mitades, tercios, cuartos, maximizada) y personalizadas por monitor.
