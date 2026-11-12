@@ -328,12 +328,13 @@ fn index_file(
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let (text, hash, error) = match ctx.extractor.extract(&path, MAX_CONTENT_BYTES) {
-        Ok(Some(e)) => (Some(e.text), Some(e.hash), None),
-        Ok(None) => (None, None, None),
+    let (text, hash, pages, error) = match ctx.extractor.extract(&path, MAX_CONTENT_BYTES) {
+        Ok(Some(e)) => (Some(e.text), Some(e.hash), e.pages, None),
+        Ok(None) => (None, None, Vec::new(), None),
         Err(e) => (
             None,
             None,
+            Vec::new(),
             Some((e.to_string(), e.reason().code().to_owned())),
         ),
     };
@@ -386,6 +387,10 @@ fn index_file(
         .map(|(i, c)| NewChunk {
             ordinal: i as i64,
             start: c.start as i64,
+            // La página de su mitad: el principio aún puede ser el final de la anterior
+            // (los fragmentos se solapan).
+            page: sift_extract::page_at(&pages, c.start + c.text.chars().count() / 2)
+                .map(i64::from),
             text: c.text,
         })
         .collect();
