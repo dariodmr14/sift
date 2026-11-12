@@ -40,6 +40,9 @@ impl From<StorageError> for AppError {
 pub struct SpaceView {
     pub space: Space,
     pub auto_icon: Option<String>,
+    /// Frecencia: por cuánto se multiplica su puntuación en la barra (1 si nunca lo
+    /// abriste; como mucho 1,25). La misma regla que los archivos (ADR 0010).
+    pub boost: f64,
 }
 
 /// Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar.
@@ -70,7 +73,15 @@ pub enum PathKind {
 #[tauri::command]
 #[specta::specta]
 pub async fn list_spaces(app: AppHandle) -> Result<Vec<SpaceView>, AppError> {
-    let spaces = app.state::<Db>().lock().list_spaces()?;
+    let (spaces, opens) = {
+        let db = app.state::<Db>();
+        let db = db.lock();
+        (
+            db.list_spaces()?,
+            db.space_open_ages(sift_search::frecency::MAX_AGE_DAYS)?,
+        )
+    };
+    let frecency = sift_search::Frecency::from_opens(opens);
     // Los iconos de Windows tardan un poco la primera vez: fuera del hilo de la IPC.
     run_blocking(move || {
         let cache = app.state::<IconCache>();
@@ -81,7 +92,11 @@ pub async fn list_spaces(app: AppHandle) -> Result<Vec<SpaceView>, AppError> {
                     Icon::Auto => auto_icon_key(&space.draft).and_then(|k| cache.get_or_load(&k)),
                     _ => None,
                 };
-                SpaceView { space, auto_icon }
+                SpaceView {
+                    boost: frecency.boost(space.id),
+                    space,
+                    auto_icon,
+                }
             })
             .collect())
     })
@@ -136,7 +151,15 @@ pub fn reorder_spaces(app: AppHandle, ids: Vec<i32>) -> Result<(), AppError> {
 pub async fn run_space(app: AppHandle, id: i32, approve: bool) -> Result<RunReport, AppError> {
     let actions = app.state::<Db>().lock().get_space(id.into())?.draft.actions;
     tracing::info!(space = id, "ejecutando Espacio");
-    run_with_approval(app, actions, approve).await
+    let report = run_with_approval(app.clone(), actions, approve).await?;
+    // Cuenta como abierto si se lanzó (aunque alguna acción fallara), no si quedó
+    // esperando confirmación.
+    if matches!(report, RunReport::Done { .. })
+        && let Err(e) = app.state::<Db>().lock().record_space_open(id.into())
+    {
+        tracing::warn!("no se pudo apuntar la apertura del Espacio: {e}");
+    }
+    Ok(report)
 }
 
 /// El botón "probar" del editor: ejecuta una sola acción (aún sin guardar), con la misma

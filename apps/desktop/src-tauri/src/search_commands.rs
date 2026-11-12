@@ -290,6 +290,30 @@ pub fn reindex(app: AppHandle) {
     app.state::<Indexing>().sync();
 }
 
+/// Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
+/// nombre; ver `sift_search::paths`). Lo que más abres va primero.
+#[tauri::command]
+#[specta::specta]
+pub async fn suggest_paths(
+    app: AppHandle,
+    query: String,
+    kind: crate::spaces_commands::PathKind,
+) -> Result<Vec<String>, AppError> {
+    /// Las que caben en la lista sin desplazarse.
+    const LIMIT: usize = 8;
+    let files = db(&app).file_paths()?;
+    let frecency = app.state::<FrecencyCache>().get(&app);
+    let kind = match kind {
+        crate::spaces_commands::PathKind::File => sift_search::paths::PathKind::File,
+        crate::spaces_commands::PathKind::Folder => sift_search::paths::PathKind::Folder,
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        sift_search::paths::suggest_paths(&files, &query, kind, &frecency, LIMIT)
+    })
+    .await
+    .map_err(|e| AppError::System(e.to_string()))
+}
+
 /// Abre un archivo encontrado. Solo rutas que estén en el índice: la UI no puede pedir
 /// abrir cualquier cosa (abrir un .exe sería ejecutarlo).
 #[tauri::command]
