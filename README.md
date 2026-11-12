@@ -2,7 +2,7 @@
 
 Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escribes lo que buscas y encuentra tus archivos por su significado, no solo por sus palabras. Todo en local: ni el índice, ni los archivos, ni el modelo de IA salen del ordenador.
 
-> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras), 3 (más formatos e indexado en tiempo real), 4 (búsqueda por significado) y 5 (ranking híbrido y medición) terminadas. Plan completo en [PLAN.md](PLAN.md).
+> 🚧 En desarrollo: Fases 1 (el lanzador), 1.5 (Espacios básicos), 2 (búsqueda por palabras), 3 (más formatos e indexado en tiempo real), 4 (búsqueda por significado), 5 (ranking híbrido y medición) y 6 (Espacios completos) terminadas. Plan completo en [PLAN.md](PLAN.md).
 
 ## Qué hace ya
 
@@ -21,6 +21,7 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **Búsqueda inteligente (por significado)**: «bases de datos» trae también lo relacionado aunque no use esas palabras. Combina la búsqueda por palabras con un modelo local (`multilingual-e5-small`, en ONNX Runtime) que se descarga una vez (~135 MB, con su hash comprobado) y prepara tus archivos en segundo plano. Los resultados que llegan solo por significado se marcan «Por significado». En las búsquedas de un nombre o un código («shell-v4.3») no interviene. Se puede desactivar en Ajustes → General.
 - **Lo que usas, primero**: lo que abres a menudo y hace poco sube en los resultados (frecencia), sin colar nada que no encaje con lo que buscas.
 - **Espacios y archivos en la misma lista**: si escribes el nombre o un alias de un Espacio, sale el primero; si encaja a medias, se coloca entre los archivos según lo que más uses.
+- **Esperas en los Espacios**: «Esperar a que responda una web de tu equipo», «…un servicio acepte conexiones (como una base de datos)», «…termine el comando anterior» o unos segundos, con «Si no ocurre en X segundos: no seguir y avisarme / seguir igualmente». La barra dice por qué paso va, Esc cancela (lo ya abierto sigue abierto) y al final cuenta qué se ejecutó y qué no.
 - **Rutas sugeridas** en el editor de Espacios: escribe el nombre de un archivo o carpeta y Sift te la sugiere desde su índice (o elígela con el diálogo de Windows).
 
 ### Métricas (Windows 10, build de release)
@@ -107,6 +108,7 @@ powershell -ExecutionPolicy Bypass -File scripts/ci.ps1
 - [ADR 0008](docs/adr/0008-distribucion-de-pdfium.md): PDFium para los PDF y cómo llega `pdfium.dll` (dentro del instalador, versión y hash fijados).
 - [ADR 0009](docs/adr/0009-busqueda-por-significado.md): búsqueda por significado (modelo elegido midiendo, vectores en SQLite, HNSW derivado, fusión y evaluación).
 - [ADR 0010](docs/adr/0010-ranking-hibrido.md): ranking híbrido (diagnóstico, búsqueda de palabras relajada, suma por archivo, frecencia, benchmark).
+- [ADR 0012](docs/adr/0012-esperas-en-los-espacios.md): esperas en los Espacios (solo cosas de tu equipo, el comando esperado sin ventana, cancelar sin cerrar nada).
 - [ADR 0011](docs/adr/0011-espacios-en-los-resultados.md): Espacios mezclados con los archivos (exactos primero, parciales en la escala de los archivos) y rutas sugeridas del índice.
 
 ## Lo aprendido
@@ -154,6 +156,13 @@ powershell -ExecutionPolicy Bypass -File scripts/ci.ps1
 - Un benchmark por piezas encuentra lo que no esperas: lo más lento de una búsqueda no era el modelo ni el índice, sino **resaltar** el texto (se creaba un analizador por palabra). Arreglarlo bajó la híbrida a la mitad.
 - Cuando no hay datos reales (4 aperturas), se puede calibrar simulando, siempre que el caso que ayuda y el que molesta se midan a la vez.
 - Una métrica que baila ±0,02 entre ejecuciones no sirve para decidir: el baile venía de empates resueltos por el orden interno del índice.
+
+**Fase 6**
+- Comparar cosas de escalas distintas (Espacios por nombre, archivos por relevancia) se resolvió poniendo los Espacios en la escala de los archivos: «como el mejor archivo × lo bien que encaja × su frecencia». Una regla que se explica en una frase y se prueba con tests.
+- Mezclar en la UI y no en Rust: los Espacios se filtran al instante en TypeScript y los archivos llegan después. Rust solo manda lo necesario para comparar (la frecencia de cada uno).
+- Para que una espera se pruebe en milisegundos, el reloj y el «dormir» van detrás de un trait: en los tests, esperar 60 s es sumar 60 a un número.
+- Un detalle que lo cambia todo: los comandos se abrían en su propia consola, que se cierra al terminar. Para poder decir por qué falló uno, el comando que se espera se lanza sin ventana y se lee su salida mientras se produce (si nadie la lee, el programa se bloquea).
+- «Solo cosas de tu equipo» hay que comprobarlo por el host exacto, sin seguir redirecciones ni usar proxies: `localhost.ejemplo.com` también empieza por «localhost».
 
 ## Licencia
 [MIT](LICENSE)

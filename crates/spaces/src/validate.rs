@@ -5,13 +5,15 @@
 
 use std::path::Path;
 
-use crate::model::{Action, CommandSpec, Icon, SpaceDraft};
+use crate::model::{Action, CommandSpec, Icon, SpaceDraft, WaitSpec, WaitUntil};
 
 pub const MAX_NAME: usize = 80;
 pub const MAX_ALIASES: usize = 20;
 pub const MAX_ACTIONS: usize = 30;
 /// Tamaño máximo de una imagen propia, ya en base64 (~256 KB de imagen).
 pub const MAX_IMAGE_BASE64: usize = 350_000;
+/// Lo más que se puede esperar en un paso: 10 minutos.
+pub const MAX_WAIT_SECS: u32 = 600;
 pub const IMAGE_MIMES: [&str; 3] = ["image/png", "image/svg+xml", "image/x-icon"];
 
 /// Extensiones que, abiertas como "archivo", **ejecutarían** algo. Se rechazan: para
@@ -73,6 +75,21 @@ pub fn validate(mut draft: SpaceDraft) -> Result<SpaceDraft, ValidationError> {
             reason,
         })?;
     }
+    // «Esperar a que termine el comando anterior» necesita un comando justo antes.
+    for (i, action) in draft.actions.iter().enumerate() {
+        if let Action::Wait(WaitSpec {
+            until: WaitUntil::CommandFinished,
+            ..
+        }) = action
+            && (i == 0 || !matches!(draft.actions[i - 1], Action::RunCommand(_)))
+        {
+            return Err(ValidationError::Action {
+                index: i + 1,
+                reason: "«esperar a que termine el comando anterior» tiene que ir justo                          después de un comando"
+                    .into(),
+            });
+        }
+    }
 
     validate_icon(&draft.icon).map_err(ValidationError::Icon)?;
     Ok(draft)
@@ -118,6 +135,7 @@ pub fn validate_action(action: &mut Action) -> Result<(), String> {
             Ok(())
         }
         Action::RunCommand(cmd) => validate_command(cmd),
+        Action::Wait(spec) => validate_wait(spec),
     }
 }
 
@@ -193,6 +211,71 @@ pub fn fold(text: &str) -> String {
             other => other,
         })
         .collect()
+}
+
+/// Una espera: solo cosas de tu equipo y tiempos razonables.
+fn validate_wait(spec: &mut WaitSpec) -> Result<(), String> {
+    let in_range = |secs: u32| (1..=MAX_WAIT_SECS).contains(&secs);
+    match &mut spec.until {
+        WaitUntil::WebResponds { url } => {
+            *url = url.trim().to_owned();
+            if !is_local_web(url) {
+                return Err("la web tiene que ser de tu equipo (http://localhost:…):                      Sift no se conecta a internet"
+                    .into());
+            }
+        }
+        WaitUntil::ServiceAccepts { port } => {
+            if *port == 0 {
+                return Err("escribe el puerto del servicio (un número de 1 a 65535)".into());
+            }
+        }
+        WaitUntil::CommandFinished => {}
+        WaitUntil::Seconds { secs } => {
+            if !in_range(*secs) {
+                return Err(format!("se puede esperar de 1 a {MAX_WAIT_SECS} segundos"));
+            }
+            return Ok(());
+        }
+    }
+    if !in_range(spec.timeout_secs) {
+        return Err(format!(
+            "el tiempo límite tiene que ser de 1 a {MAX_WAIT_SECS} segundos"
+        ));
+    }
+    Ok(())
+}
+
+/// ¿Es una web de este equipo? `http(s)://` + `localhost`, `127.0.0.1` o `[::1]`, con
+/// puerto y ruta opcionales. Se mira el **host exacto**: «localhost.ejemplo.com» o
+/// «localhost@ejemplo.com» no valen.
+pub fn is_local_web(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    let Some(rest) = lower
+        .strip_prefix("http://")
+        .or_else(|| lower.strip_prefix("https://"))
+    else {
+        return false;
+    };
+    if url.len() > 2048 || url.chars().any(char::is_whitespace) {
+        return false;
+    }
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or_default();
+    if authority.contains('@') {
+        return false;
+    }
+    let host = if authority.starts_with('[') {
+        authority.split_inclusive(']').next().unwrap_or_default()
+    } else {
+        authority.split(':').next().unwrap_or_default()
+    };
+    let port_ok = match authority.strip_prefix(host) {
+        Some("") => true,
+        Some(p) => p
+            .strip_prefix(':')
+            .is_some_and(|n| n.parse::<u16>().is_ok_and(|n| n > 0)),
+        None => false,
+    };
+    port_ok && matches!(host, "localhost" | "127.0.0.1" | "[::1]")
 }
 
 #[cfg(test)]
@@ -354,5 +437,93 @@ mod tests {
             })
             .is_err()
         );
+    }
+
+    #[test]
+    fn only_local_web_addresses_can_be_waited_for() {
+        for ok in [
+            "http://localhost",
+            "http://localhost:8080",
+            "https://127.0.0.1:8443/salud?x=1",
+            "http://[::1]:3000/",
+            "HTTP://LOCALHOST:5173",
+        ] {
+            assert!(is_local_web(ok), "{ok}");
+        }
+        for bad in [
+            "http://campus.uniovi.es",
+            "http://localhost.ejemplo.com",
+            "http://localhost@ejemplo.com",
+            "http://user@localhost",
+            "http://localhost:0",
+            "http://localhost:99999",
+            "http://localhost:abc",
+            "ftp://localhost",
+            "localhost:8080",
+            "http://127.0.0.2",
+        ] {
+            assert!(!is_local_web(bad), "{bad}");
+        }
+    }
+
+    fn wait(until: WaitUntil, timeout_secs: u32) -> Action {
+        Action::Wait(WaitSpec {
+            until,
+            timeout_secs,
+            on_timeout: crate::model::OnTimeout::Stop,
+        })
+    }
+
+    #[test]
+    fn waits_need_sensible_values() {
+        let check = |mut a: Action| validate_action(&mut a);
+        assert!(check(wait(WaitUntil::ServiceAccepts { port: 5432 }, 60)).is_ok());
+        assert!(check(wait(WaitUntil::ServiceAccepts { port: 0 }, 60)).is_err());
+        assert!(check(wait(WaitUntil::ServiceAccepts { port: 5432 }, 0)).is_err());
+        assert!(check(wait(WaitUntil::ServiceAccepts { port: 5432 }, 601)).is_err());
+        assert!(check(wait(WaitUntil::Seconds { secs: 5 }, 0)).is_ok());
+        assert!(check(wait(WaitUntil::Seconds { secs: 0 }, 60)).is_err());
+        let mut a = wait(
+            WaitUntil::WebResponds {
+                url: "  http://localhost:8080 ".into(),
+            },
+            60,
+        );
+        validate_action(&mut a).unwrap();
+        assert_eq!(
+            a,
+            wait(
+                WaitUntil::WebResponds {
+                    url: "http://localhost:8080".into()
+                },
+                60
+            )
+        );
+    }
+
+    #[test]
+    fn waiting_for_the_previous_command_needs_a_command_right_before() {
+        let command = Action::RunCommand(CommandSpec {
+            program: "docker".into(),
+            args: vec!["compose".into(), "up".into(), "-d".into()],
+            cwd: None,
+        });
+        let mut d = draft("Contenedor");
+        d.actions = vec![command.clone(), wait(WaitUntil::CommandFinished, 120)];
+        assert!(validate(d.clone()).is_ok());
+        d.actions = vec![wait(WaitUntil::CommandFinished, 120)];
+        assert!(matches!(
+            validate(d.clone()),
+            Err(ValidationError::Action { index: 1, .. })
+        ));
+        d.actions = vec![
+            command,
+            wait(WaitUntil::Seconds { secs: 2 }, 60),
+            wait(WaitUntil::CommandFinished, 120),
+        ];
+        assert!(matches!(
+            validate(d),
+            Err(ValidationError::Action { index: 3, .. })
+        ));
     }
 }

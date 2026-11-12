@@ -8,6 +8,8 @@ import {
   newAction,
   parseAliases,
   toDraft,
+  withWaitKind,
+  type WaitAction,
 } from "./draft";
 
 describe("parseAliases", () => {
@@ -87,6 +89,42 @@ describe("borradores", () => {
       kind: "openApp",
       appId: "",
       name: "",
+    });
+  });
+});
+
+describe("esperas", () => {
+  const wait = newAction("wait") as WaitAction;
+
+  it("una espera nueva: web de tu equipo, 60 s y no seguir si no responde", () => {
+    expect(wait).toEqual({
+      kind: "wait",
+      until: { kind: "webResponds", url: "http://localhost:" },
+      timeoutSecs: 60,
+      onTimeout: "stop",
+    });
+  });
+
+  it("al cambiar el tipo, el tiempo por defecto cambia con él", () => {
+    const cmd = withWaitKind(wait, "commandFinished");
+    expect(cmd.until).toEqual({ kind: "commandFinished" });
+    expect(cmd.timeoutSecs).toBe(120);
+    expect(withWaitKind(cmd, "serviceAccepts").timeoutSecs).toBe(60);
+  });
+
+  it("si cambiaste el tiempo, se respeta", () => {
+    const custom = { ...wait, timeoutSecs: 300 };
+    expect(withWaitKind(custom, "commandFinished").timeoutSecs).toBe(300);
+  });
+
+  it("cada tipo empieza con sus valores", () => {
+    expect(withWaitKind(wait, "seconds").until).toEqual({
+      kind: "seconds",
+      secs: 5,
+    });
+    expect(withWaitKind(wait, "serviceAccepts").until).toEqual({
+      kind: "serviceAccepts",
+      port: 0,
     });
   });
 });
