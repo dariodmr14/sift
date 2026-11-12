@@ -77,12 +77,14 @@ function Highlighted({ segments }: { segments: Segment[] }) {
 }
 
 /** Abre un archivo encontrado; si falla, el motivo va al panel de resultado. */
+/** Abre un archivo (un PDF, en `page` si la hay); si falla, el motivo va al panel. */
 async function openFile(
   path: string,
+  page: number | null,
   onError: (msg: string) => void,
   done: () => void,
 ) {
-  const r = await commands.openFile(path);
+  const r = await commands.openFile(path, page);
   if (r.status === "error") onError(r.error.message);
   else done();
 }
@@ -320,6 +322,9 @@ function App() {
               Por significado ·{" "}
             </span>
           )}
+          {hit.page != null && (
+            <span title="Se abre en esta página">pág. {hit.page} · </span>
+          )}
           {hit.snippet.length ? (
             <Highlighted segments={hit.snippet} />
           ) : (
@@ -341,6 +346,7 @@ function App() {
       activate: () =>
         void openFile(
           hit.path,
+          hit.page ?? null,
           (msg) =>
             setMode({
               kind: "result",
@@ -374,6 +380,7 @@ function App() {
         activate: () =>
           void openFile(
             r.path,
+            null,
             (msg) =>
               setMode({
                 kind: "result",
