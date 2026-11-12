@@ -89,3 +89,24 @@ describe("progressText", () => {
     );
   });
 });
+
+describe("avisos", () => {
+  it("se abrió pero no se pudo colocar: un aviso, no un fallo", () => {
+    const s = summarize(
+      [
+        {
+          index: 1,
+          label: "Abrir VS Code",
+          error: null,
+          ran: true,
+          note: "se abrió, pero no encontré su ventana para colocarla",
+        },
+        ok(2, "Abrir web"),
+      ],
+      false,
+    );
+    expect(s.needsAttention).toBe(true);
+    expect(s.headline).toBe("Abierto, con avisos");
+    expect(s.lines.map((l) => l.state)).toEqual(["warning", "ok"]);
+  });
+});

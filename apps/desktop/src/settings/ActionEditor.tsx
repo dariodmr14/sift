@@ -3,6 +3,7 @@ import { commands, type InstalledApp } from "../bindings";
 import { ACTION_LABELS, argsFromText, argsToText, type Action } from "./draft";
 import { AppPicker } from "./AppPicker";
 import { PathField } from "./PathField";
+import { PlacementEditor } from "./PlacementEditor";
 import { useSortableItem } from "./Sortable";
 import { Button, ErrorText, Field, TextInput } from "./ui";
 import { canCheckNow, WaitEditor } from "./WaitEditor";
@@ -181,6 +182,16 @@ export function ActionEditor({
             />
           )}
         </div>
+      )}
+
+      {(action.kind === "openFolder" ||
+        action.kind === "openFile" ||
+        action.kind === "openUrl" ||
+        action.kind === "openApp") && (
+        <PlacementEditor
+          value={action.place}
+          onChange={(place) => change({ ...action, place: place ?? undefined })}
+        />
       )}
 
       {action.kind === "runCommand" && (
