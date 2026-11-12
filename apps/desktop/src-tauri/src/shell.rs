@@ -113,6 +113,10 @@ impl Opener for WindowsOpener {
             .map(|_child| ()) // no esperamos a que termine
             .map_err(|e| format!("no se pudo ejecutar «{}»: {e}", command.program))
     }
+
+    fn spawn_captured(&self, command: &CommandSpec) -> Result<Box<dyn sift_spaces::Child>, String> {
+        crate::waits::spawn_captured(command)
+    }
 }
 
 #[cfg(windows)]

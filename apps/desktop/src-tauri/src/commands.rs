@@ -228,6 +228,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::reorder_spaces,
             spaces::run_space,
             spaces::test_action,
+            spaces::check_wait,
+            spaces::cancel_space_run,
             spaces::list_apps,
             spaces::get_icons,
             spaces::pick_path,
@@ -256,7 +258,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             LauncherHidden,
             NewSpaceRequested,
             crate::materials::GlassMoving,
-            crate::indexing::IndexProgress
+            crate::indexing::IndexProgress,
+            crate::spaces_commands::SpaceProgress
         ])
 }
 
