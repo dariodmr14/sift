@@ -81,6 +81,11 @@ export const commands = {
 	 *  nombre; ver `sift_search::paths`). Lo que más abres va primero.
 	 */
 	suggestPaths: (query: string, kind: PathKind) => typedError<string[], AppError>(__TAURI_INVOKE("suggest_paths", { query, kind })),
+	/**
+	 *  «Abierto recientemente»: lo último que abriste desde Sift. Se pide al abrir la barra,
+	 *  después de pintarla, así que no cuenta en los < 100 ms.
+	 */
+	recentFiles: () => typedError<RecentFile[], AppError>(__TAURI_INVOKE("recent_files")),
 	listRoots: () => typedError<RootView_Serialize[], AppError>(__TAURI_INVOKE("list_roots")),
 	/**
 	 *  Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
@@ -443,6 +448,14 @@ export type PendingCommand_Deserialize = {
 export type PendingCommand_Serialize = {
 	command: CommandSpec_Serialize,
 	display: string,
+};
+
+/**  Un archivo abierto hace poco desde Sift (para la barra vacía). */
+export type RecentFile = {
+	fileId: number,
+	path: string,
+	name: string,
+	ext: string,
 };
 
 export type RootView = RootView_Serialize | RootView_Deserialize;

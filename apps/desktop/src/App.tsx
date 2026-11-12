@@ -11,6 +11,7 @@ import {
   commands,
   events,
   type FileHit,
+  type RecentFile,
   type Segment,
   type SpaceProgress_Deserialize as SpaceProgress,
 } from "./bindings";
@@ -77,11 +78,11 @@ function Highlighted({ segments }: { segments: Segment[] }) {
 
 /** Abre un archivo encontrado; si falla, el motivo va al panel de resultado. */
 async function openFile(
-  hit: FileHit,
+  path: string,
   onError: (msg: string) => void,
   done: () => void,
 ) {
-  const r = await commands.openFile(hit.path);
+  const r = await commands.openFile(path);
   if (r.status === "error") onError(r.error.message);
   else done();
 }
@@ -121,6 +122,9 @@ function App() {
   const listRef = useRef<HTMLUListElement>(null);
   const rootRef = useRef<HTMLElement>(null);
   const [fileHits, setFileHits] = useState<FileHit[]>([]);
+  // «Abierto recientemente», para la barra vacía. No se borra al ocultarse: al abrir se
+  // pinta con la lista de la vez anterior y se pone al día después, sin esperar a Rust.
+  const [recent, setRecent] = useState<RecentFile[]>([]);
   const [fileIcons, setFileIcons] = useState<Record<string, string | null>>({});
   // Número de la última búsqueda pedida: las respuestas de búsquedas anteriores se ignoran.
   const searchSeq = useRef(0);
@@ -143,9 +147,9 @@ function App() {
 
   // Iconos de Windows de los archivos encontrados (una vez por ruta).
   useEffect(() => {
-    const missing = fileHits
+    const missing = [...fileHits, ...recent]
       .map((h) => h.path)
-      .filter((p) => !(p in fileIcons));
+      .filter((p, i, all) => !(p in fileIcons) && all.indexOf(p) === i);
     if (missing.length === 0) return;
     let alive = true;
     void commands.getIcons(missing).then((r) => {
@@ -158,28 +162,34 @@ function App() {
     return () => {
       alive = false;
     };
-  }, [fileHits, fileIcons]);
+  }, [fileHits, recent, fileIcons]);
 
   // Los Espacios y el ajuste de iconos se recargan cada vez que se abre la barra, así
   // siempre reflejan lo último que se editó en Ajustes.
   function refresh() {
-    return Promise.all([commands.listSpaces(), commands.getSettings()]).then(
-      ([list, settings]) => {
-        if (list.status === "ok") setSpaces(list.data);
-        setIconsHidden(settings.iconsHidden);
-      },
-    );
+    return Promise.all([
+      commands.listSpaces(),
+      commands.getSettings(),
+      commands.recentFiles(),
+    ]).then(([list, settings, opened]) => {
+      if (list.status === "ok") setSpaces(list.data);
+      setIconsHidden(settings.iconsHidden);
+      if (opened.status === "ok") setRecent(opened.data);
+    });
   }
 
   useEffect(() => {
     let alive = true;
-    void Promise.all([commands.listSpaces(), commands.getSettings()]).then(
-      ([list, settings]) => {
-        if (!alive) return; // el componente ya no existe: no tocar su estado
-        if (list.status === "ok") setSpaces(list.data);
-        setIconsHidden(settings.iconsHidden);
-      },
-    );
+    void Promise.all([
+      commands.listSpaces(),
+      commands.getSettings(),
+      commands.recentFiles(),
+    ]).then(([list, settings, opened]) => {
+      if (!alive) return; // el componente ya no existe: no tocar su estado
+      if (list.status === "ok") setSpaces(list.data);
+      setIconsHidden(settings.iconsHidden);
+      if (opened.status === "ok") setRecent(opened.data);
+    });
     return () => {
       alive = false;
     };
@@ -330,7 +340,7 @@ function App() {
       path: hit.path,
       activate: () =>
         void openFile(
-          hit,
+          hit.path,
           (msg) =>
             setMode({
               kind: "result",
@@ -343,6 +353,39 @@ function App() {
     });
     const toItem = (m: (typeof mixed)[number]) =>
       m.kind === "space" ? spaceItem(m.item.view) : fileItem(m.item);
+    // Barra vacía: los Espacios y lo último que abriste, para llegar sin escribir.
+    if (!query.trim()) {
+      const opened = recent.map((r): Item => ({
+        key: `recent-${r.fileId}`,
+        section: "recent",
+        title: r.name,
+        subtitle: shortFolder(r.path),
+        icon: fileIcons[r.path] ? (
+          <img
+            src={fileIcons[r.path]!}
+            alt=""
+            className="size-6"
+            draggable={false}
+          />
+        ) : (
+          <span className="size-6" />
+        ),
+        path: r.path,
+        activate: () =>
+          void openFile(
+            r.path,
+            (msg) =>
+              setMode({
+                kind: "result",
+                title: r.name,
+                headline: "No se pudo abrir",
+                lines: [{ label: r.name, state: "failed", detail: msg }],
+              }),
+            () => dismissLauncher(rootRef.current),
+          ),
+      }));
+      return [...mixed.map(toItem), ...opened];
+    }
     const builtins = matchBuiltins(query).map((c) => ({
       key: `builtin-${c.id}`,
       section: "commands" as const,
@@ -368,14 +411,14 @@ function App() {
       );
     }
     return list;
-  }, [query, spaces, launch, fileHits, fileIcons]);
+  }, [query, spaces, launch, fileHits, recent, fileIcons]);
 
   const starts = useMemo(
     () => sectionStarts(items.map((i) => i.section)),
     [items],
   );
 
-  const isEmpty = spaces.length === 0 && !query.trim();
+  const isEmpty = spaces.length === 0 && recent.length === 0 && !query.trim();
 
   // Que el elemento seleccionado siempre quede a la vista al moverse con las flechas.
   useEffect(() => {

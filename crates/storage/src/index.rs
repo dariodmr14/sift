@@ -565,6 +565,27 @@ impl Database {
         Ok(())
     }
 
+    /// Los últimos archivos que abriste desde Sift, el más reciente primero, sin repetir
+    /// y solo los que siguen en el índice: (id, ruta, nombre, extensión).
+    pub fn recent_files(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<(i64, String, String, String)>, StorageError> {
+        let mut stmt = self.conn.prepare(
+            // Por el id de la apertura y no por la hora: dos aperturas en el mismo
+            // milisegundo empatarían.
+            "SELECT f.id, f.path, f.name, f.ext
+             FROM opens o JOIN files f ON f.id = o.file_id
+             GROUP BY f.id ORDER BY MAX(o.id) DESC LIMIT ?1",
+        )?;
+        let rows = stmt
+            .query_map([limit as i64], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
+            })?
+            .collect::<Result<_, _>>()?;
+        Ok(rows)
+    }
+
     /// Todos los archivos del índice: (id, ruta). Para sugerir rutas en el editor de
     /// acciones (unos miles: se lee en pocos milisegundos).
     pub fn file_paths(&self) -> Result<Vec<(i64, String)>, StorageError> {
@@ -696,6 +717,24 @@ mod tests {
     }
 
     #[test]
+    fn recent_files_are_latest_first_without_repeats() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        let mut ids = Vec::new();
+        for name in ["a.md", "b.md", "c.md"] {
+            let path = format!(r"C:\Uni\{name}");
+            ids.push(db.upsert_file(&file(root, &path), &[]).unwrap().0);
+        }
+        for name in ["a.md", "b.md", "a.md", "c.md", "a.md"] {
+            db.record_file_open(Path::new(&format!(r"C:\Uni\{name}")))
+                .unwrap();
+        }
+        let order: Vec<i64> = db.recent_files(10).unwrap().iter().map(|r| r.0).collect();
+        assert_eq!(order, vec![ids[0], ids[2], ids[1]]);
+        assert_eq!(db.recent_files(2).unwrap().len(), 2);
+    }
+
+    #[test]
     fn removing_a_root_cascades_and_reports_files() {
         let mut db = Database::open_in_memory().unwrap();
         let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
@@ -707,6 +746,9 @@ mod tests {
             db.file_paths().unwrap(),
             vec![(a, r"C:\Uni\a.md".to_string())]
         );
+        let recent = db.recent_files(10).unwrap();
+        assert_eq!(recent.len(), 1);
+        assert_eq!((recent[0].0, recent[0].2.as_str()), (a, "a.md"));
         let ages = db.file_open_ages(30.0).unwrap();
         assert_eq!(ages.len(), 1);
         assert_eq!(ages[0].0, a);
