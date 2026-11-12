@@ -20,6 +20,8 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **Un único vidrio** en toda la app (barra, Ajustes y diálogos), con la opción «Desactivar vidrio».
 - **Búsqueda inteligente (por significado)**: «bases de datos» trae también lo relacionado aunque no use esas palabras. Combina la búsqueda por palabras con un modelo local (`multilingual-e5-small`, en ONNX Runtime) que se descarga una vez (~135 MB, con su hash comprobado) y prepara tus archivos en segundo plano. Los resultados que llegan solo por significado se marcan «Por significado». En las búsquedas de un nombre o un código («shell-v4.3») no interviene. Se puede desactivar en Ajustes → General.
 - **Lo que usas, primero**: lo que abres a menudo y hace poco sube en los resultados (frecencia), sin colar nada que no encaje con lo que buscas.
+- **Espacios y archivos en la misma lista**: si escribes el nombre o un alias de un Espacio, sale el primero; si encaja a medias, se coloca entre los archivos según lo que más uses.
+- **Rutas sugeridas** en el editor de Espacios: escribe el nombre de un archivo o carpeta y Sift te la sugiere desde su índice (o elígela con el diálogo de Windows).
 
 ### Métricas (Windows 10, build de release)
 
@@ -105,6 +107,7 @@ powershell -ExecutionPolicy Bypass -File scripts/ci.ps1
 - [ADR 0008](docs/adr/0008-distribucion-de-pdfium.md): PDFium para los PDF y cómo llega `pdfium.dll` (dentro del instalador, versión y hash fijados).
 - [ADR 0009](docs/adr/0009-busqueda-por-significado.md): búsqueda por significado (modelo elegido midiendo, vectores en SQLite, HNSW derivado, fusión y evaluación).
 - [ADR 0010](docs/adr/0010-ranking-hibrido.md): ranking híbrido (diagnóstico, búsqueda de palabras relajada, suma por archivo, frecencia, benchmark).
+- [ADR 0011](docs/adr/0011-espacios-en-los-resultados.md): Espacios mezclados con los archivos (exactos primero, parciales en la escala de los archivos) y rutas sugeridas del índice.
 
 ## Lo aprendido
 

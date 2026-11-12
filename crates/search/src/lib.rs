@@ -8,6 +8,7 @@ pub mod frecency;
 pub mod fusion;
 pub mod index;
 pub mod intent;
+pub mod paths;
 pub mod query;
 pub mod semantic;
 pub mod snippet;

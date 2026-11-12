@@ -18,6 +18,10 @@ describe("shortFolder", () => {
 });
 
 describe("sectionStarts", () => {
+  it("sin cabeceras si una sección sale en dos trozos", () => {
+    expect(sectionStarts(["spaces", "files", "spaces", "files"]).size).toBe(0);
+  });
+
   it("marca el primer elemento de cada sección", () => {
     const starts = sectionStarts([
       "spaces",

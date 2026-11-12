@@ -203,8 +203,8 @@ sift/
 
 ### Fase 6 — Espacios completos
 > La versión básica (modelo, acciones, editor, confirmación) se adelantó a la Fase 1.5. Aquí queda lo que se apoya en el indexado.
-- [ ] Los Espacios se mezclan con los resultados de búsqueda y suben con la frecencia.
-- [ ] Sugerir archivos y carpetas del índice al añadir acciones.
+- [x] Los Espacios se mezclan con los resultados de búsqueda y suben con la frecencia (nombre o alias exacto → primero; parcial → intercalado con los archivos en su misma escala; ADR 0011).
+- [x] Sugerir archivos y carpetas del índice al añadir acciones (por nombre, con frecencia; se mantiene el selector de Windows).
 - [ ] Acciones condicionales o con espera (p. ej. abrir la web cuando el contenedor esté listo).
 
 **Hecho cuando:** "bases de datos" + Enter abre todo tu entorno de la asignatura.

@@ -66,6 +66,11 @@ export const commands = {
 	importSpaces: () => typedError<number | null, AppError>(__TAURI_INVOKE("import_spaces")),
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
 	searchFiles: (query: string, seq: number) => typedError<SearchResponse, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
+	/**
+	 *  Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
+	 *  nombre; ver `sift_search::paths`). Lo que más abres va primero.
+	 */
+	suggestPaths: (query: string, kind: PathKind) => typedError<string[], AppError>(__TAURI_INVOKE("suggest_paths", { query, kind })),
 	listRoots: () => typedError<RootView_Serialize[], AppError>(__TAURI_INVOKE("list_roots")),
 	/**
 	 *  Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
@@ -232,7 +237,13 @@ export type FileHit = {
 	nameSegments: Segment[],
 	/**  Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre). */
 	snippet: Segment[],
+	/**  Puntuación final: la de la fusión × `boost`. */
 	score: number | null,
+	/**
+	 *  Lo que la frecencia multiplica la puntuación (1 si nunca lo abriste). La barra la
+	 *  usa para comparar Espacios y archivos en la misma escala, sin frecencia.
+	 */
+	boost: number | null,
 	/**
 	 *  Encontrado solo por significado (no comparte palabras con la búsqueda): la UI lo
 	 *  marca para que se entienda por qué está ahí.
@@ -541,6 +552,11 @@ export type SpaceView = SpaceView_Serialize | SpaceView_Deserialize;
 export type SpaceView_Deserialize = {
 	space: Space_Deserialize,
 	autoIcon?: string | null,
+	/**
+	 *  Frecencia: por cuánto se multiplica su puntuación en la barra (1 si nunca lo
+	 *  abriste; como mucho 1,25). La misma regla que los archivos (ADR 0010).
+	 */
+	boost: number | null,
 };
 
 /**
@@ -550,6 +566,11 @@ export type SpaceView_Deserialize = {
 export type SpaceView_Serialize = {
 	space: Space_Serialize,
 	autoIcon: string | null,
+	/**
+	 *  Frecencia: por cuánto se multiplica su puntuación en la barra (1 si nunca lo
+	 *  abriste; como mucho 1,25). La misma regla que los archivos (ADR 0010).
+	 */
+	boost: number | null,
 };
 
 /**  Un Espacio guardado (con su id de la base de datos). */

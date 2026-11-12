@@ -944,3 +944,37 @@ fn calibrate_frecency() {
         );
     }
 }
+
+/// Lo que tarda sugerir rutas en el editor de acciones con la carpeta real (se hace en
+/// cada tecla, con un margen de espera de 120 ms).
+/// `cargo test -p sift-search --release --test eval -- --ignored suggest_paths_latency --nocapture`
+#[test]
+#[ignore = "necesita la base de datos real: ejecutar a mano en release"]
+fn suggest_paths_latency() {
+    use sift_search::paths::{PathKind, suggest_paths};
+    let db = snapshot();
+    let started = Instant::now();
+    let files = db.file_paths().unwrap();
+    let read = started.elapsed().as_secs_f64() * 1000.0;
+    eprintln!("{} rutas leídas de SQLite en {read:.1} ms", files.len());
+    for kind in [PathKind::File, PathKind::Folder] {
+        let mut times = Vec::new();
+        for q in [
+            "tema4",
+            "apuntes bd",
+            "practica",
+            "bd tema",
+            "transacciones",
+        ] {
+            let t = Instant::now();
+            let found = suggest_paths(&files, q, kind, &Frecency::default(), 8);
+            times.push(t.elapsed().as_secs_f64() * 1000.0);
+            eprintln!("  {kind:?} «{q}»: {} → {:?}", found.len(), found.first());
+        }
+        eprintln!(
+            "{kind:?}: p50 {:.1} ms · máx {:.1} ms",
+            percentile(&mut times.clone(), 0.5),
+            percentile(&mut times, 1.0)
+        );
+    }
+}

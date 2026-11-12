@@ -134,6 +134,26 @@ impl Database {
         Ok(drafts.len())
     }
 
+    /// Apunta que has abierto un Espacio (para la frecencia).
+    pub fn record_space_open(&mut self, id: i64) -> Result<(), StorageError> {
+        self.conn
+            .execute("INSERT INTO opens (space_id) VALUES (?1)", [id])?;
+        Ok(())
+    }
+
+    /// Las aperturas de Espacios de los últimos `max_days` días: (Espacio, hace cuántos
+    /// días), para la frecencia.
+    pub fn space_open_ages(&self, max_days: f64) -> Result<Vec<(i64, f64)>, StorageError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT space_id, julianday('now') - julianday(opened_at) AS age
+             FROM opens WHERE space_id IS NOT NULL AND age <= ?1",
+        )?;
+        let rows = stmt
+            .query_map([max_days], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<Result<_, _>>()?;
+        Ok(rows)
+    }
+
     pub fn is_command_approved(&self, cmd: &CommandSpec) -> Result<bool, StorageError> {
         let (program, args, cwd) = approval_key(cmd)?;
         Ok(self
@@ -300,6 +320,24 @@ mod tests {
         assert_eq!(read, created);
         assert_eq!(read.draft.aliases, vec!["bd", "bases"]);
         assert_eq!(read.draft.actions.len(), 2);
+    }
+
+    #[test]
+    fn space_opens_are_recorded_and_go_with_the_space() {
+        let mut db = Database::open_in_memory().unwrap();
+        let a = db.create_space(draft("A")).unwrap().id;
+        let b = db.create_space(draft("B")).unwrap().id;
+        db.record_space_open(a).unwrap();
+        db.record_space_open(a).unwrap();
+        db.record_space_open(b).unwrap();
+        let ages = db.space_open_ages(30.0).unwrap();
+        assert_eq!(ages.iter().filter(|(id, _)| *id == a).count(), 2);
+        assert!(ages.iter().all(|(_, age)| (0.0..0.01).contains(age)));
+        // Al borrar el Espacio se van sus aperturas.
+        db.delete_space(a).unwrap();
+        let ages = db.space_open_ages(30.0).unwrap();
+        assert_eq!(ages.len(), 1);
+        assert_eq!(ages[0].0, b);
     }
 
     #[test]
