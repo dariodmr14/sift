@@ -2,6 +2,7 @@ import { useState } from "react";
 import { commands, type InstalledApp } from "../bindings";
 import { ACTION_LABELS, argsFromText, argsToText, type Action } from "./draft";
 import { AppPicker } from "./AppPicker";
+import { PathField } from "./PathField";
 import { useSortableItem } from "./Sortable";
 import { Button, ErrorText, Field, TextInput } from "./ui";
 
@@ -62,14 +63,6 @@ export function ActionEditor({
     );
   }
 
-  async function pickPath(
-    kind: "file" | "folder",
-    apply: (path: string) => void,
-  ) {
-    const r = await commands.pickPath(kind);
-    if (r.status === "ok" && r.data) apply(r.data);
-  }
-
   return (
     <li
       {...itemProps}
@@ -113,28 +106,17 @@ export function ActionEditor({
       </div>
 
       {(action.kind === "openFolder" || action.kind === "openFile") && (
-        <div className="flex gap-2">
-          <TextInput
-            aria-label="Ruta"
-            placeholder={
-              action.kind === "openFolder"
-                ? "C:\\Users\\…\\Carpeta"
-                : "C:\\Users\\…\\archivo.pdf"
-            }
-            value={action.path}
-            onChange={(e) => change({ ...action, path: e.currentTarget.value })}
-          />
-          <Button
-            onClick={() =>
-              void pickPath(
-                action.kind === "openFolder" ? "folder" : "file",
-                (path) => change({ ...action, path }),
-              )
-            }
-          >
-            Elegir…
-          </Button>
-        </div>
+        <PathField
+          label="Ruta"
+          kind={action.kind === "openFolder" ? "folder" : "file"}
+          placeholder={
+            action.kind === "openFolder"
+              ? "Escribe su nombre o C:\\Users\\…\\Carpeta"
+              : "Escribe su nombre o C:\\Users\\…\\archivo.pdf"
+          }
+          value={action.path}
+          onChange={(path) => change({ ...action, path })}
+        />
       )}
 
       {action.kind === "openUrl" && (
@@ -195,22 +177,13 @@ export function ActionEditor({
             />
           </Field>
           <Field label="Carpeta de trabajo (opcional)">
-            <div className="flex gap-2">
-              <TextInput
-                placeholder="C:\Users\…"
-                value={action.cwd ?? ""}
-                onChange={(e) =>
-                  change({ ...action, cwd: e.currentTarget.value || null })
-                }
-              />
-              <Button
-                onClick={() =>
-                  void pickPath("folder", (cwd) => change({ ...action, cwd }))
-                }
-              >
-                Elegir…
-              </Button>
-            </div>
+            <PathField
+              label="Carpeta de trabajo"
+              kind="folder"
+              placeholder="Su nombre o C:\Users\…"
+              value={action.cwd ?? ""}
+              onChange={(cwd) => change({ ...action, cwd: cwd || null })}
+            />
           </Field>
           <div className="col-span-2">
             <Field
