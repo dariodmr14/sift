@@ -53,6 +53,16 @@ export const commands = {
 	 *  regla de confirmación para los comandos.
 	 */
 	testAction: (action: Action_Deserialize, approve: boolean) => typedError<RunReport_Serialize, AppError>(__TAURI_INVOKE("test_action", { action, approve })),
+	/**
+	 *  «Probar» de una espera: comprueba su condición una vez, ahora, sin ejecutar nada.
+	 *  `Ok` con lo que se ha visto; error con el motivo si no se cumple.
+	 */
+	checkWait: (spec: WaitSpec_Deserialize) => typedError<string, AppError>(__TAURI_INVOKE("check_wait", { spec })),
+	/**
+	 *  Cancela el Espacio en marcha (Esc en la barra). Lo ya abierto o lanzado sigue abierto;
+	 *  lo que faltaba no se ejecuta.
+	 */
+	cancelSpaceRun: () => __TAURI_INVOKE<void>("cancel_space_run"),
 	listApps: () => typedError<InstalledApp[], AppError>(__TAURI_INVOKE("list_apps")),
 	/**  Iconos de Windows para varias claves a la vez (`app:<id>` o una ruta). */
 	getIcons: (keys: string[]) => typedError<(string | null)[], AppError>(__TAURI_INVOKE("get_icons", { keys })),
@@ -119,6 +129,7 @@ export const events = {
 	launcherHidden: makeEvent<LauncherHidden, LauncherHidden>("launcher-hidden"),
 	launcherShown: makeEvent<LauncherShown, LauncherShown>("launcher-shown"),
 	newSpaceRequested: makeEvent<NewSpaceRequested, NewSpaceRequested>("new-space-requested"),
+	spaceProgress: makeEvent<SpaceProgress_Serialize, SpaceProgress_Deserialize>("space-progress"),
 };
 
 /* Types */
@@ -135,6 +146,8 @@ export type ActionOutcome_Deserialize = {
 	label: string,
 	/**  `None` si fue bien; si no, el motivo. */
 	error?: string | null,
+	/**  `false` si no llegó a ejecutarse (se paró antes o se canceló). */
+	ran: boolean,
 };
 
 /**  Resultado de una acción, para mostrarlo en la UI. */
@@ -144,6 +157,8 @@ export type ActionOutcome_Serialize = {
 	label: string,
 	/**  `None` si fue bien; si no, el motivo. */
 	error: string | null,
+	/**  `false` si no llegó a ejecutarse (se paró antes o se canceló). */
+	ran: boolean,
 };
 
 /**  Una acción de un Espacio. Se ejecutan en orden. */
@@ -154,7 +169,11 @@ export type Action_Deserialize = ({ kind: "openFolder"; path: string }) & { appI
  */
 ({ kind: "openApp"; appId: string; name: string }) & { path?: never; url?: never } | {
 	kind: "runCommand",
-} & CommandSpec_Deserialize;
+} & CommandSpec_Deserialize | 
+/**  Un paso que espera a que algo esté listo antes de seguir (Fase 6, ADR 0012). */
+{
+	kind: "wait",
+} & WaitSpec_Deserialize;
 
 /**  Una acción de un Espacio. Se ejecutan en orden. */
 export type Action_Serialize = ({ kind: "openFolder"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openFile"; path: string }) & { appId?: never; name?: never; url?: never } | ({ kind: "openUrl"; url: string }) & { appId?: never; name?: never; path?: never } | 
@@ -164,7 +183,11 @@ export type Action_Serialize = ({ kind: "openFolder"; path: string }) & { appId?
  */
 ({ kind: "openApp"; appId: string; name: string }) & { path?: never; url?: never } | {
 	kind: "runCommand",
-} & CommandSpec_Serialize;
+} & CommandSpec_Serialize | 
+/**  Un paso que espera a que algo esté listo antes de seguir (Fase 6, ADR 0012). */
+{
+	kind: "wait",
+} & WaitSpec_Serialize;
 
 /**  Errores que la UI puede mostrar. En TypeScript llega como `{ kind, message }`. */
 export type AppError = 
@@ -395,6 +418,16 @@ export type Material = "acrylic" | "blur" |
 /**  Se pidió "crear Espacio" desde la barra con la ventana de ajustes ya abierta. */
 export type NewSpaceRequested = null;
 
+/**  Qué pasa si no ocurre a tiempo (o el comando falla). */
+export type OnTimeout = 
+/**
+ *  No seguir y avisar (lo normal: abrir la web de un contenedor que no arrancó no
+ *  sirve de nada).
+ */
+"stop" | 
+/**  Seguir con lo demás igualmente. */
+"continue";
+
 export type PathKind = "file" | "folder";
 
 /**  Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar. */
@@ -540,6 +573,34 @@ export type SpaceDraft_Serialize = {
 };
 
 /**
+ *  Evento: un Espacio en marcha va por este paso (y, si es una espera, lleva tantos
+ *  segundos esperando). La barra lo enseña con «Esc para cancelar».
+ */
+export type SpaceProgress = SpaceProgress_Serialize | SpaceProgress_Deserialize;
+
+/**
+ *  Evento: un Espacio en marcha va por este paso (y, si es una espera, lleva tantos
+ *  segundos esperando). La barra lo enseña con «Esc para cancelar».
+ */
+export type SpaceProgress_Deserialize = {
+	step: number,
+	total: number,
+	label: string,
+	waited?: number | null,
+};
+
+/**
+ *  Evento: un Espacio en marcha va por este paso (y, si es una espera, lleva tantos
+ *  segundos esperando). La barra lo enseña con «Esc para cancelar».
+ */
+export type SpaceProgress_Serialize = {
+	step: number,
+	total: number,
+	label: string,
+	waited: number | null,
+};
+
+/**
  *  Un Espacio tal como lo pinta la UI: sus datos y, si su icono es "automático", el
  *  icono real de Windows de su primera app, archivo o carpeta.
  */
@@ -625,6 +686,36 @@ export type UnreadGroupView = {
 	count: number,
 	examples: string[],
 };
+
+/**  «Esperar a que…» y qué hacer si no ocurre a tiempo. */
+export type WaitSpec = WaitSpec_Serialize | WaitSpec_Deserialize;
+
+/**  «Esperar a que…» y qué hacer si no ocurre a tiempo. */
+export type WaitSpec_Deserialize = {
+	until: WaitUntil,
+	/**  «Si no ocurre en X segundos…» (no cuenta en `Seconds`). */
+	timeoutSecs?: number,
+	onTimeout?: OnTimeout,
+};
+
+/**  «Esperar a que…» y qué hacer si no ocurre a tiempo. */
+export type WaitSpec_Serialize = {
+	until: WaitUntil,
+	/**  «Si no ocurre en X segundos…» (no cuenta en `Seconds`). */
+	timeoutSecs: number,
+	onTimeout: OnTimeout,
+};
+
+/**  A qué se espera. Solo cosas **de tu equipo**: Sift no se conecta a internet. */
+export type WaitUntil = 
+/**  Una web de tu equipo responde (`http://localhost:8080`). */
+{ kind: "webResponds"; url: string } | 
+/**  Un servicio de tu equipo acepta conexiones en un puerto (una base de datos…). */
+{ kind: "serviceAccepts"; port: number } | 
+/**  Termina el comando de justo antes (y sin error). */
+{ kind: "commandFinished" } | 
+/**  Unos segundos, sin comprobar nada. */
+{ kind: "seconds"; secs: number };
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

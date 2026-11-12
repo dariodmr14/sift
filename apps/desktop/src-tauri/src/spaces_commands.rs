@@ -3,12 +3,16 @@
 
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
-use sift_spaces::{Action, ActionOutcome, CommandSpec, Icon, Space, SpaceDraft};
+use sift_spaces::{
+    Action, ActionOutcome, CommandSpec, Icon, NoProgress, Progress, Space, SpaceDraft, WaitSpec,
+};
 use sift_storage::{Database, StorageError};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
+use tauri_specta::Event;
 
 use crate::commands::AppError;
 use crate::shell::{self, IconCache, InstalledApp, WindowsOpener};
@@ -61,6 +65,46 @@ pub enum RunReport {
     NeedsApproval { commands: Vec<PendingCommand> },
     /// Se lanzaron las acciones; cada una con su resultado.
     Done { outcomes: Vec<ActionOutcome> },
+}
+
+/// Evento: un Espacio en marcha va por este paso (y, si es una espera, lleva tantos
+/// segundos esperando). La barra lo enseña con «Esc para cancelar».
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct SpaceProgress {
+    pub step: u32,
+    pub total: u32,
+    pub label: String,
+    pub waited: Option<u32>,
+}
+
+/// El Espacio que se está ejecutando (uno a la vez) y la orden de cancelarlo.
+#[derive(Default)]
+pub struct SpaceRun {
+    running: AtomicBool,
+    cancel: AtomicBool,
+}
+
+/// Cuenta el progreso a la UI y mira si se ha cancelado.
+struct EventProgress<'a> {
+    app: &'a AppHandle,
+    total: u32,
+    cancel: &'a AtomicBool,
+}
+
+impl Progress for EventProgress<'_> {
+    fn step(&self, index: u32, label: &str, waited: Option<u32>) {
+        let _ = SpaceProgress {
+            step: index,
+            total: self.total,
+            label: label.to_owned(),
+            waited,
+        }
+        .emit(self.app);
+    }
+    fn cancelled(&self) -> bool {
+        self.cancel.load(Ordering::Relaxed)
+    }
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, specta::Type)]
@@ -151,7 +195,18 @@ pub fn reorder_spaces(app: AppHandle, ids: Vec<i32>) -> Result<(), AppError> {
 pub async fn run_space(app: AppHandle, id: i32, approve: bool) -> Result<RunReport, AppError> {
     let actions = app.state::<Db>().lock().get_space(id.into())?.draft.actions;
     tracing::info!(space = id, "ejecutando Espacio");
-    let report = run_with_approval(app.clone(), actions, approve).await?;
+    let run = app.state::<SpaceRun>();
+    if run.running.swap(true, Ordering::SeqCst) {
+        return Err(AppError::Invalid(
+            "ya se está abriendo otro Espacio: espera a que acabe o cancélalo".into(),
+        ));
+    }
+    run.cancel.store(false, Ordering::SeqCst);
+    let report = run_with_approval(app.clone(), actions, approve, true).await;
+    app.state::<SpaceRun>()
+        .running
+        .store(false, Ordering::SeqCst);
+    let report = report?;
     // Cuenta como abierto si se lanzó (aunque alguna acción fallara), no si quedó
     // esperando confirmación.
     if matches!(report, RunReport::Done { .. })
@@ -171,13 +226,14 @@ pub async fn test_action(
     action: Action,
     approve: bool,
 ) -> Result<RunReport, AppError> {
-    run_with_approval(app, vec![action], approve).await
+    run_with_approval(app, vec![action], approve, false).await
 }
 
 async fn run_with_approval(
     app: AppHandle,
     actions: Vec<Action>,
     approve: bool,
+    with_progress: bool,
 ) -> Result<RunReport, AppError> {
     let pending = {
         let db = app.state::<Db>();
@@ -204,12 +260,48 @@ async fn run_with_approval(
             tracing::info!(command = %sift_spaces::display_command(command), "comando aprobado");
         }
     }
-    let outcomes =
-        run_blocking(move || Ok(sift_spaces::run_actions(&actions, &WindowsOpener))).await?;
+    // En otro hilo: con esperas puede tardar minutos.
+    let outcomes = run_blocking(move || {
+        let waiter = crate::waits::LocalWaiter::new();
+        let run = app.state::<SpaceRun>();
+        let events = EventProgress {
+            app: &app,
+            total: actions.len() as u32,
+            cancel: &run.cancel,
+        };
+        let progress: &dyn Progress = if with_progress { &events } else { &NoProgress };
+        Ok(sift_spaces::run_actions(
+            &actions,
+            &WindowsOpener,
+            &waiter,
+            progress,
+        ))
+    })
+    .await?;
     for o in outcomes.iter().filter(|o| o.error.is_some()) {
         tracing::warn!(action = %o.label, error = ?o.error, "acción fallida");
     }
     Ok(RunReport::Done { outcomes })
+}
+
+/// Cancela el Espacio en marcha (Esc en la barra). Lo ya abierto o lanzado sigue abierto;
+/// lo que faltaba no se ejecuta.
+#[tauri::command]
+#[specta::specta]
+pub fn cancel_space_run(app: AppHandle) {
+    app.state::<SpaceRun>().cancel.store(true, Ordering::SeqCst);
+}
+
+/// «Probar» de una espera: comprueba su condición una vez, ahora, sin ejecutar nada.
+/// `Ok` con lo que se ha visto; error con el motivo si no se cumple.
+#[tauri::command]
+#[specta::specta]
+pub async fn check_wait(spec: WaitSpec) -> Result<String, AppError> {
+    run_blocking(move || {
+        sift_spaces::check_wait_now(&spec, &crate::waits::LocalWaiter::new())
+            .map_err(AppError::Invalid)
+    })
+    .await
 }
 
 #[tauri::command]
