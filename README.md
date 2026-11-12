@@ -75,6 +75,10 @@ Medido en un i7-7700K con el PC en reposo (sin Sift abierto ni nada compilando),
 - **Almacenamiento**: SQLite (fuente de verdad) + Tantivy (texto) + usearch/HNSW (vectores).
 - **IA local**: `multilingual-e5-small` en ONNX Runtime.
 
+## Instalar para usarlo a diario
+
+Desde `main`: `powershell -ExecutionPolicy Bypass -File scripts/instalar.ps1` (compila y abre el instalador; para actualizar, lo mismo). Detalles, y por qué la versión de desarrollo no toca tus datos, en [docs/instalar.md](docs/instalar.md).
+
 ## Desarrollo
 
 Requisitos: Rust (stable, MSVC), Node 22+, Visual Studio Build Tools con "Desarrollo de escritorio con C++", WebView2.
@@ -90,6 +94,8 @@ cd apps/desktop
 npm install
 npm run tauri dev
 ```
+
+La versión de desarrollo usa sus propios datos (`%APPDATA%\dev.sift.app-dev`), con datos de prueba, y el atajo Ctrl+Alt+Espacio: nunca toca la instalada (ver [docs/instalar.md](docs/instalar.md)).
 
 Variables útiles: `RUST_LOG=debug` (más logs) y `SIFT_FORCE_KEYBOARD_HOOK=1` (probar la vía alternativa del atajo). Logs: `%LOCALAPPDATA%\dev.sift.app\logs`.
 

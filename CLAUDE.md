@@ -41,7 +41,8 @@ Nunca:
 Desde la raíz del repo:
 - Rust: `cargo fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`
 - UI (desde `apps/desktop/`): `npm run lint`, `npm run format`, `npm run typecheck`, `npm test`
-- App en desarrollo: `npm run tauri dev` (desde `apps/desktop/`)
+- App en desarrollo: `npm run tauri dev` (desde `apps/desktop/`). Usa sus propios datos (`%APPDATA%\dev.sift.app-dev`, atajo Ctrl+Alt+Space): nunca toca los de la versión diaria de Darío (`%APPDATA%\dev.sift.app`).
+- Versión diaria: `scripts/instalar.ps1` desde `main` (ver `docs/instalar.md`).
 - CI local completa (lo mismo que el workflow): `powershell -ExecutionPolicy Bypass -File scripts/ci.ps1`
 
 ## Diseño
