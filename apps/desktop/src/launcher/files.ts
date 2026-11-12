@@ -1,10 +1,11 @@
 // Ayudantes puros de la búsqueda unificada (sin React, para poder probarlos).
 
 /** Secciones de la lista de resultados, en este orden. */
-export type Section = "spaces" | "files" | "commands";
+export type Section = "spaces" | "recent" | "files" | "commands";
 
 export const SECTION_LABEL: Record<Section, string> = {
   spaces: "Espacios",
+  recent: "Abierto recientemente",
   files: "Archivos",
   commands: "Comandos",
 };

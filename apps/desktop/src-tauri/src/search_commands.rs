@@ -290,6 +290,35 @@ pub fn reindex(app: AppHandle) {
     app.state::<Indexing>().sync();
 }
 
+/// Un archivo abierto hace poco desde Sift (para la barra vacía).
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct RecentFile {
+    pub file_id: i32,
+    pub path: String,
+    pub name: String,
+    pub ext: String,
+}
+
+/// «Abierto recientemente»: lo último que abriste desde Sift. Se pide al abrir la barra,
+/// después de pintarla, así que no cuenta en los < 100 ms.
+#[tauri::command]
+#[specta::specta]
+pub fn recent_files(app: AppHandle) -> Result<Vec<RecentFile>, AppError> {
+    /// Los que caben en la barra con los Espacios.
+    const LIMIT: usize = 8;
+    Ok(db(&app)
+        .recent_files(LIMIT)?
+        .into_iter()
+        .map(|(id, path, name, ext)| RecentFile {
+            file_id: id as i32,
+            path,
+            name,
+            ext,
+        })
+        .collect())
+}
+
 /// Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
 /// nombre; ver `sift_search::paths`). Lo que más abres va primero.
 #[tauri::command]
