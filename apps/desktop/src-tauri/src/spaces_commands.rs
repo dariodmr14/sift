@@ -151,7 +151,9 @@ pub async fn list_spaces(app: AppHandle) -> Result<Vec<SpaceView>, AppError> {
 fn auto_icon_key(draft: &SpaceDraft) -> Option<String> {
     draft.actions.iter().find_map(|a| match a {
         Action::OpenApp { app_id, .. } => Some(shell::app_icon_key(app_id)),
-        Action::OpenFile { path } | Action::OpenFolder { path } => Some(path.display().to_string()),
+        Action::OpenFile { path, .. } | Action::OpenFolder { path, .. } => {
+            Some(path.display().to_string())
+        }
         _ => None,
     })
 }
@@ -274,6 +276,7 @@ async fn run_with_approval(
             &actions,
             &WindowsOpener,
             &waiter,
+            Some(&crate::window_manager::Win32Windows),
             progress,
         ))
     })
@@ -282,6 +285,14 @@ async fn run_with_approval(
         tracing::warn!(action = %o.label, error = ?o.error, "acción fallida");
     }
     Ok(RunReport::Done { outcomes })
+}
+
+/// Las pantallas conectadas, para elegir dónde colocar una ventana en el editor.
+#[tauri::command]
+#[specta::specta]
+pub async fn list_monitors() -> Result<Vec<sift_spaces::placement::MonitorInfo>, AppError> {
+    use sift_spaces::placement::WindowManager;
+    run_blocking(|| Ok(crate::window_manager::Win32Windows.monitors())).await
 }
 
 /// Cancela el Espacio en marcha (Esc en la barra). Lo ya abierto o lanzado sigue abierto;
@@ -467,13 +478,16 @@ mod tests {
             actions: vec![
                 Action::OpenUrl {
                     url: "https://x.es".into(),
+                    place: None,
                 },
                 Action::OpenApp {
                     app_id: "Code".into(),
                     name: "VS Code".into(),
+                    place: None,
                 },
                 Action::OpenFolder {
                     path: PathBuf::from(r"C:\Uni"),
+                    place: None,
                 },
             ],
         };
