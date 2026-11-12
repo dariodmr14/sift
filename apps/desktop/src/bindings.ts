@@ -232,7 +232,13 @@ export type FileHit = {
 	nameSegments: Segment[],
 	/**  Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre). */
 	snippet: Segment[],
+	/**  Puntuación final: la de la fusión × `boost`. */
 	score: number | null,
+	/**
+	 *  Lo que la frecencia multiplica la puntuación (1 si nunca lo abriste). La barra la
+	 *  usa para comparar Espacios y archivos en la misma escala, sin frecencia.
+	 */
+	boost: number | null,
 	/**
 	 *  Encontrado solo por significado (no comparte palabras con la búsqueda): la UI lo
 	 *  marca para que se entienda por qué está ahí.
@@ -541,6 +547,11 @@ export type SpaceView = SpaceView_Serialize | SpaceView_Deserialize;
 export type SpaceView_Deserialize = {
 	space: Space_Deserialize,
 	autoIcon?: string | null,
+	/**
+	 *  Frecencia: por cuánto se multiplica su puntuación en la barra (1 si nunca lo
+	 *  abriste; como mucho 1,25). La misma regla que los archivos (ADR 0010).
+	 */
+	boost: number | null,
 };
 
 /**
@@ -550,6 +561,11 @@ export type SpaceView_Deserialize = {
 export type SpaceView_Serialize = {
 	space: Space_Serialize,
 	autoIcon: string | null,
+	/**
+	 *  Frecencia: por cuánto se multiplica su puntuación en la barra (1 si nunca lo
+	 *  abriste; como mucho 1,25). La misma regla que los archivos (ADR 0010).
+	 */
+	boost: number | null,
 };
 
 /**  Un Espacio guardado (con su id de la base de datos). */

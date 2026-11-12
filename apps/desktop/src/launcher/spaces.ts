@@ -27,19 +27,3 @@ export function score(query: string, space: Searchable): number {
   if (qWords.every((w) => names.some((n) => n.includes(w)))) return 1;
   return 0;
 }
-
-/**
- * Espacios que encajan con la búsqueda, los mejores primero. A igual puntuación se
- * respeta el orden que el usuario eligió en Ajustes. Con la búsqueda vacía, todos.
- */
-export function matchSpaces<T extends Searchable>(
-  query: string,
-  spaces: T[],
-): T[] {
-  if (!query.trim()) return spaces;
-  return spaces
-    .map((space, order) => ({ space, order, s: score(query, space) }))
-    .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s || a.order - b.order)
-    .map((x) => x.space);
-}

@@ -21,14 +21,20 @@ export function shortFolder(path: string, keep = 3): string {
 }
 
 /**
- * Índices en los que empieza una sección nueva (para pintar su cabecera). Los elementos
- * llegan ya ordenados por sección.
+ * Índices en los que empieza una sección nueva (para pintar su cabecera). Si alguna
+ * sección sale en dos trozos (Espacios intercalados entre archivos), ninguna cabecera:
+ * «Archivos · Espacios · Archivos» confundiría más que ayudaría. Entonces cada Espacio
+ * lo dice en su subtítulo.
  */
 export function sectionStarts(sections: Section[]): Set<number> {
   const starts = new Set<number>();
-  sections.forEach((s, i) => {
-    if (i === 0 || sections[i - 1] !== s) starts.add(i);
-  });
+  const seen = new Set<Section>();
+  for (const [i, s] of sections.entries()) {
+    if (i > 0 && sections[i - 1] === s) continue;
+    if (seen.has(s)) return new Set();
+    seen.add(s);
+    starts.add(i);
+  }
   return starts;
 }
 

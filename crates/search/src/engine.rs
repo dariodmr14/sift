@@ -72,7 +72,11 @@ pub struct FileHit {
     pub name_segments: Vec<Segment>,
     /// Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre).
     pub snippet: Vec<Segment>,
+    /// Puntuación final: la de la fusión × `boost`.
     pub score: f64,
+    /// Lo que la frecencia multiplica la puntuación (1 si nunca lo abriste). La barra la
+    /// usa para comparar Espacios y archivos en la misma escala, sin frecencia.
+    pub boost: f64,
     /// Encontrado solo por significado (no comparte palabras con la búsqueda): la UI lo
     /// marca para que se entienda por qué está ahí.
     pub by_meaning: bool,
@@ -169,17 +173,20 @@ pub fn search_with(
             entry.3 += 1;
         }
     }
-    let mut ranked: Vec<(usize, (i64, i64), f64)> = files
+    let mut ranked: Vec<(usize, (i64, i64), f64, f64)> = files
         .into_values()
-        .map(|(order, key, score, _)| (order, key, score * frecency.boost(key.0)))
+        .map(|(order, key, score, _)| {
+            let boost = frecency.boost(key.0);
+            (order, key, score * boost, boost)
+        })
         .collect();
     ranked.sort_by(|a, b| b.2.total_cmp(&a.2).then(a.0.cmp(&b.0)));
-    let best: Vec<((i64, i64), f64)> = ranked
+    let best: Vec<((i64, i64), f64, f64)> = ranked
         .into_iter()
         .take(limit * FETCH_MARGIN)
-        .map(|(_, key, score)| (key, score))
+        .map(|(_, key, score, boost)| (key, score, boost))
         .collect();
-    let keys: Vec<(i64, i64)> = best.iter().map(|(k, _)| *k).collect();
+    let keys: Vec<(i64, i64)> = best.iter().map(|(k, _, _)| *k).collect();
     let loaded: HashMap<(i64, i64), _> = text
         .fetch(&keys)?
         .into_iter()
@@ -189,7 +196,7 @@ pub fn search_with(
     // (resultado, texto del fragmento). Se resalta al final, y solo lo que se muestra:
     // resaltar es lo más caro de preparar un resultado (medido con el benchmark).
     let mut found: Vec<(FileHit, String)> = Vec::with_capacity(best.len());
-    for (key, score) in best {
+    for (key, score, boost) in best {
         let Some(h) = loaded.remove(&key) else {
             continue;
         };
@@ -203,6 +210,7 @@ pub fn search_with(
                 name: h.name,
                 ext: h.ext,
                 score,
+                boost,
             },
             h.body,
         ));
