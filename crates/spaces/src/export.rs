@@ -80,6 +80,7 @@ mod tests {
             actions: vec![
                 Action::OpenUrl {
                     url: "https://campus.es".into(),
+                    place: None,
                 },
                 Action::RunCommand(CommandSpec {
                     program: "docker".into(),

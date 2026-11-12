@@ -4,6 +4,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
+use crate::placement::Placement;
+
 /// Un Espacio guardado (con su id de la base de datos).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
@@ -65,12 +67,21 @@ pub enum Icon {
 pub enum Action {
     OpenFolder {
         path: PathBuf,
+        /// Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        place: Option<Placement>,
     },
     OpenFile {
         path: PathBuf,
+        /// Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        place: Option<Placement>,
     },
     OpenUrl {
         url: String,
+        /// Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        place: Option<Placement>,
     },
     /// Una app instalada, elegida en el selector. `app_id` es su identificador en la
     /// carpeta de aplicaciones de Windows (`shell:AppsFolder`): una ruta o un AUMID.
@@ -78,6 +89,9 @@ pub enum Action {
     OpenApp {
         app_id: String,
         name: String,
+        /// Dónde colocar su ventana (Fase 6.5). `None` = donde la ponga Windows.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        place: Option<Placement>,
     },
     RunCommand(CommandSpec),
     /// Un paso que espera a que algo esté listo antes de seguir (Fase 6, ADR 0012).
