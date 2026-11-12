@@ -10,7 +10,7 @@ import {
 import { commands, type FileHit, type Segment } from "./bindings";
 import { dismissLauncher, useLauncher } from "./useLauncher";
 import { matchBuiltins, type BuiltinId } from "./launcher/builtins";
-import { matchSpaces } from "./launcher/spaces";
+import { mixResults } from "./launcher/mix";
 import { moveSelection } from "./launcher/selection";
 import { SpaceIcon } from "./components/SpaceIcon";
 import {
@@ -211,12 +211,19 @@ function App() {
   }, []);
 
   const items = useMemo<Item[]>(() => {
-    const fromSpaces = matchSpaces(
+    const mixed = mixResults(
       query,
-      spaces.map((v) => ({ ...v.space, view: v })),
-    ).map(({ view }) => ({
+      spaces.map((v) => ({
+        name: v.space.name,
+        aliases: v.space.aliases,
+        boost: v.boost ?? 1,
+        view: v,
+      })),
+      fileHits,
+    );
+    const spaceItem = (view: SpaceView): Item => ({
       key: `space-${view.space.id}`,
-      section: "spaces" as const,
+      section: "spaces",
       title: view.space.name,
       subtitle: subtitleFor(view),
       icon: (
@@ -227,10 +234,10 @@ function App() {
         />
       ),
       activate: () => void launch(view, false),
-    }));
-    const files = fileHits.map((hit) => ({
+    });
+    const fileItem = (hit: FileHit): Item => ({
       key: `file-${hit.fileId}`,
-      section: "files" as const,
+      section: "files",
       title: <Highlighted segments={hit.nameSegments} />,
       // Con coincidencia en el contenido, el fragmento; si no, la carpeta. Lo que llega
       // solo por significado no tiene palabras que resaltar: se dice, para que se
@@ -269,7 +276,9 @@ function App() {
           (msg) => setMode({ kind: "result", title: hit.name, errors: [msg] }),
           () => dismissLauncher(rootRef.current),
         ),
-    }));
+    });
+    const toItem = (m: (typeof mixed)[number]) =>
+      m.kind === "space" ? spaceItem(m.item.view) : fileItem(m.item);
     const builtins = matchBuiltins(query).map((c) => ({
       key: `builtin-${c.id}`,
       section: "commands" as const,
@@ -279,10 +288,22 @@ function App() {
       shortcut: c.shortcut,
       activate: () => openSettings(c.id === "newSpace"),
     }));
-    // Espacios, luego los comandos de la propia app y, al final, los archivos. Los
-    // comandos solo salen si lo escrito encaja con su nombre («ajustes»), y son uno o
-    // dos: detrás de cientos de archivos que contienen esa palabra no se encontrarían.
-    return [...fromSpaces, ...builtins, ...files];
+    // Primero los Espacios que encajan exactamente, luego los comandos de la propia app y,
+    // al final, archivos con los Espacios que encajan a medias intercalados (ver
+    // `mixResults`). Los comandos solo salen si lo escrito encaja con su nombre
+    // («ajustes»), y son uno o dos: detrás de cientos de archivos no se encontrarían.
+    const exact = mixed.filter((m) => m.kind === "space" && m.exact);
+    const rest = mixed.filter((m) => !(m.kind === "space" && m.exact));
+    const list = [...exact.map(toItem), ...builtins, ...rest.map(toItem)];
+    // Sin cabeceras (Espacios intercalados entre archivos), cada Espacio dice qué es.
+    if (sectionStarts(list.map((i) => i.section)).size === 0) {
+      return list.map((i) =>
+        i.section === "spaces"
+          ? { ...i, subtitle: <>Espacio · {i.subtitle}</> }
+          : i,
+      );
+    }
+    return list;
   }, [query, spaces, launch, fileHits, fileIcons]);
 
   const starts = useMemo(

@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { matchSpaces, score } from "./spaces";
+import { score } from "./spaces";
 
 const bd = { name: "Bases de datos", aliases: ["bd", "SQL"] };
-const redes = { name: "Redes", aliases: ["networking"] };
-const tfg = { name: "TFG", aliases: ["trabajo fin de grado"] };
-const all = [redes, bd, tfg];
-
-const names = (q: string) => matchSpaces(q, all).map((s) => s.name);
 
 describe("score", () => {
   it("exacto > empieza por > principio de palabras > contiene", () => {
@@ -24,31 +19,5 @@ describe("score", () => {
 
   it("la búsqueda vacía no puntúa", () => {
     expect(score("  ", bd)).toBe(0);
-  });
-});
-
-describe("matchSpaces", () => {
-  it("con la búsqueda vacía devuelve todos en el orden del usuario", () => {
-    expect(names("")).toEqual(["Redes", "Bases de datos", "TFG"]);
-  });
-
-  it("encuentra por alias", () => {
-    expect(names("trabajo")).toEqual(["TFG"]);
-    expect(names("network")).toEqual(["Redes"]);
-  });
-
-  it("ordena por calidad y, a igualdad, por el orden del usuario", () => {
-    const a = { name: "Datos A", aliases: [] };
-    const b = { name: "Datos B", aliases: [] };
-    const exact = { name: "Otra", aliases: ["datos"] };
-    expect(matchSpaces("datos", [a, b, exact]).map((s) => s.name)).toEqual([
-      "Otra",
-      "Datos A",
-      "Datos B",
-    ]);
-  });
-
-  it("sin coincidencias, lista vacía", () => {
-    expect(names("zzz")).toEqual([]);
   });
 });
