@@ -959,7 +959,13 @@ fn suggest_paths_latency() {
     eprintln!("{} rutas leídas de SQLite en {read:.1} ms", files.len());
     for kind in [PathKind::File, PathKind::Folder] {
         let mut times = Vec::new();
-        for q in ["tema4", "apuntes bd", "practica", "bd tema", "transacciones"] {
+        for q in [
+            "tema4",
+            "apuntes bd",
+            "practica",
+            "bd tema",
+            "transacciones",
+        ] {
             let t = Instant::now();
             let found = suggest_paths(&files, q, kind, &Frecency::default(), 8);
             times.push(t.elapsed().as_secs_f64() * 1000.0);
