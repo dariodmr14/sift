@@ -217,14 +217,14 @@ sift/
 
 ### Fase 6.5 — Colocar ventanas (zonas)
 Acciones que, además de abrir una app, colocan su ventana en una posición o zona de la pantalla (p. ej. "abrir VS Code en la mitad derecha"), como hacen los FancyZones de PowerToys.
-- [ ] Zonas predefinidas (mitades, tercios, cuartos, maximizada) y personalizadas por monitor.
-- [ ] Esperar a que la app abra: seguir el proceso lanzado y esperar a su ventana principal, con tiempo límite.
-- [ ] Identificar la ventana correcta: por proceso, y si la app reutiliza un proceso existente (VS Code, navegadores), por título o clase de ventana.
-- [ ] Varios monitores: elegir monitor por nombre o posición; respetar el área de trabajo (sin la barra de tareas) y el DPI de cada pantalla.
-- [ ] Ventanas ya abiertas: moverlas en lugar de abrir otra instancia (opcional por acción).
-- [ ] Colocar con `SetWindowPos`, teniendo en cuenta los bordes invisibles de Windows 10 (`DwmGetWindowAttribute`).
+- [x] Zonas predefinidas (mitades, tercios, dos tercios, cuartos, toda la pantalla). Las personalizadas, al backlog.
+- [x] Esperar a que la app abra: hasta 15 s a que aparezca su ventana; si no, sigue y avisa.
+- [x] Identificar la ventana correcta: una ventana **nueva** del programa esperado (sirve con apps que reutilizan su proceso), con el título para desempatar.
+- [x] Varios monitores: principal, donde esté el ratón o una concreta (nombre + posición); área útil y escala de cada pantalla.
+- [x] Ventanas ya abiertas: moverlas en lugar de abrir otra (opcional por acción).
+- [x] Colocar con `SetWindowPos`, compensando los bordes invisibles de Windows 10 (`DwmGetWindowAttribute`). Comprobado en pantalla, exacto al píxel (ADR 0014).
 
-**Hecho cuando:** un Espacio abre VS Code en la mitad derecha y el navegador en la izquierda del monitor elegido, aunque alguna de las dos ya estuviera abierta.
+**Hecho cuando:** un Espacio abre VS Code en la mitad derecha y el navegador en la izquierda del monitor elegido, aunque alguna de las dos ya estuviera abierta. ✅ Comprobado con el Bloc de notas y el Explorador (que, como VS Code, reutiliza su proceso) en las dos pantallas; con VS Code y el navegador de Darío, pendiente de su uso real.
 
 ### Fase 7 — Pulido
 - [ ] Instalar y usar la skill unslop (https://github.com/heydamir/unslop, licencia CC BY 4.0: citar a Damir Sokolovsky en el README) para auditar y rediseñar la interfaz, respetando el sistema de diseño Vidrio y justificando cualquier cambio en un ADR. Usarla también para el vídeo de LinkedIn.
@@ -258,6 +258,8 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - Firma de código del instalador (evita el aviso de SmartScreen; tiene coste).
 - Icono propio de la app y de la bandeja (ahora es el de Tauri por defecto).
 - Grabar el atajo pulsándolo en Ajustes, en vez de escribirlo como texto.
+- Zonas propias para colocar ventanas (dibujarlas por pantalla, como FancyZones). El modelo ya lo admite (ADR 0014).
+- Colocar también la ventana de un comando (`code .`): habría que saber qué programa abre.
 - Búsqueda: reordenar los primeros resultados con un *reranker* local, si las ideas siguen fallando y cabe en los 50 ms (ADR 0010).
 - Búsqueda: calcular el vector de cada fragmento con el contexto de su documento (título, asignatura). Obliga a recalcular todos los vectores (ADR 0010).
 - Búsqueda: agrupar copias del mismo archivo en varias carpetas (hoy `clarin.txt` puede salir tres veces seguidas).
