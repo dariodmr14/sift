@@ -49,6 +49,13 @@ export const ZONES: ZoneInfo[] = [
   },
 ];
 
+/** Cómo se enseñan, por filas: completa y mitades · tercios · cuartos. */
+export const ZONE_ROWS: Zone[][] = [
+  ["maximized", "leftHalf", "rightHalf", "topHalf", "bottomHalf"],
+  ["leftThird", "centerThird", "rightThird", "leftTwoThirds", "rightTwoThirds"],
+  ["topLeft", "topRight", "bottomLeft", "bottomRight"],
+];
+
 export interface MonitorOption {
   /** Valor del desplegable: «primary», «underMouse» o «specific:<índice>». */
   value: string;

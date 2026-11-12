@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MonitorInfo } from "../bindings";
-import { monitorOptions, ZONES } from "./zones";
+import { monitorOptions, ZONE_ROWS, ZONES } from "./zones";
 
 const screen = (name: string, left: number, primary: boolean): MonitorInfo => {
   const bounds = { left, top: 0, right: left + 1920, bottom: 1080 };
@@ -16,6 +16,13 @@ describe("ZONES", () => {
       expect(l + w).toBeLessThanOrEqual(6);
       expect(t + h).toBeLessThanOrEqual(6);
     }
+  });
+});
+
+describe("ZONE_ROWS", () => {
+  it("cada zona sale una vez en las filas", () => {
+    const all = ZONE_ROWS.flat();
+    expect([...all].sort()).toEqual(ZONES.map((z) => z.id).sort());
   });
 });
 

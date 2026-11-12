@@ -10,7 +10,7 @@ import {
   type Zone,
 } from "../bindings";
 import { Select } from "./ui";
-import { monitorOptions, sameChoice, ZONES } from "./zones";
+import { monitorOptions, sameChoice, ZONE_ROWS, ZONES } from "./zones";
 
 export interface PlacementValue {
   zone: Zone;
@@ -85,10 +85,11 @@ export function PlacementEditor({
       <span className="block text-xs font-medium text-muted">
         Colocar su ventana
       </span>
+      {/* Por filas con sentido (completa y mitades · tercios · cuartos), no como caigan. */}
       <div
         role="radiogroup"
         aria-label="Dónde colocar su ventana"
-        className="flex flex-wrap gap-1.5"
+        className="flex items-start gap-3"
       >
         <button
           type="button"
@@ -97,28 +98,37 @@ export function PlacementEditor({
           aria-label="No colocar: donde la ponga Windows"
           title="No colocar: donde la ponga Windows"
           onClick={() => pick(null)}
-          className={`flex h-9 items-center rounded-item px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+          className={`flex h-9 shrink-0 items-center rounded-item px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-accent ${
             current === null ? "bg-selected" : "hover:bg-hover"
           }`}
         >
           No colocar
         </button>
-        {ZONES.map((z) => (
-          <button
-            key={z.id}
-            type="button"
-            role="radio"
-            aria-checked={current?.zone === z.id}
-            aria-label={z.label}
-            title={z.label}
-            onClick={() => pick(z.id)}
-            className={`rounded-item p-1 outline-none focus-visible:ring-2 focus-visible:ring-accent ${
-              current?.zone === z.id ? "bg-selected" : "hover:bg-hover"
-            }`}
-          >
-            <ZoneThumb sixths={z.sixths} />
-          </button>
-        ))}
+        <div className="space-y-1">
+          {ZONE_ROWS.map((row) => (
+            <div key={row[0]} className="flex gap-1">
+              {row.map((id) => {
+                const z = ZONES.find((zone) => zone.id === id)!;
+                return (
+                  <button
+                    key={z.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={current?.zone === z.id}
+                    aria-label={z.label}
+                    title={z.label}
+                    onClick={() => pick(z.id)}
+                    className={`rounded-item p-1 outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                      current?.zone === z.id ? "bg-selected" : "hover:bg-hover"
+                    }`}
+                  >
+                    <ZoneThumb sixths={z.sixths} />
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
       {current && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
