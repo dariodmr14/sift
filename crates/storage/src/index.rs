@@ -565,6 +565,16 @@ impl Database {
         Ok(())
     }
 
+    /// Todos los archivos del índice: (id, ruta). Para sugerir rutas en el editor de
+    /// acciones (unos miles: se lee en pocos milisegundos).
+    pub fn file_paths(&self) -> Result<Vec<(i64, String)>, StorageError> {
+        let mut stmt = self.conn.prepare("SELECT id, path FROM files")?;
+        let rows = stmt
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<Result<_, _>>()?;
+        Ok(rows)
+    }
+
     /// Las aperturas de archivos de los últimos `max_days` días: (archivo, hace cuántos
     /// días), para la frecencia. Son pocas: unas cuantas por día de uso.
     pub fn file_open_ages(&self, max_days: f64) -> Result<Vec<(i64, f64)>, StorageError> {
@@ -693,6 +703,10 @@ mod tests {
             .upsert_file(&file(root, r"C:\Uni\a.md"), &[chunk(0, "x")])
             .unwrap();
         db.record_file_open(Path::new(r"C:\Uni\a.md")).unwrap();
+        assert_eq!(
+            db.file_paths().unwrap(),
+            vec![(a, r"C:\Uni\a.md".to_string())]
+        );
         let ages = db.file_open_ages(30.0).unwrap();
         assert_eq!(ages.len(), 1);
         assert_eq!(ages[0].0, a);

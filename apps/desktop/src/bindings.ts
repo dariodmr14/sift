@@ -66,6 +66,11 @@ export const commands = {
 	importSpaces: () => typedError<number | null, AppError>(__TAURI_INVOKE("import_spaces")),
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
 	searchFiles: (query: string, seq: number) => typedError<SearchResponse, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
+	/**
+	 *  Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
+	 *  nombre; ver `sift_search::paths`). Lo que más abres va primero.
+	 */
+	suggestPaths: (query: string, kind: PathKind) => typedError<string[], AppError>(__TAURI_INVOKE("suggest_paths", { query, kind })),
 	listRoots: () => typedError<RootView_Serialize[], AppError>(__TAURI_INVOKE("list_roots")),
 	/**
 	 *  Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
