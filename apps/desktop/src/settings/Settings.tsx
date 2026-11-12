@@ -5,9 +5,12 @@ import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
 
+/** Cómo escucha Sift el atajo, explicado (solo en «Avanzado»). */
 const BACKEND_LABEL = {
-  registerHotKey: "RegisterHotKey (vía principal)",
-  keyboardHook: "Hook de teclado (vía alternativa)",
+  registerHotKey:
+    "RegisterHotKey: el atajo está registrado en Windows, que avisa a Sift al pulsarlo (lo normal).",
+  keyboardHook:
+    "Hook de teclado: Windows no dejó registrar el atajo (quizá otro programa lo usa), así que Sift escucha el teclado para detectarlo.",
 } as const;
 
 type Page = "spaces" | "folders" | "general" | "status";
@@ -130,10 +133,11 @@ function SmartSearchToggle() {
         <span>
           Búsqueda inteligente
           <span className="block text-xs text-muted">
-            Encuentra también lo relacionado aunque no use tus palabras: «bases
-            de datos» trae los apuntes de normalización o de SQL. Funciona en tu
-            PC: la primera vez descarga un modelo de unos 120 MB y prepara tus
-            archivos en segundo plano.
+            Encuentra también lo que trata de lo mismo aunque use otras
+            palabras: buscando «viaje» salen también las reservas de hotel o los
+            billetes de tren. Funciona en tu PC, sin enviar nada: la primera vez
+            descarga unos 120 MB y luego prepara tus archivos poco a poco,
+            cuando no estás usando mucho el ordenador.
           </span>
         </span>
       </label>
@@ -254,8 +258,8 @@ function HotkeyForm({
         </button>
       </form>
       <p id="hotkey-help" className="text-xs text-muted">
-        Modificadores (Ctrl, Alt, Shift, Win) + una tecla, separados por «+».
-        Ejemplos: Alt+Space, Ctrl+Shift+K, Win+F2.
+        Una o varias de las teclas Ctrl, Alt, Shift o Win, más otra tecla,
+        unidas con «+». Por ejemplo: Alt+Space, Ctrl+Shift+K o Win+F2.
       </p>
       {message && (
         <p
@@ -306,28 +310,60 @@ function StartupToggle({ initial }: { initial: boolean }) {
 function StatusList({ status }: { status: Status }) {
   const l = status.latency;
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-      <dt className="text-muted">Atajo</dt>
-      <dd>{status.hotkey ?? "ninguno (no se pudo registrar)"}</dd>
-      <dt className="text-muted">Mecanismo</dt>
-      <dd>{status.backend ? BACKEND_LABEL[status.backend] : "—"}</dd>
-      <dt className="text-muted">Acrylic</dt>
-      <dd>
-        {status.acrylic ? "activo en la barra" : "no disponible (fondo opaco)"}
-      </dd>
-      <dt className="text-muted">Base de datos</dt>
-      <dd>
-        {status.storageError
-          ? `no disponible: ${status.storageError}`
-          : "correcta"}
-      </dd>
-      <dt className="text-muted">Latencia</dt>
-      <dd>
-        {l
-          ? `última ${l.lastMs} ms · p50 ${l.p50Ms} ms · p95 ${l.p95Ms} ms (${l.samples} medidas)`
-          : "aún sin medidas: abre el lanzador con el atajo"}
-      </dd>
-    </dl>
+    <div className="space-y-6">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
+        <dt className="text-muted">Atajo</dt>
+        <dd>
+          {status.hotkey ??
+            "ninguno: no se pudo activar. Prueba con otro en General."}
+        </dd>
+        <dt className="text-muted">Vidrio</dt>
+        <dd>
+          {status.acrylic
+            ? "activo en la barra"
+            : "no disponible en este equipo: la barra usa un fondo opaco"}
+        </dd>
+        <dt className="text-muted">Tus datos</dt>
+        <dd>
+          {status.storageError
+            ? `no se pueden guardar: ${status.storageError}`
+            : "se guardan bien"}
+        </dd>
+        <dt className="text-muted">Rapidez al abrir</dt>
+        <dd>
+          {l
+            ? `${l.lastMs} ms la última vez (la meta es menos de 100 ms)`
+            : "aún sin medir: abre la barra con el atajo"}
+        </dd>
+      </dl>
+      <details className="group space-y-3">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent">
+          <span
+            aria-hidden
+            className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
+          >
+            ›
+          </span>
+          Avanzado
+        </summary>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 pt-3 text-sm">
+          <dt className="text-muted">Cómo se escucha el atajo</dt>
+          <dd>{status.backend ? BACKEND_LABEL[status.backend] : "—"}</dd>
+          <dt className="text-muted">Material de la barra</dt>
+          <dd>
+            {status.acrylic
+              ? "Acrylic: el desenfoque translúcido de Windows."
+              : "Opaco: Windows no ofrece Acrylic (el desenfoque translúcido) aquí."}
+          </dd>
+          <dt className="text-muted">Tiempo de apertura</dt>
+          <dd>
+            {l
+              ? `p50 ${l.p50Ms} ms y p95 ${l.p95Ms} ms en las últimas ${l.samples} veces: la mitad tardó menos de ${l.p50Ms} ms y 19 de cada 20, menos de ${l.p95Ms} ms. Se mide desde que pulsas el atajo hasta que la barra está en pantalla.`
+              : "—"}
+          </dd>
+        </dl>
+      </details>
+    </div>
   );
 }
 

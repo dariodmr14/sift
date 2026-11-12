@@ -258,9 +258,8 @@ export function SpacesSection() {
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="text-lg">Crea tu primer Espacio</p>
             <p className="max-w-sm text-sm text-muted">
-              Por ejemplo «Bases de datos»: la carpeta de la asignatura, los
-              apuntes, el campus virtual y `docker compose up` de las prácticas,
-              todo con un Enter.
+              Por ejemplo «Trabajo»: la carpeta del proyecto, el correo, el
+              calendario y tu app de notas, todo con un Enter.
             </p>
             <Button
               variant="primary"

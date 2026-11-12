@@ -89,10 +89,9 @@ export function WaitEditor({
 
       {until.kind === "commandFinished" && (
         <p className="text-xs text-muted">
-          Espera a que acabe el comando de justo antes (por ejemplo,{" "}
-          <span className="font-mono">docker compose up -d</span>). Ese comando
-          se ejecuta sin ventana y, si termina con error, verás sus últimas
-          líneas.
+          Espera a que acabe el comando de justo antes, por ejemplo uno que
+          prepara o arranca algo. Ese comando se ejecuta sin ventana y, si
+          termina con error, verás lo último que escribió.
         </p>
       )}
 

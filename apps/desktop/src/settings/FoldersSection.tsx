@@ -93,8 +93,8 @@ export function FoldersSection() {
         <ul className="divide-y divide-line rounded-window border border-line">
           {roots?.length === 0 && (
             <li className="p-4 text-sm text-muted">
-              Aún no hay carpetas. Añade, por ejemplo, la de tus apuntes de la
-              universidad.
+              Aún no hay carpetas. Añade, por ejemplo, Documentos o la carpeta
+              donde guardas tus trabajos.
             </li>
           )}
           {roots?.map((root) => (
@@ -111,8 +111,8 @@ export function FoldersSection() {
         <p className="text-xs text-muted">
           Sift solo mira lo que sirve para buscar: documentos, textos, código y,
           por su nombre, imágenes y vídeos. Se salta programas y archivos
-          internos de otras herramientas. Por ahora lee el contenido de textos,
-          Markdown, código, PDF, Word y PowerPoint; las hojas de cálculo se
+          internos de otras herramientas. Por ahora lee el contenido de textos y
+          notas, código, PDF, Word y PowerPoint; las hojas de cálculo se
           encuentran por su nombre. Lee en segundo plano y se pausa si estás
           usando mucho el PC. Quitar una carpeta solo hace que Sift deje de
           buscar en ella: tus archivos no se tocan.
@@ -351,8 +351,8 @@ function MediaToggle() {
       <span>
         Buscar también imágenes y vídeos por su nombre
         <span className="block text-xs text-muted">
-          Su contenido no se lee. Los que están en carpetas que Sift se salta
-          (dependencias, compilados, cachés) no aparecen.
+          Su contenido no se lee. No aparecen los que están en carpetas que Sift
+          se salta (las que otros programas crean para su uso interno).
         </span>
       </span>
     </label>

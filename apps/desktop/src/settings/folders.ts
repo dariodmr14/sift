@@ -88,7 +88,7 @@ export function statusNotes(status: IndexStatus | null): string[] {
     );
   if (!status.readsPdf)
     notes.push(
-      "Los PDF se encuentran solo por su nombre: falta el lector de PDF (pdfium.dll).",
+      "Los PDF se encuentran solo por su nombre: falta la pieza de Sift que los lee. Reinstalar Sift lo arregla.",
     );
   const smart = status.smart;
   if (smart.enabled && smart.note)
