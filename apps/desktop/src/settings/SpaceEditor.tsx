@@ -172,7 +172,7 @@ export function SpaceEditor({
                   Alias
                 </span>
                 <TextInput
-                  placeholder="bd, sql"
+                  placeholder="curro, oficina"
                   value={aliasText}
                   aria-describedby="alias-hint"
                   onChange={(e) => setAliasText(e.currentTarget.value)}

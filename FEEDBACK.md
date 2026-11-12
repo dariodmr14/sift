@@ -85,3 +85,13 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 ## 2026-11-13 — Tras fusionar la Fase 3 (rama `feat/fase-4-semantica`)
 
 - [x] ✅ **Al cerrar Ajustes, volver a la barra** si se abrieron desde ella (Alt+Espacio → Ajustes), con el foco en la búsqueda: lo normal es que hayas cambiado algo y quieras usar la app. Si se abrieron desde la bandeja, al cerrar no se muestra la barra.
+
+## 2026-11-12 — Bloque de mejoras antes de la Fase 6.5 (rama `feat/mejoras-barra`)
+
+- [x] ✅ **Textos para cualquiera**: sin jerga ni ejemplos sacados de los apuntes de Darío (la búsqueda inteligente ponía «normalización» y «SQL»). Los términos técnicos, solo en «Avanzado» y explicados.
+- [x] ✅ **Barra vacía útil**: «Espacios» y «Abierto recientemente» (lo último que abriste desde Sift), con teclado.
+- [x] ✅ **Abrir el PDF en la página** del fragmento que encaja, con «pág. 37» en el resultado.
+- [x] ✅ **Filtros rápidos** por tipo («pdf …», «código …», «word …», «imagen …») con una etiqueta que se quita con Retroceso.
+
+### Para la Fase 7 (pulido)
+- [ ] ⏳ **«Por qué sale este resultado»**: enseñar el fragmento que encaja (y, si llegó por significado, que se entienda la relación). En la barra actual no cabe: pensar el formato (panel lateral, vista previa, al pulsar una tecla como → o Espacio…) sin romper la apertura en < 100 ms.
