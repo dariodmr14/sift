@@ -75,7 +75,7 @@ export const commands = {
 	/**  Importa Espacios de un JSON (se añaden al final). Devuelve cuántos. */
 	importSpaces: () => typedError<number | null, AppError>(__TAURI_INVOKE("import_spaces")),
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
-	searchFiles: (query: string, seq: number) => typedError<SearchResponse, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
+	searchFiles: (query: string, seq: number) => typedError<SearchResponse_Serialize, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
 	/**
 	 *  Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
 	 *  nombre; ver `sift_search::paths`). Lo que más abres va primero.
@@ -122,7 +122,7 @@ export const commands = {
 	 *  Abre un archivo encontrado. Solo rutas que estén en el índice: la UI no puede pedir
 	 *  abrir cualquier cosa (abrir un .exe sería ejecutarlo).
 	 */
-	openFile: (path: string) => typedError<null, AppError>(__TAURI_INVOKE("open_file", { path })),
+	openFile: (path: string, page: number | null) => typedError<null, AppError>(__TAURI_INVOKE("open_file", { path, page })),
 	/**  Abre la carpeta que contiene el archivo, con él seleccionado (como «Abrir ubicación»). */
 	revealFile: (path: string) => typedError<null, AppError>(__TAURI_INVOKE("reveal_file", { path })),
 };
@@ -255,9 +255,45 @@ export type CommandSpec_Serialize = {
 };
 
 /**  Un archivo encontrado, con su mejor fragmento. */
-export type FileHit = {
+export type FileHit = FileHit_Serialize | FileHit_Deserialize;
+
+/**  Un archivo encontrado, con su mejor fragmento. */
+export type FileHit_Deserialize = {
 	/**  Id de SQLite. En TypeScript es un `number` normal: nunca pasará de 2³¹. */
 	fileId: number,
+	/**  El fragmento que se enseña (el que mejor encaja). */
+	chunkId: number,
+	/**  Página de ese fragmento, en un PDF (la rellena la app desde SQLite). */
+	page?: number | null,
+	path: string,
+	name: string,
+	ext: string,
+	/**  Nombre con lo que encaja resaltado. */
+	nameSegments: Segment[],
+	/**  Fragmento del contenido con lo que encaja resaltado (vacío si solo encajó el nombre). */
+	snippet: Segment[],
+	/**  Puntuación final: la de la fusión × `boost`. */
+	score: number | null,
+	/**
+	 *  Lo que la frecencia multiplica la puntuación (1 si nunca lo abriste). La barra la
+	 *  usa para comparar Espacios y archivos en la misma escala, sin frecencia.
+	 */
+	boost: number | null,
+	/**
+	 *  Encontrado solo por significado (no comparte palabras con la búsqueda): la UI lo
+	 *  marca para que se entienda por qué está ahí.
+	 */
+	byMeaning: boolean,
+};
+
+/**  Un archivo encontrado, con su mejor fragmento. */
+export type FileHit_Serialize = {
+	/**  Id de SQLite. En TypeScript es un `number` normal: nunca pasará de 2³¹. */
+	fileId: number,
+	/**  El fragmento que se enseña (el que mejor encaja). */
+	chunkId: number,
+	/**  Página de ese fragmento, en un PDF (la rellena la app desde SQLite). */
+	page: number | null,
 	path: string,
 	name: string,
 	ext: string,
@@ -500,14 +536,30 @@ export type RunReport_Serialize =
 /**  Se lanzaron las acciones; cada una con su resultado. */
 { status: "done"; outcomes: ActionOutcome_Serialize[] };
 
-export type SearchResponse = {
+export type SearchResponse = SearchResponse_Serialize | SearchResponse_Deserialize;
+
+export type SearchResponse_Deserialize = {
 	/**  El número que mandó la UI: si llega una respuesta vieja, la descarta. */
 	seq: number,
-	results: SearchResults,
+	results: SearchResults_Deserialize,
 };
 
-export type SearchResults = {
-	hits: FileHit[],
+export type SearchResponse_Serialize = {
+	/**  El número que mandó la UI: si llega una respuesta vieja, la descarta. */
+	seq: number,
+	results: SearchResults_Serialize,
+};
+
+export type SearchResults = SearchResults_Serialize | SearchResults_Deserialize;
+
+export type SearchResults_Deserialize = {
+	hits: FileHit_Deserialize[],
+	/**  Tiempo de la búsqueda en Rust (sin la IPC), en milisegundos. */
+	tookMs: number | null,
+};
+
+export type SearchResults_Serialize = {
+	hits: FileHit_Serialize[],
 	/**  Tiempo de la búsqueda en Rust (sin la IPC), en milisegundos. */
 	tookMs: number | null,
 };

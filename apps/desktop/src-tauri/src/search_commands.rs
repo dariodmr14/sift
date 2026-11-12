@@ -116,7 +116,7 @@ pub async fn search_files(
         retrievers.push(semantic);
     }
     let frecency = app.state::<FrecencyCache>().get(&app);
-    let results = sift_search::search_with(
+    let mut results = sift_search::search_with(
         &indexing.index,
         &retrievers,
         &query,
@@ -124,6 +124,24 @@ pub async fn search_files(
         &frecency,
     )
     .map_err(|e| AppError::System(e.to_string()))?;
+    // La página de los PDF, para enseñarla («pág. 37») y abrir ahí. Son pocos: una
+    // consulta por resultado a la clave primaria.
+    let pdf_chunks: Vec<i64> = results
+        .hits
+        .iter()
+        .filter(|h| h.ext.eq_ignore_ascii_case("pdf"))
+        .map(|h| h.chunk_id)
+        .collect();
+    if !pdf_chunks.is_empty() {
+        match db(&app).chunk_pages(&pdf_chunks) {
+            Ok(pages) => {
+                for hit in &mut results.hits {
+                    hit.page = pages.get(&hit.chunk_id).map(|p| *p as u32);
+                }
+            }
+            Err(e) => tracing::warn!("no se pudieron leer las páginas: {e}"),
+        }
+    }
     if !query.trim().is_empty() {
         app.state::<SearchStats>()
             .0
@@ -347,21 +365,26 @@ pub async fn suggest_paths(
 /// abrir cualquier cosa (abrir un .exe sería ejecutarlo).
 #[tauri::command]
 #[specta::specta]
-pub async fn open_file(app: AppHandle, path: String) -> Result<(), AppError> {
+pub async fn open_file(app: AppHandle, path: String, page: Option<u32>) -> Result<(), AppError> {
     let path = PathBuf::from(path);
     if !db(&app).is_indexed(&path)? {
         return Err(AppError::NotFound(
-            "ese archivo no está en el índice".into(),
+            "Sift ya no tiene este archivo: puede que se haya movido o borrado.".into(),
         ));
     }
     if let Err(e) = db(&app).record_file_open(&path) {
         tracing::warn!("no se pudo apuntar la apertura: {e}");
     }
     app.state::<FrecencyCache>().invalidate();
-    tauri::async_runtime::spawn_blocking(move || WindowsOpener.open_path(&path))
-        .await
-        .map_err(|e| AppError::System(e.to_string()))?
-        .map_err(AppError::System)
+    // Un PDF con página, en esa página si el lector lo permite (si no, normal).
+    let is_pdf = sift_extract::extension(&path) == "pdf";
+    tauri::async_runtime::spawn_blocking(move || match page {
+        Some(page) if is_pdf => crate::pdf_page::open_pdf_at(&path, page),
+        _ => WindowsOpener.open_path(&path),
+    })
+    .await
+    .map_err(|e| AppError::System(e.to_string()))?
+    .map_err(AppError::System)
 }
 
 /// Abre la carpeta que contiene el archivo, con él seleccionado (como «Abrir ubicación»).
@@ -371,7 +394,7 @@ pub fn reveal_file(app: AppHandle, path: String) -> Result<(), AppError> {
     let path = PathBuf::from(path);
     if !db(&app).is_indexed(&path)? {
         return Err(AppError::NotFound(
-            "ese archivo no está en el índice".into(),
+            "Sift ya no tiene este archivo: puede que se haya movido o borrado.".into(),
         ));
     }
     crate::shell::reveal_in_explorer(&path).map_err(AppError::System)
