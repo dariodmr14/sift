@@ -16,6 +16,7 @@ mod shell;
 mod smart;
 mod spaces_commands;
 mod tray;
+mod waits;
 mod watcher;
 
 use std::path::PathBuf;
@@ -176,6 +177,7 @@ pub fn run() {
         .manage(settings_window::ReturnToLauncher::default())
         .manage(search_commands::SearchStats::default())
         .manage(search_commands::FrecencyCache::default())
+        .manage(spaces_commands::SpaceRun::default())
         .invoke_handler(specta.invoke_handler())
         .setup(move |app| {
             specta.mount_events(app);

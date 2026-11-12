@@ -256,6 +256,7 @@ fn kind(action: &Action) -> &'static str {
         Action::OpenUrl { .. } => "openUrl",
         Action::OpenApp { .. } => "openApp",
         Action::RunCommand(_) => "runCommand",
+        Action::Wait(_) => "wait",
     }
 }
 

@@ -5,6 +5,7 @@ import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
   ReactNode,
+  SelectHTMLAttributes,
 } from "react";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -38,6 +39,19 @@ export function TextInput({
     <input
       spellCheck={false}
       className={`w-full rounded-item border border-line bg-hover px-3 py-1.5 text-sm outline-none focus:border-accent ${className}`}
+      {...props}
+    />
+  );
+}
+
+/** Desplegable nativo con el aspecto de `TextInput` (sigue el tema por `color-scheme`). */
+export function Select({
+  className = "",
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={`rounded-item border border-line bg-hover px-2 py-1.5 text-sm outline-none focus:border-accent ${className}`}
       {...props}
     />
   );

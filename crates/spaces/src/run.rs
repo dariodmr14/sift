@@ -1,15 +1,22 @@
 //! Ejecutar las acciones de un Espacio.
 //!
-//! La lógica (qué se lanza, en qué orden, qué hay que confirmar) está separada de *cómo*
-//! se lanza en Windows mediante el trait [`Opener`]. La app usa uno real (ShellExecute y
-//! `std::process::Command`); los tests, uno falso que solo apunta lo que se le pide.
+//! La lógica (qué se lanza, en qué orden, qué hay que confirmar, cuánto se espera) está
+//! separada de *cómo* se hace en Windows mediante dos traits: [`Opener`] (abrir y lanzar)
+//! y [`Waiter`] (comprobar si algo está listo y dejar pasar el tiempo). La app usa los de
+//! verdad; los tests, unos falsos que apuntan lo que se les pide y no esperan de verdad.
+//!
+//! Esperas (ADR 0012): un paso «Esperar a que…» comprueba su condición cada medio
+//! segundo hasta que se cumple o se acaba su tiempo. Si no se cumple, según el paso, se
+//! para (lo que queda no se ejecuta) o se sigue. Cancelar también para. **Nunca se
+//! cierra lo que ya se abrió o lanzó.**
 
 use std::collections::HashSet;
 use std::path::Path;
+use std::time::Duration;
 
 use serde::Serialize;
 
-use crate::model::{Action, CommandSpec};
+use crate::model::{Action, CommandSpec, OnTimeout, WaitSpec, WaitUntil};
 use crate::validate::validate_action;
 
 /// Lo que sabe hacer el sistema operativo. Cada método lanza una sola cosa.
@@ -17,9 +24,50 @@ pub trait Opener {
     fn open_path(&self, path: &Path) -> Result<(), String>;
     fn open_url(&self, url: &str) -> Result<(), String>;
     fn open_app(&self, app_id: &str) -> Result<(), String>;
-    /// Lanza `program` con `args` **como lista**, sin shell.
+    /// Lanza `program` con `args` **como lista**, sin shell, en su propia consola.
     fn spawn(&self, command: &CommandSpec) -> Result<(), String>;
+    /// Como `spawn`, pero sin ventana y guardando su salida, para poder esperar a que
+    /// termine y, si falla, enseñar sus últimas líneas.
+    fn spawn_captured(&self, command: &CommandSpec) -> Result<Box<dyn Child>, String>;
 }
+
+/// Un comando lanzado con [`Opener::spawn_captured`].
+pub trait Child {
+    /// `None` si sigue en marcha; `Some(Ok)` si terminó bien; `Some(Err(motivo))` si
+    /// terminó con error (con sus últimas líneas de salida).
+    fn try_finished(&mut self) -> Option<Result<(), String>>;
+}
+
+/// Comprobar si algo está listo y dejar pasar el tiempo.
+pub trait Waiter {
+    /// ¿Responde esta web de tu equipo? (una comprobación, rápida)
+    fn web_responds(&self, url: &str) -> bool;
+    /// ¿Acepta conexiones un servicio de tu equipo en este puerto?
+    fn accepts_connections(&self, port: u16) -> bool;
+    fn sleep(&self, d: Duration);
+    /// Tiempo transcurrido desde un instante fijo (un reloj que solo avanza).
+    fn now(&self) -> Duration;
+}
+
+/// Lo que la ejecución cuenta a la UI y cómo se cancela.
+pub trait Progress {
+    /// Empieza el paso `index` (desde 1). `waited` = segundos esperando, si es una espera.
+    fn step(&self, index: u32, label: &str, waited: Option<u32>);
+    fn cancelled(&self) -> bool;
+}
+
+/// Sin UI ni cancelación.
+pub struct NoProgress;
+
+impl Progress for NoProgress {
+    fn step(&self, _: u32, _: &str, _: Option<u32>) {}
+    fn cancelled(&self) -> bool {
+        false
+    }
+}
+
+/// Cada cuánto se vuelve a comprobar una espera.
+pub const POLL: Duration = Duration::from_millis(500);
 
 /// Resultado de una acción, para mostrarlo en la UI.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -31,6 +79,8 @@ pub struct ActionOutcome {
     pub label: String,
     /// `None` si fue bien; si no, el motivo.
     pub error: Option<String>,
+    /// `false` si no llegó a ejecutarse (se paró antes o se canceló).
+    pub ran: bool,
 }
 
 /// Comandos de `actions` que aún no se han aprobado, sin repetidos y en orden.
@@ -48,21 +98,210 @@ pub fn pending_approvals<'a>(
         .collect()
 }
 
-/// Ejecuta las acciones en orden. Si una falla, sigue con las demás: que no abra la web
-/// no es motivo para no abrir la carpeta. Devuelve qué pasó con cada una.
+/// Cómo acabó una espera que no se cumplió.
+enum WaitFailed {
+    /// No ocurrió a tiempo (o el comando falló): el motivo.
+    Failed(String),
+    Cancelled,
+}
+
+/// Ejecuta las acciones en orden. Si una acción normal falla, sigue con las demás: que
+/// no abra la web no es motivo para no abrir la carpeta. Una espera que no se cumple
+/// para o no, según diga el paso. Cancelar para. Devuelve qué pasó con cada acción,
+/// también con las que no llegaron a ejecutarse.
 ///
 /// Antes de llamar a esto, la app comprueba con [`pending_approvals`] que no quede
 /// ningún comando sin confirmar.
-pub fn run_actions(actions: &[Action], opener: &dyn Opener) -> Vec<ActionOutcome> {
-    actions
-        .iter()
-        .enumerate()
-        .map(|(i, action)| ActionOutcome {
-            index: i as u32 + 1,
-            label: label(action),
-            error: run_action(action, opener).err(),
-        })
-        .collect()
+pub fn run_actions(
+    actions: &[Action],
+    opener: &dyn Opener,
+    waiter: &dyn Waiter,
+    progress: &dyn Progress,
+) -> Vec<ActionOutcome> {
+    let mut out = Vec::with_capacity(actions.len());
+    // El último comando lanzado para esperarlo (solo si el paso siguiente lo espera).
+    let mut child: Option<Box<dyn Child>> = None;
+    let mut stop_at: Option<usize> = None;
+    for (i, action) in actions.iter().enumerate() {
+        let index = i as u32 + 1;
+        let label = label(action);
+        if progress.cancelled() {
+            stop_at = Some(i);
+            break;
+        }
+        progress.step(index, &label, None);
+        let (error, ran, stop) = match action {
+            Action::Wait(spec) => match wait(spec, child.take(), waiter, progress, index, &label) {
+                Ok(()) => (None, true, false),
+                Err(WaitFailed::Cancelled) => {
+                    (Some("cancelado mientras esperaba".to_owned()), false, true)
+                }
+                Err(WaitFailed::Failed(reason)) => {
+                    (Some(reason), true, spec.on_timeout == OnTimeout::Stop)
+                }
+            },
+            Action::RunCommand(cmd) if next_waits_for_command(actions, i) => {
+                let launched = check_command(cmd).and_then(|()| opener.spawn_captured(cmd));
+                match launched {
+                    Ok(c) => {
+                        child = Some(c);
+                        (None, true, false)
+                    }
+                    Err(e) => (Some(e), true, false),
+                }
+            }
+            _ => (run_action(action, opener).err(), true, false),
+        };
+        out.push(ActionOutcome {
+            index,
+            label,
+            error,
+            ran,
+        });
+        if stop {
+            stop_at = Some(i + 1);
+            break;
+        }
+    }
+    // Lo que no llegó a ejecutarse, para que la UI diga qué se hizo y qué no.
+    if let Some(from) = stop_at {
+        for (i, action) in actions.iter().enumerate().skip(from) {
+            out.push(ActionOutcome {
+                index: i as u32 + 1,
+                label: label(action),
+                error: None,
+                ran: false,
+            });
+        }
+    }
+    out
+}
+
+fn next_waits_for_command(actions: &[Action], i: usize) -> bool {
+    matches!(
+        actions.get(i + 1),
+        Some(Action::Wait(WaitSpec {
+            until: WaitUntil::CommandFinished,
+            ..
+        }))
+    )
+}
+
+/// Lo que se comprueba antes de lanzar un comando: que sea válido y que exista su
+/// carpeta de trabajo.
+fn check_command(cmd: &CommandSpec) -> Result<(), String> {
+    let mut checked = Action::RunCommand(cmd.clone());
+    validate_action(&mut checked)?;
+    if let Some(cwd) = &cmd.cwd
+        && !cwd.is_dir()
+    {
+        return Err(format!(
+            "no existe la carpeta de trabajo: {}",
+            cwd.display()
+        ));
+    }
+    Ok(())
+}
+
+/// Espera a que se cumpla `spec`, comprobando cada [`POLL`].
+fn wait(
+    spec: &WaitSpec,
+    mut child: Option<Box<dyn Child>>,
+    waiter: &dyn Waiter,
+    progress: &dyn Progress,
+    index: u32,
+    label: &str,
+) -> Result<(), WaitFailed> {
+    let mut checked = Action::Wait(spec.clone());
+    validate_action(&mut checked).map_err(WaitFailed::Failed)?;
+    let Action::Wait(spec) = checked else {
+        return Ok(());
+    };
+    let started = waiter.now();
+    let limit = Duration::from_secs(u64::from(match spec.until {
+        WaitUntil::Seconds { secs } => secs,
+        _ => spec.timeout_secs,
+    }));
+    let mut reported = None;
+    loop {
+        let elapsed = waiter.now().saturating_sub(started);
+        let secs = elapsed.as_secs() as u32;
+        if reported != Some(secs) {
+            progress.step(index, label, Some(secs));
+            reported = Some(secs);
+        }
+        let ready = match &spec.until {
+            WaitUntil::WebResponds { url } => waiter.web_responds(url),
+            WaitUntil::ServiceAccepts { port } => waiter.accepts_connections(*port),
+            WaitUntil::Seconds { .. } => elapsed >= limit,
+            WaitUntil::CommandFinished => match child.as_mut() {
+                None => {
+                    return Err(WaitFailed::Failed(
+                        "el comando de antes no se pudo lanzar".into(),
+                    ));
+                }
+                Some(c) => match c.try_finished() {
+                    None => false,
+                    Some(Ok(())) => true,
+                    Some(Err(reason)) => return Err(WaitFailed::Failed(reason)),
+                },
+            },
+        };
+        if ready {
+            return Ok(());
+        }
+        if elapsed >= limit {
+            return Err(WaitFailed::Failed(timeout_message(&spec)));
+        }
+        if progress.cancelled() {
+            return Err(WaitFailed::Cancelled);
+        }
+        waiter.sleep(POLL);
+    }
+}
+
+fn timeout_message(spec: &WaitSpec) -> String {
+    let t = spec.timeout_secs;
+    match &spec.until {
+        WaitUntil::WebResponds { url } => format!("{url} no respondió en {t} s"),
+        WaitUntil::ServiceAccepts { port } => {
+            format!("nada aceptó conexiones en el puerto {port} en {t} s")
+        }
+        WaitUntil::CommandFinished => {
+            format!("el comando no terminó en {t} s (sigue abierto)")
+        }
+        WaitUntil::Seconds { .. } => String::new(),
+    }
+}
+
+/// Comprueba una espera **una vez**, ahora (el botón «Probar» del editor): `Ok` con lo
+/// que se ha visto, o `Err` con el motivo.
+pub fn check_wait_now(spec: &WaitSpec, waiter: &dyn Waiter) -> Result<String, String> {
+    let mut checked = Action::Wait(spec.clone());
+    validate_action(&mut checked)?;
+    match &spec.until {
+        WaitUntil::WebResponds { url } => {
+            if waiter.web_responds(url) {
+                Ok(format!("{url} responde ahora mismo."))
+            } else {
+                Err(format!("{url} no responde ahora mismo."))
+            }
+        }
+        WaitUntil::ServiceAccepts { port } => {
+            if waiter.accepts_connections(*port) {
+                Ok(format!(
+                    "Hay un servicio aceptando conexiones en el puerto {port}."
+                ))
+            } else {
+                Err(format!(
+                    "Ahora mismo nada acepta conexiones en el puerto {port}."
+                ))
+            }
+        }
+        WaitUntil::CommandFinished | WaitUntil::Seconds { .. } => {
+            Err("esta espera no tiene nada que comprobar por adelantado".into())
+        }
+    }
 }
 
 /// Ejecuta una acción. Se vuelve a validar aquí, justo antes de lanzarla, aunque ya se
@@ -80,16 +319,11 @@ pub fn run_action(action: &Action, opener: &dyn Opener) -> Result<(), String> {
         Action::OpenUrl { url } => opener.open_url(url),
         Action::OpenApp { app_id, .. } => opener.open_app(app_id),
         Action::RunCommand(cmd) => {
-            if let Some(cwd) = &cmd.cwd
-                && !cwd.is_dir()
-            {
-                return Err(format!(
-                    "no existe la carpeta de trabajo: {}",
-                    cwd.display()
-                ));
-            }
+            check_command(cmd)?;
             opener.spawn(cmd)
         }
+        // Una espera suelta no lanza nada (se ejecuta dentro de `run_actions`).
+        Action::Wait(_) => Ok(()),
     }
 }
 
@@ -107,6 +341,14 @@ pub fn label(action: &Action) -> String {
         Action::OpenUrl { url } => format!("Abrir {url}"),
         Action::OpenApp { name, .. } => format!("Abrir {name}"),
         Action::RunCommand(c) => format!("Ejecutar {}", display_command(c)),
+        Action::Wait(w) => match &w.until {
+            WaitUntil::WebResponds { url } => format!("Esperar a que responda {url}"),
+            WaitUntil::ServiceAccepts { port } => {
+                format!("Esperar a que el servicio del puerto {port} acepte conexiones")
+            }
+            WaitUntil::CommandFinished => "Esperar a que termine el comando".into(),
+            WaitUntil::Seconds { secs } => format!("Esperar {secs} s"),
+        },
     }
 }
 
@@ -129,7 +371,8 @@ pub fn display_command(c: &CommandSpec) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::cell::RefCell;
+    use crate::model::{OnTimeout, WaitSpec, WaitUntil};
+    use std::cell::{Cell, RefCell};
     use std::path::PathBuf;
 
     /// Opener falso: apunta lo que se le pide en vez de lanzarlo.
@@ -138,6 +381,9 @@ mod tests {
         calls: RefCell<Vec<String>>,
         spawned: RefCell<Vec<CommandSpec>>,
         fail_urls: bool,
+        /// Para `spawn_captured`: comprobaciones hasta que termina, y si falla.
+        finishes_after: u32,
+        command_fails: bool,
     }
 
     impl Opener for Recorder {
@@ -166,6 +412,103 @@ mod tests {
             self.spawned.borrow_mut().push(command.clone());
             Ok(())
         }
+        fn spawn_captured(&self, command: &CommandSpec) -> Result<Box<dyn Child>, String> {
+            self.calls
+                .borrow_mut()
+                .push(format!("captured:{}", command.program));
+            Ok(Box::new(FakeChild {
+                polls_left: self.finishes_after,
+                fails: self.command_fails,
+            }))
+        }
+    }
+
+    /// Un comando que termina tras `polls_left` comprobaciones (bien o mal).
+    struct FakeChild {
+        polls_left: u32,
+        fails: bool,
+    }
+
+    impl Child for FakeChild {
+        fn try_finished(&mut self) -> Option<Result<(), String>> {
+            if self.polls_left > 0 {
+                self.polls_left -= 1;
+                return None;
+            }
+            Some(if self.fails {
+                Err("terminó con código 1: no such service".into())
+            } else {
+                Ok(())
+            })
+        }
+    }
+
+    /// Reloj de mentira: dormir solo lo adelanta. La web responde a partir de
+    /// `ready_at`; el puerto 5432 siempre acepta conexiones.
+    struct FakeWaiter {
+        clock: Cell<Duration>,
+        ready_at: Option<Duration>,
+    }
+
+    impl FakeWaiter {
+        fn ready_after(secs: Option<u64>) -> FakeWaiter {
+            FakeWaiter {
+                clock: Cell::new(Duration::ZERO),
+                ready_at: secs.map(Duration::from_secs),
+            }
+        }
+    }
+
+    impl Waiter for FakeWaiter {
+        fn web_responds(&self, _: &str) -> bool {
+            self.ready_at.is_some_and(|t| self.clock.get() >= t)
+        }
+        fn accepts_connections(&self, port: u16) -> bool {
+            port == 5432
+        }
+        fn sleep(&self, d: Duration) {
+            self.clock.set(self.clock.get() + d);
+        }
+        fn now(&self) -> Duration {
+            self.clock.get()
+        }
+    }
+
+    /// Progreso que apunta los pasos y se cancela al llevar `cancel_at` segundos
+    /// esperando.
+    #[derive(Default)]
+    struct Steps {
+        seen: RefCell<Vec<(u32, Option<u32>)>>,
+        cancel_at: Option<u32>,
+        cancel: Cell<bool>,
+    }
+
+    impl Progress for Steps {
+        fn step(&self, index: u32, _: &str, waited: Option<u32>) {
+            self.seen.borrow_mut().push((index, waited));
+            if waited.is_some() && waited >= self.cancel_at {
+                self.cancel.set(true);
+            }
+        }
+        fn cancelled(&self) -> bool {
+            self.cancel.get()
+        }
+    }
+
+    fn wait_for(until: WaitUntil, timeout_secs: u32, on_timeout: OnTimeout) -> Action {
+        Action::Wait(WaitSpec {
+            until,
+            timeout_secs,
+            on_timeout,
+        })
+    }
+
+    fn web(url: &str) -> WaitUntil {
+        WaitUntil::WebResponds { url: url.into() }
+    }
+
+    fn run(actions: &[Action], rec: &Recorder, waiter: &FakeWaiter) -> Vec<ActionOutcome> {
+        run_actions(actions, rec, waiter, &NoProgress)
     }
 
     fn cmd(program: &str, args: &[&str]) -> CommandSpec {
@@ -195,11 +538,12 @@ mod tests {
                 name: "Calculadora".into(),
             },
         ];
-        let out = run_actions(&actions, &rec);
+        let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
         assert_eq!(rec.calls.borrow().len(), 3);
         assert_eq!(out[0].error.as_deref(), Some("sin navegador"));
         assert_eq!(out[1].error, None);
         assert_eq!(out[2].label, "Abrir Calculadora");
+        assert!(out.iter().all(|o| o.ran));
         assert_eq!(
             out.iter().map(|o| o.index).collect::<Vec<_>>(),
             vec![1, 2, 3]
@@ -295,5 +639,174 @@ mod tests {
             display_command(&c),
             r#""C:\Program Files\x.exe" --name "mi carpeta" """#
         );
+    }
+
+    #[test]
+    fn waits_until_the_web_responds_then_goes_on() {
+        let rec = Recorder::default();
+        let waiter = FakeWaiter::ready_after(Some(12));
+        let actions = vec![
+            wait_for(web("http://localhost:8080"), 60, OnTimeout::Stop),
+            Action::OpenUrl {
+                url: "http://localhost:8080".into(),
+            },
+        ];
+        let out = run(&actions, &rec, &waiter);
+        assert!(out.iter().all(|o| o.ran && o.error.is_none()), "{out:?}");
+        assert_eq!(waiter.now(), Duration::from_secs(12));
+        assert_eq!(*rec.calls.borrow(), vec!["url:http://localhost:8080"]);
+    }
+
+    #[test]
+    fn a_wait_that_times_out_stops_the_rest_and_says_so() {
+        let rec = Recorder::default();
+        let actions = vec![
+            Action::OpenApp {
+                app_id: "code".into(),
+                name: "VS Code".into(),
+            },
+            wait_for(web("http://localhost:8080"), 30, OnTimeout::Stop),
+            Action::OpenUrl {
+                url: "http://localhost:8080".into(),
+            },
+        ];
+        let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
+        assert_eq!(out.len(), 3);
+        assert!(out[0].ran && out[0].error.is_none());
+        assert_eq!(
+            out[1].error.as_deref(),
+            Some("http://localhost:8080 no respondió en 30 s")
+        );
+        assert!(!out[2].ran, "la web no se abre");
+        // VS Code se abrió y ahí sigue: solo se lanzó una cosa, nada se cerró.
+        assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
+    }
+
+    #[test]
+    fn a_wait_can_keep_going_when_it_times_out() {
+        let rec = Recorder::default();
+        let actions = vec![
+            wait_for(web("http://localhost:8080"), 5, OnTimeout::Continue),
+            Action::OpenUrl {
+                url: "http://localhost:8080".into(),
+            },
+        ];
+        let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
+        assert!(out[0].error.is_some());
+        assert!(out[1].ran && out[1].error.is_none());
+    }
+
+    #[test]
+    fn waits_for_a_service_port_and_for_seconds() {
+        let rec = Recorder::default();
+        let waiter = FakeWaiter::ready_after(None);
+        let actions = vec![
+            wait_for(
+                WaitUntil::ServiceAccepts { port: 5432 },
+                60,
+                OnTimeout::Stop,
+            ),
+            wait_for(WaitUntil::Seconds { secs: 3 }, 60, OnTimeout::Stop),
+        ];
+        let out = run(&actions, &rec, &waiter);
+        assert!(out.iter().all(|o| o.ran && o.error.is_none()), "{out:?}");
+        assert_eq!(waiter.now(), Duration::from_secs(3));
+    }
+
+    #[test]
+    fn waits_for_the_previous_command_launched_without_window() {
+        let rec = Recorder {
+            finishes_after: 4,
+            ..Default::default()
+        };
+        let actions = vec![
+            Action::RunCommand(cmd("docker", &["compose", "up", "-d"])),
+            wait_for(WaitUntil::CommandFinished, 120, OnTimeout::Stop),
+            Action::RunCommand(cmd("code", &["."])),
+        ];
+        let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
+        assert!(out.iter().all(|o| o.ran && o.error.is_none()), "{out:?}");
+        // El que se espera, sin ventana y con su salida guardada; el otro, como siempre.
+        assert_eq!(*rec.calls.borrow(), vec!["captured:docker", "spawn:code"]);
+    }
+
+    #[test]
+    fn a_failing_command_stops_with_its_reason() {
+        let rec = Recorder {
+            command_fails: true,
+            ..Default::default()
+        };
+        let actions = vec![
+            Action::RunCommand(cmd("docker", &["compose", "up", "-d"])),
+            wait_for(WaitUntil::CommandFinished, 120, OnTimeout::Stop),
+            Action::OpenUrl {
+                url: "http://localhost:8080".into(),
+            },
+        ];
+        let out = run(&actions, &rec, &FakeWaiter::ready_after(None));
+        assert!(out[1].error.as_deref().unwrap().contains("no such service"));
+        assert!(!out[2].ran);
+    }
+
+    #[test]
+    fn cancelling_stops_waiting_and_lists_what_did_not_run() {
+        let rec = Recorder::default();
+        let steps = Steps {
+            cancel_at: Some(4),
+            ..Default::default()
+        };
+        let actions = vec![
+            Action::OpenApp {
+                app_id: "code".into(),
+                name: "VS Code".into(),
+            },
+            wait_for(web("http://localhost:8080"), 60, OnTimeout::Continue),
+            Action::OpenUrl {
+                url: "http://localhost:8080".into(),
+            },
+        ];
+        let out = run_actions(&actions, &rec, &FakeWaiter::ready_after(None), &steps);
+        assert!(out[0].ran);
+        assert!(!out[1].ran);
+        assert_eq!(out[1].error.as_deref(), Some("cancelado mientras esperaba"));
+        // Aunque el paso diga «seguir igualmente», cancelar para.
+        assert!(!out[2].ran);
+        assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
+        // La UI se enteró de cada segundo de espera.
+        assert!(steps.seen.borrow().contains(&(2, Some(3))));
+    }
+
+    #[test]
+    fn invalid_waits_never_wait() {
+        let rec = Recorder::default();
+        let waiter = FakeWaiter::ready_after(Some(0));
+        let actions = vec![wait_for(
+            web("http://campus.uniovi.es"),
+            60,
+            OnTimeout::Stop,
+        )];
+        let out = run(&actions, &rec, &waiter);
+        assert!(out[0].error.as_deref().unwrap().contains("de tu equipo"));
+        assert_eq!(waiter.now(), Duration::ZERO);
+    }
+
+    #[test]
+    fn checking_a_wait_once() {
+        let up = FakeWaiter::ready_after(Some(0));
+        let down = FakeWaiter::ready_after(None);
+        let spec = |until| WaitSpec {
+            until,
+            timeout_secs: 60,
+            on_timeout: OnTimeout::Stop,
+        };
+        assert!(check_wait_now(&spec(web("http://localhost:3000")), &up).is_ok());
+        assert!(
+            check_wait_now(&spec(web("http://localhost:3000")), &down)
+                .unwrap_err()
+                .contains("no responde ahora mismo")
+        );
+        assert!(check_wait_now(&spec(WaitUntil::ServiceAccepts { port: 5432 }), &down).is_ok());
+        assert!(check_wait_now(&spec(WaitUntil::ServiceAccepts { port: 1 }), &down).is_err());
+        assert!(check_wait_now(&spec(WaitUntil::CommandFinished), &up).is_err());
     }
 }

@@ -205,9 +205,9 @@ sift/
 > La versión básica (modelo, acciones, editor, confirmación) se adelantó a la Fase 1.5. Aquí queda lo que se apoya en el indexado.
 - [x] Los Espacios se mezclan con los resultados de búsqueda y suben con la frecencia (nombre o alias exacto → primero; parcial → intercalado con los archivos en su misma escala; ADR 0011).
 - [x] Sugerir archivos y carpetas del índice al añadir acciones (por nombre, con frecencia; se mantiene el selector de Windows).
-- [ ] Acciones condicionales o con espera (p. ej. abrir la web cuando el contenedor esté listo).
+- [x] Acciones condicionales o con espera (p. ej. abrir la web cuando el contenedor esté listo): paso «Esperar a que…» (web o servicio de tu equipo, fin del comando anterior, unos segundos), «Si no ocurre en X segundos…», Probar, progreso en la barra y Esc para cancelar (ADR 0012).
 
-**Hecho cuando:** "bases de datos" + Enter abre todo tu entorno de la asignatura.
+**Hecho cuando:** "bases de datos" + Enter abre todo tu entorno de la asignatura. ✅ El nombre o alias exacto sale el primero, y con las esperas el entorno se abre en orden (contenedores → web cuando responde), diciendo qué falló si algo falla.
 
 ### Fase 6.5 — Colocar ventanas (zonas)
 Acciones que, además de abrir una app, colocan su ventana en una posición o zona de la pantalla (p. ej. "abrir VS Code en la mitad derecha"), como hacen los FancyZones de PowerToys.
