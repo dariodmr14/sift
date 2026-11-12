@@ -80,6 +80,53 @@ pub enum Action {
         name: String,
     },
     RunCommand(CommandSpec),
+    /// Un paso que espera a que algo esté listo antes de seguir (Fase 6, ADR 0012).
+    Wait(WaitSpec),
+}
+
+/// «Esperar a que…» y qué hacer si no ocurre a tiempo.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub struct WaitSpec {
+    pub until: WaitUntil,
+    /// «Si no ocurre en X segundos…» (no cuenta en `Seconds`).
+    #[serde(default = "default_timeout")]
+    pub timeout_secs: u32,
+    #[serde(default)]
+    pub on_timeout: OnTimeout,
+}
+
+fn default_timeout() -> u32 {
+    60
+}
+
+/// A qué se espera. Solo cosas **de tu equipo**: Sift no se conecta a internet.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum WaitUntil {
+    /// Una web de tu equipo responde (`http://localhost:8080`).
+    WebResponds { url: String },
+    /// Un servicio de tu equipo acepta conexiones en un puerto (una base de datos…).
+    ServiceAccepts { port: u16 },
+    /// Termina el comando de justo antes (y sin error).
+    CommandFinished,
+    /// Unos segundos, sin comprobar nada.
+    Seconds { secs: u32 },
+}
+
+/// Qué pasa si no ocurre a tiempo (o el comando falla).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
+#[serde(rename_all = "camelCase")]
+pub enum OnTimeout {
+    /// No seguir y avisar (lo normal: abrir la web de un contenedor que no arrancó no
+    /// sirve de nada).
+    #[default]
+    Stop,
+    /// Seguir con lo demás igualmente.
+    Continue,
 }
 
 /// Un comando: programa, argumentos y carpeta de trabajo, **siempre por separado**.
