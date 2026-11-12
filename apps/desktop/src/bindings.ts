@@ -75,7 +75,7 @@ export const commands = {
 	/**  Importa Espacios de un JSON (se añaden al final). Devuelve cuántos. */
 	importSpaces: () => typedError<number | null, AppError>(__TAURI_INVOKE("import_spaces")),
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
-	searchFiles: (query: string, seq: number) => typedError<SearchResponse_Serialize, AppError>(__TAURI_INVOKE("search_files", { query, seq })),
+	searchFiles: (query: string, seq: number, filter: string | null) => typedError<SearchResponse_Serialize, AppError>(__TAURI_INVOKE("search_files", { query, seq, filter })),
 	/**
 	 *  Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
 	 *  nombre; ver `sift_search::paths`). Lo que más abres va primero.

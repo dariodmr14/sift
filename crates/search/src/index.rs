@@ -250,7 +250,28 @@ impl TextIndex {
             musts.push((Occur::Should, Box::new(BooleanQuery::new(options))));
         }
         let required = musts.len().saturating_sub(missing).max(1);
-        Box::new(BooleanQuery::with_minimum_required_clauses(musts, required))
+        let words: Box<dyn Query> =
+            Box::new(BooleanQuery::with_minimum_required_clauses(musts, required));
+        self.only_types(words, &q.exts)
+    }
+
+    /// `query`, pero solo en archivos con alguna de estas extensiones (vacío = todos).
+    fn only_types(&self, query: Box<dyn Query>, exts: &[String]) -> Box<dyn Query> {
+        if exts.is_empty() {
+            return query;
+        }
+        let types: Vec<(Occur, Box<dyn Query>)> = exts
+            .iter()
+            .map(|e| {
+                let t = Term::from_field_text(self.fields.ext, e);
+                let q: Box<dyn Query> = Box::new(TermQuery::new(t, IndexRecordOption::Basic));
+                (Occur::Should, q)
+            })
+            .collect();
+        Box::new(BooleanQuery::new(vec![
+            (Occur::Must, query),
+            (Occur::Must, Box::new(BooleanQuery::new(types))),
+        ]))
     }
 
     /// Los `k` fragmentos que mejor encajan con la consulta. Solo sus ids (columnas
@@ -293,24 +314,29 @@ impl TextIndex {
         &self,
         hashes: &[(i64, f32)],
         k: usize,
+        exts: &[String],
     ) -> Result<Vec<Candidate>, IndexError> {
         if hashes.is_empty() {
             return Ok(Vec::new());
         }
         let f = self.fields;
         let searcher = self.reader.searcher();
-        let query = BooleanQuery::new(
-            hashes
-                .iter()
-                .map(|(hash, _)| {
-                    let t = Term::from_field_i64(f.text_hash, *hash);
-                    let q: Box<dyn Query> = Box::new(TermQuery::new(t, IndexRecordOption::Basic));
-                    (Occur::Should, q)
-                })
-                .collect(),
+        let query = self.only_types(
+            Box::new(BooleanQuery::new(
+                hashes
+                    .iter()
+                    .map(|(hash, _)| {
+                        let t = Term::from_field_i64(f.text_hash, *hash);
+                        let q: Box<dyn Query> =
+                            Box::new(TermQuery::new(t, IndexRecordOption::Basic));
+                        (Occur::Should, q)
+                    })
+                    .collect(),
+            )),
+            exts,
         );
         // Sin orden propio: las copias se ordenan después por el parecido de su texto.
-        let found = searcher.search(&query, &TopDocs::with_limit(k * 4).order_by_score())?;
+        let found = searcher.search(&*query, &TopDocs::with_limit(k * 4).order_by_score())?;
         let rank: std::collections::HashMap<i64, (usize, f32)> = hashes
             .iter()
             .enumerate()

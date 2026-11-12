@@ -104,7 +104,7 @@ pub fn search(
     raw: &str,
     limit: usize,
 ) -> Result<SearchResults, IndexError> {
-    search_with(text, retrievers, raw, limit, &Frecency::default())
+    search_with(text, retrievers, raw, limit, &Frecency::default(), &[])
 }
 
 /// Como [`search`], y además sube lo que abres a menudo y hace poco ([`Frecency`]): solo
@@ -115,9 +115,11 @@ pub fn search_with(
     raw: &str,
     limit: usize,
     frecency: &Frecency,
+    exts: &[&str],
 ) -> Result<SearchResults, IndexError> {
     let started = Instant::now();
-    let q = ParsedQuery::parse(raw);
+    let mut q = ParsedQuery::parse(raw);
+    q.exts = exts.iter().map(|e| e.to_ascii_lowercase()).collect();
     if q.is_empty() {
         return Ok(SearchResults {
             hits: Vec::new(),
@@ -276,7 +278,8 @@ mod tests {
                 file_id: *id,
                 path: format!(r"C:\Uni\{name}"),
                 name: name.to_string(),
-                ext: name.rsplit('.').next().unwrap_or("").to_string(),
+                // Como el indexador de verdad (`sift_extract::extension`): en minúsculas.
+                ext: name.rsplit('.').next().unwrap_or("").to_ascii_lowercase(),
                 chunks,
             })
             .unwrap();
@@ -423,6 +426,45 @@ mod tests {
     }
 
     #[test]
+    fn a_type_filter_keeps_only_those_files() {
+        let idx = index_with(&[
+            (1, "redes.pdf", &["apuntes de redes"]),
+            (2, "redes.md", &["más redes"]),
+            (3, "Redes.PPTX", &["redes en diapositivas"]),
+        ]);
+        let only = |exts: &[&str]| -> Vec<String> {
+            search_with(
+                &idx,
+                &[&Lexical(&idx)],
+                "redes ",
+                10,
+                &Frecency::default(),
+                exts,
+            )
+            .unwrap()
+            .hits
+            .into_iter()
+            .map(|h| h.name)
+            .collect()
+        };
+        assert_eq!(only(&["pdf"]), vec!["redes.pdf"]);
+        assert_eq!(only(&["ppt", "pptx", "odp"]), vec!["Redes.PPTX"]);
+        assert_eq!(only(&[]).len(), 3);
+        // También en lo que llega por significado (de hashes a fragmentos).
+        let hashes = [
+            (sift_storage::text_hash("apuntes de redes"), 0.9),
+            (sift_storage::text_hash("más redes"), 0.8),
+        ];
+        let by_meaning = idx
+            .chunks_by_hashes(&hashes, 10, &["md".to_owned()])
+            .unwrap();
+        assert_eq!(
+            by_meaning.iter().map(|c| c.file_id).collect::<Vec<_>>(),
+            vec![2]
+        );
+    }
+
+    #[test]
     fn frecency_reorders_but_never_adds() {
         let idx = index_with(&[
             (1, "a.md", &["redes y más redes"]),
@@ -430,7 +472,7 @@ mod tests {
             (3, "c.md", &["otra cosa"]),
         ]);
         let ranked = |f: &Frecency| -> Vec<String> {
-            search_with(&idx, &[&Lexical(&idx)], "redes ", 10, f)
+            search_with(&idx, &[&Lexical(&idx)], "redes ", 10, f, &[])
                 .unwrap()
                 .hits
                 .into_iter()

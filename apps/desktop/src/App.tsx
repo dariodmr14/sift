@@ -17,6 +17,7 @@ import {
 } from "./bindings";
 import { dismissLauncher, useLauncher } from "./useLauncher";
 import { matchBuiltins, type BuiltinId } from "./launcher/builtins";
+import { detectFilter, type TypeFilter } from "./launcher/filters";
 import { mixResults } from "./launcher/mix";
 import {
   progressText,
@@ -130,6 +131,8 @@ function App() {
   const [fileIcons, setFileIcons] = useState<Record<string, string | null>>({});
   // Número de la última búsqueda pedida: las respuestas de búsquedas anteriores se ignoran.
   const searchSeq = useRef(0);
+  // Filtro rápido activo («pdf …»): una etiqueta junto a la caja; Retroceso lo quita.
+  const [filter, setFilter] = useState<TypeFilter | null>(null);
 
   // Búsqueda de archivos en Rust a cada tecla (es rápida: < 50 ms).
   useEffect(() => {
@@ -141,11 +144,11 @@ function App() {
       );
       return;
     }
-    void commands.searchFiles(query, seq).then((r) => {
+    void commands.searchFiles(query, seq, filter?.id ?? null).then((r) => {
       if (r.status !== "ok" || !isLatest(r.data.seq, searchSeq.current)) return;
       setFileHits(r.data.results.hits);
     });
-  }, [query]);
+  }, [query, filter]);
 
   // Iconos de Windows de los archivos encontrados (una vez por ruta).
   useEffect(() => {
@@ -200,6 +203,7 @@ function App() {
   const dismiss = () => dismissLauncher(rootRef.current);
   const reset = () => {
     setQuery("");
+    setFilter(null);
     setSelected(0);
     setMode({ kind: "list" });
   };
@@ -283,7 +287,8 @@ function App() {
   const items = useMemo<Item[]>(() => {
     const mixed = mixResults(
       query,
-      spaces.map((v) => ({
+      // Con un filtro de tipo solo salen archivos de ese tipo.
+      (filter ? [] : spaces).map((v) => ({
         name: v.space.name,
         aliases: v.space.aliases,
         boost: v.boost ?? 1,
@@ -359,7 +364,9 @@ function App() {
     });
     const toItem = (m: (typeof mixed)[number]) =>
       m.kind === "space" ? spaceItem(m.item.view) : fileItem(m.item);
-    // Barra vacía: los Espacios y lo último que abriste, para llegar sin escribir.
+    // Barra vacía: los Espacios y lo último que abriste, para llegar sin escribir. Con un
+    // filtro y nada escrito aún, nada (la caja ya dice qué escribir).
+    if (!query.trim() && filter) return [];
     if (!query.trim()) {
       const opened = recent.map((r): Item => ({
         key: `recent-${r.fileId}`,
@@ -393,7 +400,7 @@ function App() {
       }));
       return [...mixed.map(toItem), ...opened];
     }
-    const builtins = matchBuiltins(query).map((c) => ({
+    const builtins = (filter ? [] : matchBuiltins(query)).map((c) => ({
       key: `builtin-${c.id}`,
       section: "commands" as const,
       title: c.title,
@@ -418,7 +425,7 @@ function App() {
       );
     }
     return list;
-  }, [query, spaces, launch, fileHits, recent, fileIcons]);
+  }, [query, filter, spaces, launch, fileHits, recent, fileIcons]);
 
   const starts = useMemo(
     () => sectionStarts(items.map((i) => i.section)),
@@ -435,6 +442,17 @@ function App() {
   }, [selected]);
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    const box = e.currentTarget;
+    if (
+      e.key === "Backspace" &&
+      filter &&
+      box.selectionStart === 0 &&
+      box.selectionEnd === 0
+    ) {
+      e.preventDefault();
+      setFilter(null);
+      return;
+    }
     // Por la tecla física (`code`) y no por el carácter (`key`): con el teclado español
     // la coma no siempre llega como "," con Ctrl pulsado.
     if (e.ctrlKey && (e.code === "Comma" || e.code === "KeyN")) {
@@ -509,27 +527,54 @@ function App() {
 
   return (
     <main ref={rootRef} className="sift-from flex h-full flex-col bg-surface">
-      <input
-        ref={inputRef}
-        autoFocus
-        value={query}
-        onChange={(e) => {
-          setQuery(e.currentTarget.value);
-          setSelected(0); // al escribir, la selección vuelve al primer resultado
-          setMode({ kind: "list" });
-        }}
-        onKeyDown={onKeyDown}
-        // Mientras se abre un Espacio, escribir no cambia nada (Esc sigue cancelando).
-        readOnly={mode.kind === "running"}
-        placeholder="Buscar en Sift…"
-        spellCheck={false}
-        role="combobox"
-        aria-label="Buscar"
-        aria-expanded={mode.kind === "list" && items.length > 0}
-        aria-controls="results"
-        aria-activedescendant={activeId}
-        className="w-full border-b border-line bg-transparent px-5 py-4 text-xl text-fg outline-none placeholder:text-muted"
-      />
+      <div className="flex items-center gap-2 border-b border-line px-5">
+        {filter && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onMouseDown={(e) => e.preventDefault()} // que la caja no pierda el foco
+            onClick={() => setFilter(null)}
+            title="Quitar el filtro (Retroceso al principio de la caja)"
+            className="shrink-0 rounded-item bg-selected px-2 py-0.5 text-sm text-fg hover:bg-hover"
+          >
+            {filter.label}{" "}
+            <span aria-hidden className="text-muted">
+              ×
+            </span>
+          </button>
+        )}
+        <input
+          ref={inputRef}
+          autoFocus
+          value={query}
+          onChange={(e) => {
+            const text = e.currentTarget.value;
+            // «pdf » al principio: se convierte en la etiqueta y el resto es la búsqueda.
+            const detected = filter ? null : detectFilter(text);
+            if (detected) {
+              setFilter(detected.filter);
+              setQuery(detected.rest);
+            } else {
+              setQuery(text);
+            }
+            setSelected(0); // al escribir, la selección vuelve al primer resultado
+            setMode({ kind: "list" });
+          }}
+          onKeyDown={onKeyDown}
+          // Mientras se abre un Espacio, escribir no cambia nada (Esc sigue cancelando).
+          readOnly={mode.kind === "running"}
+          placeholder={
+            filter ? `Buscar en tus ${filter.plural}…` : "Buscar en Sift…"
+          }
+          spellCheck={false}
+          role="combobox"
+          aria-label="Buscar"
+          aria-expanded={mode.kind === "list" && items.length > 0}
+          aria-controls="results"
+          aria-activedescendant={activeId}
+          className="min-w-0 flex-1 bg-transparent py-4 text-xl text-fg outline-none placeholder:text-muted"
+        />
+      </div>
 
       <div className="min-h-0 flex-1">
         {mode.kind === "confirm" ? (
@@ -613,7 +658,11 @@ function App() {
           </ul>
         ) : (
           <p className="p-6 text-center text-muted">
-            Sin resultados para «{query}»
+            {filter && !query.trim()
+              ? `Escribe qué buscar en tus ${filter.plural}`
+              : filter
+                ? `Sin ${filter.plural} para «${query}»`
+                : `Sin resultados para «${query}»`}
           </p>
         )}
       </div>
