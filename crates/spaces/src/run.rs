@@ -446,6 +446,29 @@ pub fn label(action: &Action) -> String {
     }
 }
 
+/// El texto del diálogo de Windows que pide confirmar comandos nuevos. La confirmación va
+/// en un diálogo nativo (fuera del WebView) para que nada que se ejecute dentro de la
+/// interfaz pueda darla por buena (auditoría, A4).
+pub fn approval_message(owner: &str, commands: &[CommandSpec]) -> String {
+    let what = if commands.len() == 1 {
+        "un comando"
+    } else {
+        "estos comandos"
+    };
+    let mut text = format!("«{owner}» va a ejecutar {what} por primera vez:\n");
+    for c in commands {
+        text.push_str(&format!("\n    {}", display_command(c)));
+        if let Some(cwd) = &c.cwd {
+            text.push_str(&format!("\n        en {}", cwd.display()));
+        }
+    }
+    text.push_str(
+        "\n\nRevisa que sea lo que esperas. Solo se pregunta una vez por comando: si cambia, \
+         se vuelve a preguntar.",
+    );
+    text
+}
+
 /// Cómo se muestra un comando en la confirmación: cada argumento por separado y
 /// entrecomillado si tiene espacios, para que se vea exactamente qué se ejecutará.
 pub fn display_command(c: &CommandSpec) -> String {
@@ -1117,5 +1140,18 @@ mod tests {
         assert!(out[0].note.as_deref().unwrap().contains("cancelado"));
         assert!(!out[1].ran);
         assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
+    }
+
+    #[test]
+    fn the_approval_message_shows_each_command_and_where() {
+        let mut up = cmd("docker", &["compose", "up", "-d"]);
+        up.cwd = Some(PathBuf::from(r"C:\Proyecto"));
+        let one = approval_message("Bases de datos", std::slice::from_ref(&up));
+        assert!(one.starts_with("«Bases de datos» va a ejecutar un comando por primera vez:"));
+        assert!(one.contains("docker compose up -d"));
+        assert!(one.contains(r"en C:\Proyecto"));
+        assert!(!one.contains("  Solo"), "sin espacios de más: {one}");
+        let two = approval_message("X", &[up, cmd("code", &["."])]);
+        assert!(two.contains("estos comandos"));
     }
 }

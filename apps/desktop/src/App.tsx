@@ -36,11 +36,6 @@ import {
 
 type Ok<T> = Extract<T, { status: "ok" }> extends { data: infer D } ? D : never;
 type SpaceView = Ok<Awaited<ReturnType<typeof commands.listSpaces>>>[number];
-type RunReport = Ok<Awaited<ReturnType<typeof commands.runSpace>>>;
-type PendingCommand = Extract<
-  RunReport,
-  { status: "needsApproval" }
->["commands"][number];
 
 const BUILTIN_ICON: Record<BuiltinId, string> = {
   settings: "⚙️",
@@ -90,11 +85,9 @@ async function openFile(
   else done();
 }
 
-/** La barra está en uno de tres modos. */
+/** La barra está en uno de estos modos. */
 type Mode =
   | { kind: "list" }
-  /** Un Espacio va a ejecutar comandos por primera vez: hay que confirmarlos. */
-  | { kind: "confirm"; space: SpaceView; commands: PendingCommand[] }
   /** Un Espacio en marcha (con esperas puede tardar): por qué paso va. Esc cancela. */
   | {
       kind: "running";
@@ -242,7 +235,7 @@ function App() {
     return () => void stop.then((f) => f());
   }, []);
 
-  const launch = useCallback(async (view: SpaceView, approve: boolean) => {
+  const launch = useCallback(async (view: SpaceView) => {
     const title = view.space.name;
     running.current = true;
     cancelRequested.current = false;
@@ -253,7 +246,7 @@ function App() {
         setMode({ kind: "running", title, progress: null, cancelling: false }),
       300,
     );
-    const result = await commands.runSpace(view.space.id, approve);
+    const result = await commands.runSpace(view.space.id);
     clearTimeout(slow);
     running.current = false;
     if (result.status === "error") {
@@ -268,8 +261,10 @@ function App() {
       return;
     }
     const report = result.data;
-    if (report.status === "needsApproval") {
-      setMode({ kind: "confirm", space: view, commands: report.commands });
+    // Había comandos nuevos y en el diálogo de Windows se eligió «Cancelar»: no se lanzó
+    // nada, la barra vuelve a la lista.
+    if (report.status === "declined") {
+      setMode({ kind: "list" });
       return;
     }
     const summary = summarize(report.outcomes, cancelRequested.current);
@@ -308,7 +303,7 @@ function App() {
           name={view.space.name}
         />
       ),
-      activate: () => void launch(view, false),
+      activate: () => void launch(view),
     });
     const fileItem = (hit: FileHit): Item => ({
       key: `file-${hit.fileId}`,
@@ -473,16 +468,6 @@ function App() {
         return;
       }
     }
-    if (mode.kind === "confirm") {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        void launch(mode.space, true);
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setMode({ kind: "list" });
-      }
-      return;
-    }
     if (mode.kind === "running") {
       // Esc cancela: lo ya abierto sigue abierto; al acabar, el resumen.
       if (e.key === "Escape") {
@@ -577,12 +562,7 @@ function App() {
       </div>
 
       <div className="min-h-0 flex-1">
-        {mode.kind === "confirm" ? (
-          <ConfirmPanel
-            space={mode.space.space.name}
-            commands={mode.commands}
-          />
-        ) : mode.kind === "running" ? (
+        {mode.kind === "running" ? (
           <RunningPanel
             title={mode.title}
             progress={mode.progress}
@@ -668,12 +648,7 @@ function App() {
       </div>
 
       <footer className="flex items-center gap-4 border-t border-line px-5 py-2 text-xs text-muted">
-        {mode.kind === "confirm" ? (
-          <>
-            <span>↵ ejecutar</span>
-            <span>Esc volver</span>
-          </>
-        ) : mode.kind === "running" ? (
+        {mode.kind === "running" ? (
           <span>Esc cancelar (lo ya abierto sigue abierto)</span>
         ) : mode.kind === "result" ? (
           <span>Esc cerrar</span>
@@ -724,47 +699,6 @@ function EmptyState() {
       >
         Crear tu primer Espacio <kbd className="ml-2 text-muted">↵</kbd>
       </button>
-    </div>
-  );
-}
-
-function ConfirmPanel({
-  space,
-  commands,
-}: {
-  space: string;
-  commands: PendingCommand[];
-}) {
-  return (
-    <div
-      role="alertdialog"
-      aria-labelledby="confirm-title"
-      className="h-full overflow-y-auto p-5"
-    >
-      <p id="confirm-title" className="mb-1 text-[15px]">
-        «{space}» va a ejecutar{" "}
-        {commands.length === 1 ? "un comando" : "estos comandos"} por primera
-        vez
-      </p>
-      <p className="mb-4 text-xs text-muted">
-        Revisa que sea lo que esperas. Solo se pregunta una vez por comando: si
-        cambia, se vuelve a preguntar.
-      </p>
-      <ul className="space-y-2">
-        {commands.map((c) => (
-          <li
-            key={c.display}
-            className="rounded-item bg-selected px-3 py-2 font-mono text-[13px] select-text"
-          >
-            {c.display}
-            {c.command.cwd && (
-              <span className="mt-1 block text-xs text-muted">
-                en {c.command.cwd}
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
