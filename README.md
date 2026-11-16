@@ -106,6 +106,12 @@ Comprobaciones (la CI, en local: lo mismo que el workflow de GitHub, que solo se
 powershell -ExecutionPolicy Bypass -File scripts/ci.ps1
 ```
 
+Prueba de extremo a extremo (arranca la versión de desarrollo con sus datos de prueba y **abre ventanas**; comprueba la barra, la búsqueda y Ajustes, y deja capturas en `target/e2e/`):
+
+```bash
+node scripts/e2e.mjs
+```
+
 ## Decisiones de arquitectura
 
 - [ADR 0001](docs/adr/0001-tauri-y-almacenamiento.md): Tauri 2; SQLite + Tantivy + HNSW.
