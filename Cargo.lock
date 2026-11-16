@@ -4582,6 +4582,7 @@ dependencies = [
  "sift-storage",
  "tempfile",
  "thiserror 2.0.21",
+ "tracing",
  "walkdir",
  "zip",
 ]
