@@ -1,440 +1,88 @@
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  commands,
-  events,
-  type FileHit,
-  type RecentFile,
-  type Segment,
-  type SpaceProgress_Deserialize as SpaceProgress,
-} from "./bindings";
+// La barra: la caja de búsqueda, la lista (o un panel) y el pie con los atajos. Aquí solo
+// se junta todo y se maneja el teclado; cada parte vive en `launcher/`.
+
+import { useCallback, useMemo, useRef, useState } from "react";
+import { commands } from "./bindings";
 import { dismissLauncher, useLauncher } from "./useLauncher";
-import { matchBuiltins, type BuiltinId } from "./launcher/builtins";
 import { detectFilter, type TypeFilter } from "./launcher/filters";
-import { mixResults } from "./launcher/mix";
+import { buildItems, type Item } from "./launcher/items";
+import { failedMode, type Mode } from "./launcher/mode";
 import {
-  progressText,
-  summarize,
-  type SummaryLine,
-} from "./launcher/runSummary";
+  EmptyState,
+  openSettings,
+  ResultPanel,
+  RunningPanel,
+} from "./launcher/panels";
+import { ResultsList } from "./launcher/ResultsList";
 import { moveSelection } from "./launcher/selection";
-import { SpaceIcon } from "./components/SpaceIcon";
-import {
-  SECTION_LABEL,
-  isLatest,
-  sectionStarts,
-  shortFolder,
-  type Section,
-} from "./launcher/files";
-
-type Ok<T> = Extract<T, { status: "ok" }> extends { data: infer D } ? D : never;
-type SpaceView = Ok<Awaited<ReturnType<typeof commands.listSpaces>>>[number];
-
-const BUILTIN_ICON: Record<BuiltinId, string> = {
-  settings: "⚙️",
-  newSpace: "➕",
-};
-
-/** Lo que la lista sabe pintar y ejecutar, venga de donde venga. */
-interface Item {
-  key: string;
-  section: Section;
-  title: ReactNode;
-  subtitle: ReactNode;
-  icon: ReactNode;
-  shortcut?: string;
-  /** Ruta del archivo (solo resultados de archivos): Ctrl+↵ carpeta, Ctrl+Shift+C copiar. */
-  path?: string;
-  activate: () => void;
-}
-
-/** Texto con las partes encontradas resaltadas (los trozos vienen de Rust). */
-function Highlighted({ segments }: { segments: Segment[] }) {
-  return (
-    <>
-      {segments.map((s, i) =>
-        s.hit ? (
-          <mark key={i} className="rounded-[2px] bg-accent/25 text-fg">
-            {s.text}
-          </mark>
-        ) : (
-          <span key={i}>{s.text}</span>
-        ),
-      )}
-    </>
-  );
-}
-
-/** Abre un archivo encontrado; si falla, el motivo va al panel de resultado. */
-/** Abre un archivo (un PDF, en `page` si la hay); si falla, el motivo va al panel. */
-async function openFile(
-  path: string,
-  page: number | null,
-  onError: (msg: string) => void,
-  done: () => void,
-) {
-  const r = await commands.openFile(path, page);
-  if (r.status === "error") onError(r.error.message);
-  else done();
-}
-
-/** La barra está en uno de estos modos. */
-type Mode =
-  | { kind: "list" }
-  /** Un Espacio en marcha (con esperas puede tardar): por qué paso va. Esc cancela. */
-  | {
-      kind: "running";
-      title: string;
-      progress: SpaceProgress | null;
-      cancelling: boolean;
-    }
-  /** Algo falló, se paró o se canceló: qué se ejecutó y qué no. */
-  | { kind: "result"; title: string; headline: string; lines: SummaryLine[] };
-
-const openSettings = (newSpace = false) => void commands.openSettings(newSpace);
-
-function subtitleFor(view: SpaceView): string {
-  const n = view.space.actions.length;
-  const actions = n === 1 ? "1 acción" : `${n} acciones`;
-  return view.space.aliases.length
-    ? `${actions} · ${view.space.aliases.join(", ")}`
-    : actions;
-}
+import { useBarData } from "./launcher/useBarData";
+import { useFileIcons, useFileSearch } from "./launcher/useFileSearch";
+import { useSpaceRun } from "./launcher/useSpaceRun";
 
 function App() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
-  const [spaces, setSpaces] = useState<SpaceView[]>([]);
-  const [iconsHidden, setIconsHidden] = useState(false);
   const [mode, setMode] = useState<Mode>({ kind: "list" });
-  const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-  const rootRef = useRef<HTMLElement>(null);
-  const [fileHits, setFileHits] = useState<FileHit[]>([]);
-  // «Abierto recientemente», para la barra vacía. No se borra al ocultarse: al abrir se
-  // pinta con la lista de la vez anterior y se pone al día después, sin esperar a Rust.
-  const [recent, setRecent] = useState<RecentFile[]>([]);
-  const [fileIcons, setFileIcons] = useState<Record<string, string | null>>({});
-  // Número de la última búsqueda pedida: las respuestas de búsquedas anteriores se ignoran.
-  const searchSeq = useRef(0);
   // Filtro rápido activo («pdf …»): una etiqueta junto a la caja; Retroceso lo quita.
   const [filter, setFilter] = useState<TypeFilter | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
 
-  // Búsqueda de archivos en Rust a cada tecla (es rápida: < 50 ms).
-  useEffect(() => {
-    const seq = ++searchSeq.current;
-    if (!query.trim()) {
-      // Sin consulta no hay archivos que mostrar (se limpia en la siguiente vuelta).
-      void Promise.resolve().then(
-        () => isLatest(seq, searchSeq.current) && setFileHits([]),
-      );
-      return;
-    }
-    void commands.searchFiles(query, seq, filter?.id ?? null).then((r) => {
-      if (r.status !== "ok" || !isLatest(r.data.seq, searchSeq.current)) return;
-      setFileHits(r.data.results.hits);
-    });
-  }, [query, filter]);
+  const { spaces, recent, iconsHidden, refresh } = useBarData();
+  const fileHits = useFileSearch(query, filter);
+  const icons = useFileIcons([...fileHits, ...recent].map((h) => h.path));
 
-  // Iconos de Windows de los archivos encontrados (una vez por ruta).
-  useEffect(() => {
-    const missing = [...fileHits, ...recent]
-      .map((h) => h.path)
-      .filter((p, i, all) => !(p in fileIcons) && all.indexOf(p) === i);
-    if (missing.length === 0) return;
-    let alive = true;
-    void commands.getIcons(missing).then((r) => {
-      if (!alive || r.status !== "ok") return;
-      setFileIcons((prev) => ({
-        ...prev,
-        ...Object.fromEntries(missing.map((p, i) => [p, r.data[i] ?? null])),
-      }));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [fileHits, recent, fileIcons]);
-
-  // Los Espacios y el ajuste de iconos se recargan cada vez que se abre la barra, así
-  // siempre reflejan lo último que se editó en Ajustes.
-  function refresh() {
-    return Promise.all([
-      commands.listSpaces(),
-      commands.getSettings(),
-      commands.recentFiles(),
-    ]).then(([list, settings, opened]) => {
-      if (list.status === "ok") setSpaces(list.data);
-      setIconsHidden(settings.iconsHidden);
-      if (opened.status === "ok") setRecent(opened.data);
-    });
-  }
-
-  useEffect(() => {
-    let alive = true;
-    void Promise.all([
-      commands.listSpaces(),
-      commands.getSettings(),
-      commands.recentFiles(),
-    ]).then(([list, settings, opened]) => {
-      if (!alive) return; // el componente ya no existe: no tocar su estado
-      if (list.status === "ok") setSpaces(list.data);
-      setIconsHidden(settings.iconsHidden);
-      if (opened.status === "ok") setRecent(opened.data);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const dismiss = () => dismissLauncher(rootRef.current);
-  const reset = () => {
+  const dismiss = useCallback(() => dismissLauncher(rootRef.current), []);
+  const reset = useCallback(() => {
     setQuery("");
     setFilter(null);
     setSelected(0);
     setMode({ kind: "list" });
-  };
+  }, []);
 
-  // Un Espacio con esperas puede seguir en marcha con la barra oculta. Mientras tanto no
-  // se limpia nada, y si al acabar hay algo que contar, se enseña al volver a abrirla.
-  const running = useRef(false);
-  const visible = useRef(true);
-  const keepResult = useRef(false);
-  const cancelRequested = useRef(false);
+  const { launch, cancel, shown, hidden } = useSpaceRun({
+    setMode,
+    onDone: dismiss,
+    onResetHidden: reset,
+  });
 
   useLauncher(
     rootRef,
     () => {
-      visible.current = true;
-      if (running.current || keepResult.current) {
-        keepResult.current = false;
-      } else {
-        reset();
-      }
+      // Si hay un Espacio en marcha o un resumen pendiente, se conserva.
+      if (!shown()) reset();
       inputRef.current?.focus();
       void refresh();
     },
     // Al ocultarse se limpia ya, con la ventana invisible: al volver no se ve lo de antes.
     () => {
-      visible.current = false;
-      if (!running.current) reset();
+      if (hidden()) reset();
     },
   );
 
-  // Por qué paso va el Espacio en marcha.
-  useEffect(() => {
-    const stop = events.spaceProgress.listen(({ payload }) =>
-      setMode((m) => (m.kind === "running" ? { ...m, progress: payload } : m)),
-    );
-    return () => void stop.then((f) => f());
-  }, []);
-
-  const launch = useCallback(async (view: SpaceView) => {
-    const title = view.space.name;
-    running.current = true;
-    cancelRequested.current = false;
-    // El panel «en marcha» solo si tarda: un Espacio normal se abre al instante y no
-    // debe parpadear.
-    const slow = setTimeout(
-      () =>
-        setMode({ kind: "running", title, progress: null, cancelling: false }),
-      300,
-    );
-    const result = await commands.runSpace(view.space.id);
-    clearTimeout(slow);
-    running.current = false;
-    if (result.status === "error") {
-      setMode({
-        kind: "result",
-        title,
-        headline: "No se pudo abrir",
-        lines: [
-          { label: title, state: "failed", detail: result.error.message },
-        ],
-      });
-      return;
-    }
-    const report = result.data;
-    // Había comandos nuevos y en el diálogo de Windows se eligió «Cancelar»: no se lanzó
-    // nada, la barra vuelve a la lista.
-    if (report.status === "declined") {
-      setMode({ kind: "list" });
-      return;
-    }
-    const summary = summarize(report.outcomes, cancelRequested.current);
-    if (summary.needsAttention) {
-      setMode({ kind: "result", title, ...summary });
-      // Con la barra oculta, que lo vea al volver a abrirla.
-      if (!visible.current) keepResult.current = true;
-    } else if (visible.current) {
-      dismissLauncher(rootRef.current);
-    } else {
-      reset();
-    }
-  }, []);
-
-  const items = useMemo<Item[]>(() => {
-    const mixed = mixResults(
-      query,
-      // Con un filtro de tipo solo salen archivos de ese tipo.
-      (filter ? [] : spaces).map((v) => ({
-        name: v.space.name,
-        aliases: v.space.aliases,
-        boost: v.boost ?? 1,
-        view: v,
-      })),
-      fileHits,
-    );
-    const spaceItem = (view: SpaceView): Item => ({
-      key: `space-${view.space.id}`,
-      section: "spaces",
-      title: view.space.name,
-      subtitle: subtitleFor(view),
-      icon: (
-        <SpaceIcon
-          icon={view.space.icon}
-          autoIcon={view.autoIcon}
-          name={view.space.name}
-        />
-      ),
-      activate: () => void launch(view),
-    });
-    const fileItem = (hit: FileHit): Item => ({
-      key: `file-${hit.fileId}`,
-      section: "files",
-      title: <Highlighted segments={hit.nameSegments} />,
-      // Con coincidencia en el contenido, el fragmento; si no, la carpeta. Lo que llega
-      // solo por significado no tiene palabras que resaltar: se dice, para que se
-      // entienda por qué está ahí.
-      subtitle: (
-        <>
-          {hit.byMeaning && (
-            <span
-              className="text-accent"
-              title="No contiene tus palabras: Sift lo ha encontrado por su significado"
-            >
-              Por significado ·{" "}
-            </span>
-          )}
-          {hit.page != null && (
-            <span title="Se abre en esta página">pág. {hit.page} · </span>
-          )}
-          {hit.snippet.length ? (
-            <Highlighted segments={hit.snippet} />
-          ) : (
-            shortFolder(hit.path)
-          )}
-        </>
-      ),
-      icon: fileIcons[hit.path] ? (
-        <img
-          src={fileIcons[hit.path]!}
-          alt=""
-          className="size-6"
-          draggable={false}
-        />
-      ) : (
-        <span className="size-6" />
-      ),
-      path: hit.path,
-      activate: () =>
-        void openFile(
-          hit.path,
-          hit.page ?? null,
-          (msg) =>
-            setMode({
-              kind: "result",
-              title: hit.name,
-              headline: "No se pudo abrir",
-              lines: [{ label: hit.name, state: "failed", detail: msg }],
-            }),
-          () => dismissLauncher(rootRef.current),
-        ),
-    });
-    const toItem = (m: (typeof mixed)[number]) =>
-      m.kind === "space" ? spaceItem(m.item.view) : fileItem(m.item);
-    // Barra vacía: los Espacios y lo último que abriste, para llegar sin escribir. Con un
-    // filtro y nada escrito aún, nada (la caja ya dice qué escribir).
-    if (!query.trim() && filter) return [];
-    if (!query.trim()) {
-      const opened = recent.map((r): Item => ({
-        key: `recent-${r.fileId}`,
-        section: "recent",
-        title: r.name,
-        subtitle: shortFolder(r.path),
-        icon: fileIcons[r.path] ? (
-          <img
-            src={fileIcons[r.path]!}
-            alt=""
-            className="size-6"
-            draggable={false}
-          />
-        ) : (
-          <span className="size-6" />
-        ),
-        path: r.path,
-        activate: () =>
-          void openFile(
-            r.path,
-            null,
-            (msg) =>
-              setMode({
-                kind: "result",
-                title: r.name,
-                headline: "No se pudo abrir",
-                lines: [{ label: r.name, state: "failed", detail: msg }],
-              }),
-            () => dismissLauncher(rootRef.current),
-          ),
-      }));
-      return [...mixed.map(toItem), ...opened];
-    }
-    const builtins = (filter ? [] : matchBuiltins(query)).map((c) => ({
-      key: `builtin-${c.id}`,
-      section: "commands" as const,
-      title: c.title,
-      subtitle: c.subtitle,
-      icon: <span className="text-xl">{BUILTIN_ICON[c.id]}</span>,
-      shortcut: c.shortcut,
-      activate: () => openSettings(c.id === "newSpace"),
-    }));
-    // Primero los Espacios que encajan exactamente, luego los comandos de la propia app y,
-    // al final, archivos con los Espacios que encajan a medias intercalados (ver
-    // `mixResults`). Los comandos solo salen si lo escrito encaja con su nombre
-    // («ajustes»), y son uno o dos: detrás de cientos de archivos no se encontrarían.
-    const exact = mixed.filter((m) => m.kind === "space" && m.exact);
-    const rest = mixed.filter((m) => !(m.kind === "space" && m.exact));
-    const list = [...exact.map(toItem), ...builtins, ...rest.map(toItem)];
-    // Sin cabeceras (Espacios intercalados entre archivos), cada Espacio dice qué es.
-    if (sectionStarts(list.map((i) => i.section)).size === 0) {
-      return list.map((i) =>
-        i.section === "spaces"
-          ? { ...i, subtitle: <>Espacio · {i.subtitle}</> }
-          : i,
-      );
-    }
-    return list;
-  }, [query, filter, spaces, launch, fileHits, recent, fileIcons]);
-
-  const starts = useMemo(
-    () => sectionStarts(items.map((i) => i.section)),
-    [items],
+  const open = useCallback(
+    (path: string, name: string, page: number | null) =>
+      void commands.openFile(path, page).then((r) => {
+        if (r.status === "error") setMode(failedMode(name, r.error.message));
+        else dismiss();
+      }),
+    [dismiss],
   );
 
-  const isEmpty = spaces.length === 0 && recent.length === 0 && !query.trim();
+  const items = useMemo(
+    () => buildItems({ query, filter, spaces, fileHits, recent, icons }),
+    [query, filter, spaces, fileHits, recent, icons],
+  );
 
-  // Que el elemento seleccionado siempre quede a la vista al moverse con las flechas.
-  useEffect(() => {
-    listRef.current
-      ?.querySelector(`[data-index="${selected}"]`)
-      ?.scrollIntoView({ block: "nearest" });
-  }, [selected]);
+  /** Lo que pasa al elegir una fila (Enter o clic). */
+  const activate = (item: Item) => {
+    const a = item.action;
+    if (a.kind === "space") void launch(a.view);
+    else if (a.kind === "file") open(a.path, a.name, a.page);
+    else openSettings(a.newSpace);
+  };
+
+  const isEmpty = spaces.length === 0 && recent.length === 0 && !query.trim();
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     const box = e.currentTarget;
@@ -469,12 +117,9 @@ function App() {
       }
     }
     if (mode.kind === "running") {
-      // Esc cancela: lo ya abierto sigue abierto; al acabar, el resumen.
       if (e.key === "Escape") {
         e.preventDefault();
-        cancelRequested.current = true;
-        void commands.cancelSpaceRun();
-        setMode({ ...mode, cancelling: true });
+        cancel();
       }
       return;
     }
@@ -496,7 +141,7 @@ function App() {
       case "Enter":
         e.preventDefault();
         if (isEmpty) openSettings(true);
-        else items[selected]?.activate();
+        else if (items[selected]) activate(items[selected]);
         break;
       case "Escape":
         e.preventDefault();
@@ -577,65 +222,13 @@ function App() {
         ) : isEmpty ? (
           <EmptyState />
         ) : items.length > 0 ? (
-          <ul
-            id="results"
-            ref={listRef}
-            role="listbox"
-            aria-label="Resultados"
-            className="h-full overflow-y-auto p-2"
-          >
-            {items.map((item, i) => (
-              <Fragment key={item.key}>
-                {starts.has(i) && (
-                  // Cabecera de sección: no se puede seleccionar (no es una opción).
-                  <li
-                    role="presentation"
-                    className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wide text-muted uppercase first:pt-0"
-                  >
-                    {SECTION_LABEL[item.section]}
-                  </li>
-                )}
-                <li
-                  id={`result-${item.key}`}
-                  data-index={i}
-                  role="option"
-                  aria-selected={i === selected}
-                  onMouseMove={() => setSelected(i)}
-                  onMouseDown={(e) => e.preventDefault()} // que el input no pierda el foco
-                  onClick={item.activate}
-                  className="sift-option flex items-center gap-3 px-3 py-2"
-                >
-                  {!iconsHidden && (
-                    <span
-                      className="flex w-7 shrink-0 items-center justify-center"
-                      aria-hidden
-                    >
-                      {item.icon}
-                    </span>
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px]">
-                      {item.title}
-                    </span>
-                    <span className="block truncate text-xs text-muted">
-                      {item.subtitle}
-                    </span>
-                  </span>
-                  {item.shortcut ? (
-                    <kbd className="text-xs text-muted" aria-hidden>
-                      {item.shortcut}
-                    </kbd>
-                  ) : (
-                    i === selected && (
-                      <kbd className="text-xs text-muted" aria-hidden>
-                        ↵
-                      </kbd>
-                    )
-                  )}
-                </li>
-              </Fragment>
-            ))}
-          </ul>
+          <ResultsList
+            items={items}
+            selected={selected}
+            iconsHidden={iconsHidden}
+            onHover={setSelected}
+            onActivate={activate}
+          />
         ) : (
           <p className="p-6 text-center text-muted">
             {filter && !query.trim()
@@ -680,105 +273,6 @@ function App() {
         </button>
       </footer>
     </main>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-      <p className="text-lg">Aún no tienes Espacios</p>
-      <p className="max-w-sm text-sm text-muted">
-        Un Espacio abre de golpe todo lo de un contexto: carpetas, webs, apps y
-        comandos.
-      </p>
-      <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => openSettings(true)}
-        className="mt-2 rounded-item bg-selected px-4 py-2 text-sm"
-      >
-        Crear tu primer Espacio <kbd className="ml-2 text-muted">↵</kbd>
-      </button>
-    </div>
-  );
-}
-
-function RunningPanel({
-  title,
-  progress,
-  cancelling,
-}: {
-  title: string;
-  progress: SpaceProgress | null;
-  cancelling: boolean;
-}) {
-  return (
-    <div role="status" aria-live="polite" className="h-full p-5">
-      <p className="mb-1 text-[15px]">Abriendo «{title}»</p>
-      <p className="text-sm text-muted">
-        {cancelling
-          ? "Cancelando…"
-          : progress
-            ? progressText({ ...progress, waited: progress.waited ?? null })
-            : "Empezando…"}
-      </p>
-    </div>
-  );
-}
-
-const LINE_MARK: Record<SummaryLine["state"], { mark: string; cls: string }> = {
-  ok: { mark: "✓", cls: "text-success" },
-  warning: { mark: "!", cls: "text-accent" },
-  failed: { mark: "✕", cls: "text-danger" },
-  cancelled: { mark: "✕", cls: "text-muted" },
-  notRun: { mark: "–", cls: "text-muted" },
-};
-
-function ResultPanel({
-  title,
-  headline,
-  lines,
-}: {
-  title: string;
-  headline: string;
-  lines: SummaryLine[];
-}) {
-  return (
-    <div role="alert" className="h-full overflow-y-auto p-5">
-      <p className="mb-3 text-[15px]">
-        «{title}»: {headline}
-      </p>
-      <ul className="space-y-1.5 text-sm select-text">
-        {lines.map((l, i) => (
-          <li key={i} className="flex gap-2">
-            <span
-              aria-hidden
-              className={`w-4 shrink-0 text-center ${LINE_MARK[l.state].cls}`}
-            >
-              {LINE_MARK[l.state].mark}
-            </span>
-            <span className="min-w-0">
-              <span className={l.state === "notRun" ? "text-muted" : ""}>
-                {l.label}
-                {l.state === "notRun" && " (no se ejecutó)"}
-              </span>
-              {l.detail && (
-                <span
-                  className={`block font-mono text-xs whitespace-pre-wrap ${
-                    l.state === "failed" ? "text-danger" : "text-muted"
-                  }`}
-                >
-                  {l.detail}
-                </span>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-4 text-xs text-muted">
-        Revisa el Espacio en Ajustes si hace falta.
-      </p>
-    </div>
   );
 }
 

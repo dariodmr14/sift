@@ -8,10 +8,14 @@
 # Opciones (solo para ir más rápido mientras se trabaja; antes de un merge, sin ninguna):
 #   -SkipInstall   no ejecuta `npm ci` (usa node_modules tal como esté)
 #   -SkipBuild     no compila la app en release (el paso más lento)
+#   -E2E           añade la prueba de humo de extremo a extremo (scripts/e2e.mjs): arranca la
+#                  versión de desarrollo y ABRE VENTANAS en la pantalla, así que no va por
+#                  defecto (pruebas en pantalla, con permiso de Darío).
 
 param(
     [switch]$SkipInstall,
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [switch]$E2E
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,7 +38,8 @@ $Steps = @(
     @{ Name = "UI: eslint";              Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "lint") },
     @{ Name = "UI: tsc";                 Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "typecheck") },
     @{ Name = "UI: vitest";              Dir = $Desktop; Cmd = "npm.cmd"; Args = @("test") },
-    @{ Name = "Build de la app";         Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "tauri", "build", "--", "--no-bundle"); Skip = $SkipBuild }
+    @{ Name = "Build de la app";         Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "tauri", "build", "--", "--no-bundle"); Skip = $SkipBuild },
+    @{ Name = "E2E (abre ventanas)";     Dir = $Root;    Cmd = "node"; Args = @((Join-Path $Root "scripts\e2e.mjs")); Skip = -not $E2E }
 )
 
 $Results = @()
