@@ -14,8 +14,8 @@ type TestState =
   /** Fue bien; en una espera, lo que se ha visto («responde ahora mismo»). */
   | { kind: "ok"; message?: string }
   | { kind: "error"; message: string }
-  /** Es un comando que nunca se ha ejecutado: se muestra y se pide confirmar. */
-  | { kind: "confirm"; display: string };
+  /** Pedía confirmar un comando nuevo y en el diálogo se eligió «Cancelar». */
+  | { kind: "declined" };
 
 interface Props {
   action: Action;
@@ -49,7 +49,7 @@ export function ActionEditor({
     onChange(next);
   };
 
-  async function runTest(approve: boolean) {
+  async function runTest() {
     setTest({ kind: "running" });
     // Una espera no se ejecuta: se comprueba una vez, ahora, sin lanzar el Espacio.
     if (action.kind === "wait") {
@@ -60,15 +60,10 @@ export function ActionEditor({
           : { kind: "error", message: r.error.message },
       );
     }
-    const r = await commands.testAction(action, approve);
+    const r = await commands.testAction(action);
     if (r.status === "error")
       return setTest({ kind: "error", message: r.error.message });
-    if (r.data.status === "needsApproval") {
-      return setTest({
-        kind: "confirm",
-        display: r.data.commands.map((c) => c.display).join("\n"),
-      });
-    }
+    if (r.data.status === "declined") return setTest({ kind: "declined" });
     const failed = r.data.outcomes.find((o) => o.error);
     setTest(
       failed ? { kind: "error", message: failed.error! } : { kind: "ok" },
@@ -107,7 +102,7 @@ export function ActionEditor({
           {ACTION_LABELS[action.kind]}
         </span>
         <Button
-          onClick={() => void runTest(false)}
+          onClick={() => void runTest()}
           disabled={
             test.kind === "running" ||
             (action.kind === "wait" && !canCheckNow(action))
@@ -248,24 +243,10 @@ export function ActionEditor({
         <p className="text-sm text-success">{test.message ?? "Funciona."}</p>
       )}
       {test.kind === "error" && <ErrorText>{test.message}</ErrorText>}
-      {test.kind === "confirm" && (
-        <div
-          role="alertdialog"
-          className="space-y-2 rounded-item bg-selected p-3 text-sm"
-        >
-          <p>Este comando se va a ejecutar por primera vez:</p>
-          <pre className="font-mono text-[13px] whitespace-pre-wrap select-text">
-            {test.display}
-          </pre>
-          <div className="flex gap-2">
-            <Button variant="primary" onClick={() => void runTest(true)}>
-              Ejecutar
-            </Button>
-            <Button variant="ghost" onClick={() => setTest({ kind: "idle" })}>
-              Cancelar
-            </Button>
-          </div>
-        </div>
+      {test.kind === "declined" && (
+        <p className="text-sm text-muted">
+          No se ejecutó: cancelaste la confirmación.
+        </p>
       )}
     </li>
   );
