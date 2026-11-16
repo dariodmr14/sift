@@ -60,8 +60,8 @@ Para no perderlo al pulir:
 |---|---|---|---|---|---|
 | A1 | En release, `panic = "abort"`: un fallo inesperado en **cualquier** hilo cierra Sift entero, sin aviso. | Si un extractor falla con un archivo raro (un PDF dañado, por ejemplo), Sift se cierra. Al arrancar vuelve a leer ese mismo archivo y se cierra otra vez: un **bucle de cierres**. Hoy no ha pasado, pero no hay nada que lo impida. | `error-handling`, `rust-patterns`, `production-audit` | medio | alto |
 | A2 | Si el hilo de indexado muere, nadie se entera. `sync()` y `smart_changed()` hacen `let _ = send(...)` y el estado se queda en lo último. | Arreglado A1, un fallo dejaría el indexado parado en silencio: los cambios en tus carpetas no se verían y Ajustes diría «Al día». | `error-handling` (fallos silenciosos) | medio | medio |
-| A3 | La CSP es mínima: `default-src 'self'; style-src 'self' 'unsafe-inline'`. Le faltan `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'` e `img-src 'self' data:` explícito. | Es defensa en profundidad: hoy solo se carga contenido propio, pero cuesta poco cerrar más. `'unsafe-inline'` en estilos hace falta por los `style={…}` de React; queda anotado como deuda. | `security-review` | bajo | medio |
-| A4 | La aprobación de comandos llega como `approve: true` desde la UI (`run_space`, `test_action`), y Rust se la cree. | Si algún día entrara contenido no confiable en el WebView, podría aprobar y ejecutar comandos. Lo sensato es que la aprobación sea un token de un solo uso que dé Rust con el `NeedsApproval`, o un diálogo nativo. | `security-review` | medio | medio |
+| A3 | La CSP es mínima: `default-src 'self'; style-src 'self' 'unsafe-inline'`. Le faltan `object-src 'none'`, `base-uri 'none'`, `frame-ancestors 'none'` e `img-src 'self' data:` explícito, y `connect-src ipc:`. | Es defensa en profundidad y, al revisarlo, **un posible fallo real**: Tauri solo aplica la CSP en la versión instalada (nunca en desarrollo), y sin `img-src data:` los iconos de la barra se bloquearían ahí. `'unsafe-inline'` en estilos hace falta por los `style={…}` de React; queda anotado como deuda. | `security-review` | bajo | alto |
+| A4 | La aprobación de comandos llega como `approve: true` desde la UI (`run_space`, `test_action`), y Rust se la cree. | Si algún día entrara contenido no confiable en el WebView, podría aprobar y ejecutar comandos. **Corrección al hacerlo:** un token de un solo uso no protege, porque quien llame desde la UI lo recibe. La confirmación tiene que salir del WebView: un **diálogo de Windows** desde Rust. | `security-review` | medio | medio |
 
 ### 🟢 Fase 7 (pulido y diseño)
 
@@ -121,7 +121,13 @@ Para no perderlo al pulir:
 
 ---
 
-## 4. Propuesta de orden para la Fase 7 (si apruebas)
+## Revisión de `.claude/` (hecha con «Arreglar ya»)
+
+- **Permisos del proyecto** (`.claude/settings.json`): se permiten `git add/commit/push` y `gh pr`/`gh run`, y se prohíbe forzar el push a `main`. Faltaba cerrar lo que CLAUDE.md prohíbe y nada impedía: **borrar `main` en GitHub** (`git push origin :main`, `git push --delete`), **forzar con `+rama`** a cualquier rama y `gh repo delete`. Ahora están prohibidos.
+- **`settings.local.json`** (no se sube a git): solo activa el paquete ECC.
+- **Ganchos de ECC:** 27 ganchos de Node que se ejecutan antes y después de cada herramienta y al empezar y acabar la sesión. Revisados sus scripts: ninguno sale a internet (el único que abre una conexión va a `localhost`, el lienzo de planes). Son de terceros y corren con tus permisos; si alguno estorba, se puede desactivar con `ecc:hookify-configure`.
+
+## 4. Propuesta de orden para la Fase 7 (aprobada)
 
 1. **Arreglar ya** (A1–A4), en un PR propio.
 2. **Base para pulir:** separar `App.tsx` (F18), tests de componentes (F19) y la prueba de humo de extremo a extremo (F20).
