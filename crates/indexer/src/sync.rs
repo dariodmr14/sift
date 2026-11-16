@@ -306,6 +306,20 @@ fn commit(ctx: Context<'_>, sink: &mut dyn IndexSink) -> Result<(), SyncError> {
     Ok(())
 }
 
+/// Lee un archivo con `extract`; si el lector falla de forma inesperada (un pánico), el
+/// archivo cuenta como dañado en vez de tumbar el indexado (auditoría, A1).
+fn extract_safely<T>(
+    path: &Path,
+    extract: impl FnOnce() -> Result<T, sift_extract::ExtractError>,
+) -> Result<T, sift_extract::ExtractError> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(extract)).unwrap_or_else(|_| {
+        tracing::error!(path = %path.display(), "fallo inesperado al leer el archivo");
+        Err(sift_extract::ExtractError::Damaged(
+            "fallo inesperado al leerlo".into(),
+        ))
+    })
+}
+
 /// Lee un archivo y lo guarda (SQLite primero, que es la fuente de verdad; luego el
 /// índice). `moved` son los archivos que acaban de desaparecer, por hash de contenido: si
 /// este es uno de ellos con otro nombre, se mueve en vez de leerse como nuevo.
@@ -328,7 +342,11 @@ fn index_file(
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let (text, hash, pages, error) = match ctx.extractor.extract(&path, MAX_CONTENT_BYTES) {
+    // Un fallo inesperado dentro de un lector (un archivo raro) no puede tumbar el
+    // indexado: el archivo queda como «dañado» y, como no se reintenta mientras no cambie,
+    // no vuelve a fallar en cada arranque.
+    let extracted = extract_safely(&path, || ctx.extractor.extract(&path, MAX_CONTENT_BYTES));
+    let (text, hash, pages, error) = match extracted {
         Ok(Some(e)) => (Some(e.text), Some(e.hash), e.pages, None),
         Ok(None) => (None, None, Vec::new(), None),
         Err(e) => (
@@ -669,6 +687,18 @@ pub fn recover(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn a_reader_that_panics_marks_the_file_as_damaged() {
+        let out: Result<(), sift_extract::ExtractError> =
+            extract_safely(Path::new(r"C:\Uni\raro.pdf"), || panic!("lector roto"));
+        let err = out.unwrap_err();
+        assert!(matches!(err, sift_extract::ExtractError::Damaged(_)));
+        assert_eq!(err.reason(), sift_extract::UnreadReason::Damaged);
+        // Lo normal pasa tal cual.
+        assert_eq!(extract_safely(Path::new("a.md"), || Ok(7)).unwrap(), 7);
+    }
+
     use super::*;
     use std::collections::HashMap;
 

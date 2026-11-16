@@ -82,5 +82,8 @@ todo = "warn"
 codegen-units = 1
 lto = true
 opt-level = 3
-panic = "abort"
+# `unwind` y no `abort`: un fallo inesperado al leer un archivo raro se puede atrapar y
+# apuntar el archivo como dañado. Con `abort` cerraba Sift entero y, al volver a leerlo al
+# arrancar, se cerraba otra vez (auditoría, A1).
+panic = "unwind"
 strip = true
