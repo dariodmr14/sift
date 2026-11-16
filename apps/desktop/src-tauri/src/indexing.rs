@@ -122,6 +122,11 @@ pub struct LastRun {
     pub seconds: f64,
 }
 
+/// Lo que dice Ajustes si un trabajo del indexado falla de forma inesperada.
+const PANIC_NOTE: &str = "Algo falló al revisar tus carpetas. Se volverá a intentar con el próximo cambio o al abrir Sift.";
+/// Lo que dice si el hilo de indexado se ha parado del todo.
+const STOPPED_NOTE: &str = "El indexado se ha parado por un fallo. Cierra Sift y vuelve a abrirlo.";
+
 /// Evento: el estado del indexado ha cambiado.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct IndexProgress(pub IndexStatus);
@@ -190,9 +195,21 @@ impl Indexing {
             target_vectors: None,
             unsaved_vectors: 0,
         };
+        let crashed = status.clone();
         let spawned = std::thread::Builder::new()
             .name("sift-indexing".into())
-            .spawn(move || worker.run(rx, pdfium_dir));
+            .spawn(move || {
+                // Lo que no atrapa cada trabajo (p. ej. al arrancar): queda dicho en el estado.
+                let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    worker.run(rx, pdfium_dir)
+                }));
+                if run.is_err() {
+                    tracing::error!("el hilo de indexado se ha parado por un fallo inesperado");
+                    let mut s = crashed.lock().unwrap_or_else(|p| p.into_inner());
+                    s.running = false;
+                    s.error = Some(STOPPED_NOTE.into());
+                }
+            });
         if let Err(e) = spawned {
             tracing::error!(error = %e, "no se pudo arrancar el hilo de indexado");
         }
@@ -209,12 +226,23 @@ impl Indexing {
 
     /// Pide una revisión (incremental) de todas las carpetas.
     pub fn sync(&self) {
-        let _ = self.jobs.send(Job::Sync);
+        self.send(Job::Sync);
     }
 
     /// Se ha cambiado la opción de búsqueda inteligente: se carga o se descarga.
     pub fn smart_changed(&self) {
-        let _ = self.jobs.send(Job::Smart);
+        self.send(Job::Smart);
+    }
+
+    /// Le pasa trabajo al hilo de indexado. Si ese hilo ya no está, no se calla: lo dice
+    /// en el estado, para que Ajustes no siga diciendo «Al día» (auditoría, A2).
+    fn send(&self, job: Job) {
+        if self.jobs.send(job).is_err() {
+            tracing::error!("el hilo de indexado no está en marcha");
+            let mut status = self.status.lock().unwrap_or_else(|p| p.into_inner());
+            status.running = false;
+            status.error = Some(STOPPED_NOTE.into());
+        }
     }
 
     /// Para la pasada en curso; la siguiente `sync` vuelve a empezar.
@@ -289,9 +317,23 @@ impl Worker {
                 match rx.try_recv() {
                     Ok(job) => job,
                     Err(mpsc::TryRecvError::Empty) => {
-                        let outcome = self.smart_work(&extractor, &rx);
-                        smart_pending = outcome.more;
-                        sync_pending |= outcome.sync;
+                        let outcome =
+                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                                self.smart_work(&extractor, &rx)
+                            }));
+                        match outcome {
+                            Ok(outcome) => {
+                                smart_pending = outcome.more;
+                                sync_pending |= outcome.sync;
+                            }
+                            Err(_) => {
+                                tracing::error!(
+                                    "fallo inesperado al preparar la búsqueda inteligente"
+                                );
+                                smart_pending = false;
+                                self.update(|s| s.error = Some(PANIC_NOTE.into()));
+                            }
+                        }
                         continue;
                     }
                     Err(mpsc::TryRecvError::Disconnected) => return,
@@ -302,22 +344,37 @@ impl Worker {
                     Err(_) => return, // la app se está cerrando
                 }
             };
-            match job {
-                Job::Paths(paths) => {
-                    let (paths, sync_too) = drain(&rx, paths);
-                    sync_pending |= sync_too;
-                    if self.changed(&extractor, paths).is_err() {
-                        sync_pending = true; // demasiados cambios o un fallo: revisión completa
+            // Un fallo inesperado en un trabajo no para el indexado: se apunta, se avisa en
+            // Ajustes y se sigue con el siguiente (auditoría, A2).
+            let handled = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                match job {
+                    Job::Paths(paths) => {
+                        let (paths, sync_too) = drain(&rx, paths);
+                        sync_pending |= sync_too;
+                        if self.changed(&extractor, paths).is_err() {
+                            sync_pending = true; // demasiados cambios o un fallo: revisión completa
+                        }
                     }
+                    Job::Sync => {
+                        // Varias peticiones seguidas = una sola pasada, que además cubre los
+                        // cambios sueltos que hubiera en cola.
+                        let _ = drain(&rx, Vec::new());
+                        self.cancel.store(false, Ordering::Relaxed);
+                        sync_pending = self.sync_all(&extractor, &rx);
+                    }
+                    Job::Smart => {}
                 }
-                Job::Sync => {
-                    // Varias peticiones seguidas = una sola pasada, que además cubre los
-                    // cambios sueltos que hubiera en cola.
-                    let _ = drain(&rx, Vec::new());
-                    self.cancel.store(false, Ordering::Relaxed);
-                    sync_pending = self.sync_all(&extractor, &rx);
-                }
-                Job::Smart => {}
+            }));
+            if handled.is_err() {
+                tracing::error!("fallo inesperado en el indexado; se sigue con lo siguiente");
+                // No se reintenta en bucle: la próxima revisión será con el siguiente cambio
+                // o al volver a abrir Sift.
+                sync_pending = false;
+                self.update(|s| {
+                    s.running = false;
+                    s.phase = IndexPhase::Idle;
+                    s.error = Some(PANIC_NOTE.into());
+                });
             }
             // Tras cualquier cambio puede haber textos nuevos que vectorizar.
             smart_pending = true;
