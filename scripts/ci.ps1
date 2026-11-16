@@ -25,7 +25,11 @@ $Steps = @(
     @{ Name = "PDFium (version fijada)"; Dir = $Root;    Cmd = "powershell"; Args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\fetch-pdfium.ps1")) },
     @{ Name = "Rust: clippy";            Dir = $Root;    Cmd = "cargo"; Args = @("clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings") },
     @{ Name = "Rust: tests";             Dir = $Root;    Cmd = "cargo"; Args = @("test", "--workspace", "--locked") },
+    # Fallos de seguridad conocidos en las dependencias (base de RustSec). Falla si hay
+    # alguna vulnerabilidad; los avisos de «sin mantener» se enseñan, pero no paran.
+    @{ Name = "Rust: dependencias";      Dir = $Root;    Cmd = "cargo"; Args = @("audit") },
     @{ Name = "UI: npm ci";              Dir = $Desktop; Cmd = "npm.cmd"; Args = @("ci"); Skip = $SkipInstall },
+    @{ Name = "UI: dependencias";        Dir = $Desktop; Cmd = "npm.cmd"; Args = @("audit", "--omit=dev", "--audit-level=moderate") },
     @{ Name = "UI: prettier";            Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "format:check") },
     @{ Name = "UI: eslint";              Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "lint") },
     @{ Name = "UI: tsc";                 Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "typecheck") },
@@ -36,6 +40,14 @@ $Steps = @(
 $Results = @()
 $Failed = $false
 $Started = Get-Date
+
+# `cargo audit` no viene con Rust: si falta, se dice cómo instalarlo en vez de fallar raro.
+& cargo audit --version *> $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Falta cargo-audit (revisa fallos de seguridad en las dependencias). Instálalo una vez con:" -ForegroundColor Red
+    Write-Host "  cargo install cargo-audit --locked" -ForegroundColor Red
+    exit 1
+}
 
 # `npm ci` borra node_modules entero y lo vuelve a instalar. Si algo lo tiene abierto
 # (`npm run tauri dev`, que deja Vite en marcha), Windows no deja borrar algunos archivos
