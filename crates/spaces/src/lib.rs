@@ -9,7 +9,7 @@ pub mod validate;
 
 pub use model::{Action, CommandSpec, Icon, OnTimeout, Space, SpaceDraft, WaitSpec, WaitUntil};
 pub use run::{
-    ActionOutcome, Child, NoProgress, Opener, POLL, Progress, Waiter, check_wait_now,
-    display_command, label, pending_approvals, run_action, run_actions,
+    ActionOutcome, Child, NoProgress, Opener, POLL, Progress, Waiter, approval_message,
+    check_wait_now, display_command, label, pending_approvals, run_action, run_actions,
 };
 pub use validate::{ValidationError, validate, validate_action};

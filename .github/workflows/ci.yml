@@ -44,6 +44,11 @@ jobs:
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Tests
         run: cargo test --workspace --locked
+      # Fallos de seguridad conocidos en las dependencias (RustSec), como en scripts/ci.ps1.
+      - name: Dependencias (cargo audit)
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit
 
   frontend:
     name: Frontend (prettier, eslint, tsc, vitest)
@@ -59,6 +64,7 @@ jobs:
           cache: npm
           cache-dependency-path: apps/desktop/package-lock.json
       - run: npm ci
+      - run: npm audit --omit=dev --audit-level=moderate
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck

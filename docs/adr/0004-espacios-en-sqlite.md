@@ -21,6 +21,8 @@ Los Espacios se adelantan a la Fase 1.5 (ver [FEEDBACK.md](../../FEEDBACK.md)). 
 
 **6. Los ajustes simples (atajo, "solo texto") siguen en `settings.json`.** El atajo se necesita al arrancar, antes que nada. El fichero es legible y editable a mano, y no tiene relaciones ni historial. Si los ajustes crecen o necesitan transacciones, se moverán a SQLite con una migración.
 
+**Actualización (2026-11-16, auditoría A4):** la confirmación ya no la da la interfaz con un `approve: true`, sino **Rust, con un diálogo de Windows** («Ejecutar» / «Cancelar») antes de apuntar ninguna aprobación. Así, nada que corriera dentro del WebView podría aprobar comandos por su cuenta. Un token de un solo uso no habría bastado: quien lo pidiera desde la interfaz lo recibiría.
+
 ## Consecuencias
 
 - Una migración publicada no se edita nunca: los cambios van en una nueva al final de `MIGRATIONS`.

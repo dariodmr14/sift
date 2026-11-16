@@ -43,16 +43,15 @@ export const commands = {
 	deleteSpace: (id: number) => typedError<null, AppError>(__TAURI_INVOKE("delete_space", { id })),
 	reorderSpaces: (ids: number[]) => typedError<null, AppError>(__TAURI_INVOKE("reorder_spaces", { ids })),
 	/**
-	 *  Ejecuta un Espacio guardado. Con `approve: false`, si hay comandos sin aprobar,
-	 *  devuelve `NeedsApproval` sin lanzar nada. Con `approve: true`, apunta como aprobados
-	 *  esos comandos y lo ejecuta.
+	 *  Ejecuta un Espacio guardado. Si tiene comandos que nunca se han ejecutado, Rust pide
+	 *  confirmarlos en un diálogo de Windows antes de lanzar nada (ver `run_with_approval`).
 	 */
-	runSpace: (id: number, approve: boolean) => typedError<RunReport_Serialize, AppError>(__TAURI_INVOKE("run_space", { id, approve })),
+	runSpace: (id: number) => typedError<RunReport_Serialize, AppError>(__TAURI_INVOKE("run_space", { id })),
 	/**
 	 *  El botón "probar" del editor: ejecuta una sola acción (aún sin guardar), con la misma
 	 *  regla de confirmación para los comandos.
 	 */
-	testAction: (action: Action_Deserialize, approve: boolean) => typedError<RunReport_Serialize, AppError>(__TAURI_INVOKE("test_action", { action, approve })),
+	testAction: (action: Action_Deserialize) => typedError<RunReport_Serialize, AppError>(__TAURI_INVOKE("test_action", { action })),
 	/**
 	 *  «Probar» de una espera: comprueba su condición una vez, ahora, sin ejecutar nada.
 	 *  `Ok` con lo que se ha visto; error con el motivo si no se cumple.
@@ -521,21 +520,6 @@ export type OnTimeout =
 
 export type PathKind = "file" | "folder";
 
-/**  Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar. */
-export type PendingCommand = PendingCommand_Serialize | PendingCommand_Deserialize;
-
-/**  Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar. */
-export type PendingCommand_Deserialize = {
-	command: CommandSpec_Deserialize,
-	display: string,
-};
-
-/**  Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar. */
-export type PendingCommand_Serialize = {
-	command: CommandSpec_Serialize,
-	display: string,
-};
-
 /**  Dónde se coloca una ventana al abrir una acción. */
 export type Placement = Placement_Serialize | Placement_Deserialize;
 
@@ -597,19 +581,19 @@ export type RunReport = RunReport_Serialize | RunReport_Deserialize;
 
 export type RunReport_Deserialize = 
 /**
- *  Hay comandos que nunca se han ejecutado: la UI tiene que pedir confirmación y
- *  volver a llamar con `approve: true`. No se ha lanzado nada.
+ *  Había comandos nuevos y, en el diálogo de confirmación, se eligió no ejecutarlos.
+ *  No se ha lanzado nada.
  */
-{ status: "needsApproval"; commands: PendingCommand_Deserialize[] } | 
+{ status: "declined" } | 
 /**  Se lanzaron las acciones; cada una con su resultado. */
 { status: "done"; outcomes: ActionOutcome_Deserialize[] };
 
 export type RunReport_Serialize = 
 /**
- *  Hay comandos que nunca se han ejecutado: la UI tiene que pedir confirmación y
- *  volver a llamar con `approve: true`. No se ha lanzado nada.
+ *  Había comandos nuevos y, en el diálogo de confirmación, se eligió no ejecutarlos.
+ *  No se ha lanzado nada.
  */
-{ status: "needsApproval"; commands: PendingCommand_Serialize[] } | 
+{ status: "declined" } | 
 /**  Se lanzaron las acciones; cada una con su resultado. */
 { status: "done"; outcomes: ActionOutcome_Serialize[] };
 

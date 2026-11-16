@@ -6,9 +6,7 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
-use sift_spaces::{
-    Action, ActionOutcome, CommandSpec, Icon, NoProgress, Progress, Space, SpaceDraft, WaitSpec,
-};
+use sift_spaces::{Action, ActionOutcome, Icon, NoProgress, Progress, Space, SpaceDraft, WaitSpec};
 use sift_storage::{Database, StorageError};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -49,20 +47,12 @@ pub struct SpaceView {
     pub boost: f64,
 }
 
-/// Un comando pendiente de confirmar, con el texto exacto que se va a ejecutar.
-#[derive(Debug, Clone, Serialize, specta::Type)]
-#[serde(rename_all = "camelCase")]
-pub struct PendingCommand {
-    pub command: CommandSpec,
-    pub display: String,
-}
-
 #[derive(Debug, Clone, Serialize, specta::Type)]
 #[serde(tag = "status", rename_all = "camelCase")]
 pub enum RunReport {
-    /// Hay comandos que nunca se han ejecutado: la UI tiene que pedir confirmación y
-    /// volver a llamar con `approve: true`. No se ha lanzado nada.
-    NeedsApproval { commands: Vec<PendingCommand> },
+    /// Había comandos nuevos y, en el diálogo de confirmación, se eligió no ejecutarlos.
+    /// No se ha lanzado nada.
+    Declined,
     /// Se lanzaron las acciones; cada una con su resultado.
     Done { outcomes: Vec<ActionOutcome> },
 }
@@ -189,13 +179,12 @@ pub fn reorder_spaces(app: AppHandle, ids: Vec<i32>) -> Result<(), AppError> {
     Ok(app.state::<Db>().lock().reorder_spaces(&ids)?)
 }
 
-/// Ejecuta un Espacio guardado. Con `approve: false`, si hay comandos sin aprobar,
-/// devuelve `NeedsApproval` sin lanzar nada. Con `approve: true`, apunta como aprobados
-/// esos comandos y lo ejecuta.
+/// Ejecuta un Espacio guardado. Si tiene comandos que nunca se han ejecutado, Rust pide
+/// confirmarlos en un diálogo de Windows antes de lanzar nada (ver `run_with_approval`).
 #[tauri::command]
 #[specta::specta]
-pub async fn run_space(app: AppHandle, id: i32, approve: bool) -> Result<RunReport, AppError> {
-    let actions = app.state::<Db>().lock().get_space(id.into())?.draft.actions;
+pub async fn run_space(app: AppHandle, id: i32) -> Result<RunReport, AppError> {
+    let draft = app.state::<Db>().lock().get_space(id.into())?.draft;
     tracing::info!(space = id, "ejecutando Espacio");
     let run = app.state::<SpaceRun>();
     if run.running.swap(true, Ordering::SeqCst) {
@@ -204,13 +193,13 @@ pub async fn run_space(app: AppHandle, id: i32, approve: bool) -> Result<RunRepo
         ));
     }
     run.cancel.store(false, Ordering::SeqCst);
-    let report = run_with_approval(app.clone(), actions, approve, true).await;
+    let report = run_with_approval(app.clone(), draft.actions, &draft.name, true).await;
     app.state::<SpaceRun>()
         .running
         .store(false, Ordering::SeqCst);
     let report = report?;
-    // Cuenta como abierto si se lanzó (aunque alguna acción fallara), no si quedó
-    // esperando confirmación.
+    // Cuenta como abierto si se lanzó (aunque alguna acción fallara), no si se canceló la
+    // confirmación.
     if matches!(report, RunReport::Done { .. })
         && let Err(e) = app.state::<Db>().lock().record_space_open(id.into())
     {
@@ -223,18 +212,18 @@ pub async fn run_space(app: AppHandle, id: i32, approve: bool) -> Result<RunRepo
 /// regla de confirmación para los comandos.
 #[tauri::command]
 #[specta::specta]
-pub async fn test_action(
-    app: AppHandle,
-    action: Action,
-    approve: bool,
-) -> Result<RunReport, AppError> {
-    run_with_approval(app, vec![action], approve, false).await
+pub async fn test_action(app: AppHandle, action: Action) -> Result<RunReport, AppError> {
+    run_with_approval(app, vec![action], "Esta acción", false).await
 }
 
+/// Ejecuta acciones. Si hay comandos que nunca se han ejecutado, primero los enseña en un
+/// **diálogo de Windows** y solo sigue si se elige «Ejecutar». La confirmación no la da la
+/// interfaz (un `approve: true` desde el WebView): así, nada que corriera dentro de la
+/// interfaz podría aprobar comandos por su cuenta (auditoría, A4).
 async fn run_with_approval(
     app: AppHandle,
     actions: Vec<Action>,
-    approve: bool,
+    owner: &str,
     with_progress: bool,
 ) -> Result<RunReport, AppError> {
     let pending = {
@@ -244,16 +233,25 @@ async fn run_with_approval(
         sift_spaces::pending_approvals(&actions, |c| db.is_command_approved(c).unwrap_or(false))
     };
     if !pending.is_empty() {
-        if !approve {
-            return Ok(RunReport::NeedsApproval {
-                commands: pending
-                    .into_iter()
-                    .map(|command| PendingCommand {
-                        display: sift_spaces::display_command(&command),
-                        command,
-                    })
-                    .collect(),
-            });
+        let message = sift_spaces::approval_message(owner, &pending);
+        let dialog = app.clone();
+        let approved = run_blocking(move || {
+            use tauri_plugin_dialog::{MessageDialogButtons, MessageDialogKind};
+            Ok(dialog
+                .dialog()
+                .message(message)
+                .title("Sift: confirmar comandos")
+                .kind(MessageDialogKind::Warning)
+                .buttons(MessageDialogButtons::OkCancelCustom(
+                    "Ejecutar".into(),
+                    "Cancelar".into(),
+                ))
+                .blocking_show())
+        })
+        .await?;
+        if !approved {
+            tracing::info!("comandos nuevos no confirmados: no se ejecuta nada");
+            return Ok(RunReport::Declined);
         }
         let db = app.state::<Db>();
         let mut db = db.lock();
