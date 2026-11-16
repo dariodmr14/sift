@@ -8,6 +8,8 @@ El plan completo, con fases y criterios de "hecho", está en [PLAN.md](PLAN.md).
 - Editor: VS Code. Darío usa GitHub Desktop para sus repos de la uni; en Sift, Claude se encarga de GitHub (ver «Flujo de GitHub»).
 
 ## Cómo trabajamos
+- **Idioma:** responde siempre a Darío en español. El código, los comentarios técnicos en inglés si ya lo están, y los mensajes de commit pueden seguir en inglés.
+- Pruebas en pantalla (abrir ventanas, ratón, teclado): pide permiso antes; si Darío dice que se va o que sigas solo, puedes hacerlas sin preguntar.
 - Una rama y un PR por tarea o grupo pequeño de tareas; nunca todo de golpe.
 - Cada PR con tests y la CI local (`scripts/ci.ps1`) en verde antes de fusionar.
 - Commits pequeños con [Conventional Commits](https://www.conventionalcommits.org/es/): `feat:`, `fix:`, `chore:`, `docs:`, `ci:`, `refactor:`, `test:`…
