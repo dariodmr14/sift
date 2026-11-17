@@ -41,4 +41,21 @@ Lo que **no** aparece: degradados, texto con degradado, brillos de color, bordes
 - **F17:** pulsar oscurece un paso (Fluent no encoge al pulsar).
 - **Se mantiene:** el vidrio y sus tintes, el acento del usuario (con la variante legible de F9), los radios (4 en controles y 8 en ventanas, los de Fluent), la tipografía Segoe UI Variable y la distribución de cada pantalla.
 
-Cuando la apruebes (o la cambies), se aplican las nueve pasadas en este orden: espaciado, color, iconos, texto, tipo, distribución, detalles, visuales y movimiento.
+## Aprobada, con estos ajustes de Darío (2026-11-17)
+
+- **La firma también por significado.** Si el archivo no contiene las palabras buscadas, se marca **el pasaje entero que encaja** (el fragmento que Sift ha elegido por su significado), con la misma marca. Exacta o por significado, la firma es una sola: un subrayado de 2 px con el acento legible (`--accent-ink`, 4,5:1 sobre el fondo; con el lavanda de este PC en tema claro, el acento tal cual daba 2,8:1).
+- **Iconos comprobados en Segoe MDL2 Assets 1.79 (Windows 10):** todos existen y tienen dibujo (se pintaron para verlos). Una alternativa: el asa de puntos de Fluent no está en MDL2 y se usa el asa de barras (`GripperBarHorizontal`, E76F), la de las listas de Windows 10.
+- **Teclas (keycaps) solo en el pie y en la fila seleccionada.**
+- **Capturas antes y después** en `docs/capturas/`, con el permiso de Darío para las pruebas en pantalla.
+
+## Las nueve pasadas
+
+1. **Espaciado:** los dos valores sueltos pasan a la escala de 4 px.
+2. **Color:** el acento legible (F9) para texto, foco, la píldora de selección y el progreso.
+3. **Iconos:** la fuente de iconos de Windows en lugar de emoji y glifos de texto.
+4. **Texto:** marcadores cortos, plurales de verdad y sin punto en etiquetas.
+5. **Tipo:** la escala de Fluent, cabeceras con mayúscula inicial en seminegrita y cifras tabulares.
+6. **Distribución:** sin cambios. La dirección mantiene la de cada pantalla, y las columnas de iconos y las alturas de fila ya coinciden.
+7. **Detalles:** teclas en el pie y en la fila seleccionada, y la firma.
+8. **Visuales:** el momento 2, abrir un Espacio como una secuencia viva de pasos. El momento 1 (el fragmento en la vista previa) llega con el bloque 7.
+9. **Movimiento:** no queda ningún signo de unslop (ni `transition-all`, ni escalas al pasar el ratón, ni bucles). Lo pendiente de movimiento (F15–F17) es el bloque 5.
