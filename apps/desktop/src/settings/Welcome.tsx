@@ -132,7 +132,7 @@ export function Welcome({
               tabIndex={-1}
               className="text-xl font-semibold outline-none"
             >
-              Bienvenido a Sift
+              Te damos la bienvenida a Sift
             </h1>
             <p className="text-sm text-muted">
               Sift busca en tus archivos por su nombre, por lo que dicen y por
