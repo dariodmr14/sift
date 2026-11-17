@@ -6,6 +6,7 @@
 //! la semántica no participa. Ver ADR 0006 y 0009.
 
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::time::Instant;
 
 use serde::Serialize;
@@ -241,6 +242,7 @@ pub fn search_with(
         // nombre se analiza una vez y no en cada comparación.
         found.sort_by_cached_key(|(h, _)| !named(h));
     }
+    drop_copies(&mut found);
     found.truncate(limit);
     let hits = found
         .into_iter()
@@ -258,10 +260,103 @@ pub fn search_with(
     })
 }
 
+/// Quita las copias: el mismo apunte guardado en varias carpetas saldría varias veces
+/// seguidas y ocuparía puestos de otros archivos. Es copia de uno anterior el que tiene el
+/// mismo nombre (sin mayúsculas ni tildes) y el mismo fragmento. Cualquiera de las copias
+/// vale, así que se enseña la mejor colocada. Lo que no tiene texto (imágenes, vídeos: solo
+/// se encuentran por el nombre) no se agrupa nunca: dos `IMG_0001.jpg` suelen ser fotos
+/// distintas.
+fn drop_copies(found: &mut Vec<(FileHit, String)>) {
+    let mut seen = std::collections::HashSet::new();
+    found.retain(|(h, body)| {
+        if body.is_empty() {
+            return true;
+        }
+        let mut hasher = DefaultHasher::new();
+        body.hash(&mut hasher);
+        seen.insert((crate::analyzer::fold(&h.name), hasher.finish()))
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use sift_indexer::{IndexSink, IndexedFile};
+
+    fn hit(file_id: i64, name: &str, body: &str) -> (FileHit, String) {
+        (
+            FileHit {
+                file_id,
+                chunk_id: file_id,
+                page: None,
+                path: format!(r"C:\Uni\{file_id}\{name}"),
+                name: name.to_string(),
+                ext: String::new(),
+                name_segments: Vec::new(),
+                snippet: Vec::new(),
+                score: 1.0,
+                boost: 1.0,
+                by_meaning: false,
+            },
+            body.to_string(),
+        )
+    }
+
+    fn ids(found: &[(FileHit, String)]) -> Vec<i64> {
+        found.iter().map(|(h, _)| h.file_id).collect()
+    }
+
+    #[test]
+    fn copies_in_several_folders_show_only_the_first() {
+        let mut found = vec![
+            hit(1, "clarin.txt", "texto"),
+            hit(2, "clarin.txt", "texto"),
+            hit(3, "clarin.txt", "texto"),
+        ];
+        drop_copies(&mut found);
+        assert_eq!(ids(&found), vec![1]);
+    }
+
+    #[test]
+    fn same_name_with_different_text_are_both_kept() {
+        let mut found = vec![hit(1, "notas.txt", "uno"), hit(2, "notas.txt", "otro")];
+        drop_copies(&mut found);
+        assert_eq!(ids(&found), vec![1, 2]);
+    }
+
+    #[test]
+    fn same_text_with_different_name_are_both_kept() {
+        let mut found = vec![hit(1, "a.txt", "texto"), hit(2, "b.txt", "texto")];
+        drop_copies(&mut found);
+        assert_eq!(ids(&found), vec![1, 2]);
+    }
+
+    #[test]
+    fn same_name_without_text_are_never_grouped() {
+        let mut found = vec![hit(1, "IMG_0001.jpg", ""), hit(2, "IMG_0001.jpg", "")];
+        drop_copies(&mut found);
+        assert_eq!(ids(&found), vec![1, 2]);
+    }
+
+    #[test]
+    fn case_and_accents_do_not_hide_a_copy() {
+        let mut found = vec![
+            hit(1, "Canción.TXT", "texto"),
+            hit(2, "cancion.txt", "texto"),
+        ];
+        drop_copies(&mut found);
+        assert_eq!(ids(&found), vec![1]);
+    }
+
+    #[test]
+    fn search_does_not_repeat_copies() {
+        let idx = index_with(&[
+            (1, "redes.md", &["apuntes de redes"]),
+            (2, "redes.md", &["apuntes de redes"]),
+            (3, "otro.md", &["apuntes de redes"]),
+        ]);
+        assert_eq!(names(&idx, "redes "), vec!["redes.md", "otro.md"]);
+    }
 
     fn index_with(files: &[(i64, &str, &[&str])]) -> TextIndex {
         let mut idx = TextIndex::in_memory().unwrap();
