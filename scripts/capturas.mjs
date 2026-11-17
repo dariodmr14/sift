@@ -2,7 +2,10 @@
 //
 // Uso (desde la raíz del repo, en la rama de las pasadas, sin cambios sin guardar en
 // apps/desktop/src; abre ventanas en la pantalla y no hay que tocar nada mientras tanto):
-//   node scripts/capturas.mjs [rama-base]        (por defecto, main)
+//   node scripts/capturas.mjs [rama-base] [--solo=barra|--solo=ajustes]   (base: main)
+//
+// Para la barra pulsa su atajo de desarrollo (Ctrl+Alt+Space, scripts/atajo-dev.ps1)
+// cuando se ha ocultado: se oculta al perder el foco.
 //
 // Arranca UNA vez la versión de DESARROLLO (sus datos de prueba, nunca los tuyos) y, para
 // cada estado (la base y cada commit «(unslop)» de la rama), pone `apps/desktop/src` como
@@ -18,7 +21,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { connect, root, sleep, startDevApp, typeInBar, waitFor } from "./devapp.mjs";
 
-const base = process.argv[2] ?? "main";
+const base = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "main";
+const only = process.argv.find((a) => a.startsWith("--solo="))?.slice(7); // barra | ajustes
 const out = path.join(root, "docs", "capturas");
 const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
 
@@ -75,6 +79,18 @@ async function grab(page, file) {
   ]);
 }
 
+/**
+ * La barra se oculta al perder el foco: si no está a la vista, se pulsa su atajo (el de
+ * la versión de desarrollo) y se espera a que aparezca. Sin ella a la vista, no hay captura.
+ */
+async function showBar(bar) {
+  const visible = () => bar.evaluate("document.visibilityState === 'visible' && document.hasFocus()");
+  if (await visible()) return;
+  execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(root, "scripts", "atajo-dev.ps1")]);
+  await waitFor(visible, 5_000, "la barra a la vista");
+  await sleep(400); // la animación de entrada
+}
+
 /** Recarga la página y espera a que `selector` exista (la nueva interfaz ya está). */
 async function reload(page, selector) {
   await page.evaluate("location.reload()").catch(() => {});
@@ -94,21 +110,29 @@ try {
   const bar = await connect("localhost:1420/");
   await sleep(2000);
 
-  for (const [i, s] of states.entries()) {
+  for (const [i, s] of only === "ajustes" ? [] : states.entries()) {
     useSrcOf(s.sha);
     await reload(bar, 'input[aria-label="Buscar"]');
+    await showBar(bar);
     const prefix = path.join(out, `${i}-${s.slug}`);
     await grab(bar, `${prefix}-barra-vacia.jpg`);
+    await showBar(bar);
     await typeInBar(bar, "vidrio");
     await waitFor(() => bar.evaluate("document.querySelectorAll('[role=option]').length > 0"), 20_000, "resultados").catch(() => {});
     await sleep(600);
+    await showBar(bar);
     await grab(bar, `${prefix}-barra-busqueda.jpg`);
     console.log(`barra: ${s.slug}`);
   }
 
-  await bar.evaluate("window.__TAURI_INTERNALS__.invoke('open_settings', { newSpace: false })");
-  const settings = await connect("settings.html");
-  for (const [i, s] of states.entries()) {
+  const settings =
+    only === "barra"
+      ? null
+      : (await bar.evaluate(
+          "window.__TAURI_INTERNALS__.invoke('open_settings', { newSpace: false })",
+        ),
+        await connect("settings.html"));
+  for (const [i, s] of settings ? states.entries() : []) {
     useSrcOf(s.sha);
     await reload(settings, "h1");
     const prefix = path.join(out, `${i}-${s.slug}`);
@@ -125,7 +149,7 @@ try {
     console.log(`ajustes: ${s.slug}`);
   }
   bar.close();
-  settings.close();
+  settings?.close();
 } catch (e) {
   console.error(String(e));
   fs.writeFileSync(path.join(root, "target", "capturas-app.log"), app.log);

@@ -145,6 +145,8 @@ Sift lo he desarrollado yo, con Claude Code (el asistente de programación de An
 
 Cada cambio ha ido en su rama y su PR, con la CI local en verde y con mi visto bueno antes de fusionarse.
 
+Por eso Claude aparece en GitHub entre quienes han contribuido al repositorio: parte del código, los primeros pull requests y la puesta en marcha de GitHub (ramas, PR y CI) los hice con Claude Code, que firmaba los commits como coautor. GitHub conserva esa firma en los PR ya fusionados y no se puede quitar.
+
 ### Lo aprendido
 
 Lo más útil de cada fase está en [docs/aprendido.md](docs/aprendido.md). En resumen:
