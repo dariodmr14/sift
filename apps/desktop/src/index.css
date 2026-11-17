@@ -27,6 +27,8 @@
   --color-field: var(--field);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  /* El acento como texto o trazo, legible sobre el fondo (F9; lo calcula Rust). */
+  --color-accent-ink: var(--accent-ink);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-glass: var(--glass); /* barras fijas y diálogos sobre contenido */
@@ -58,6 +60,7 @@
   /* Acento por defecto (azul de Windows). Se sustituye por el del usuario al arrancar. */
   --accent: rgb(96 205 255);
   --accent-fg: rgb(0 0 0);
+  --accent-ink: rgb(96 205 255);
 
   --surface-solid: rgb(
     32 32 36
@@ -70,6 +73,8 @@
 
   color-scheme: dark;
   font-family: var(--font-sans);
+  /* Cifras del mismo ancho: los números que cambian («Leyendo 32 de 120», ms) no bailan. */
+  font-variant-numeric: tabular-nums;
   color: var(--fg);
 }
 
@@ -86,6 +91,7 @@
   --success: rgb(15 123 15);
   --accent: rgb(0 95 184);
   --accent-fg: rgb(255 255 255);
+  --accent-ink: rgb(0 95 184);
   color-scheme: light;
 }
 
@@ -186,6 +192,54 @@ body,
     font-size: 10px;
   }
 
+  /*
+   * Iconos de la interfaz (components/Glyph.tsx): la fuente de iconos de Windows, 16 px y
+   * del color del texto. El desplazamiento vertical los centra con la línea de texto.
+   */
+  .sift-glyph {
+    display: inline-block;
+    font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+    font-size: 16px;
+    font-style: normal;
+    line-height: 1;
+    vertical-align: -0.125em;
+  }
+
+  /*
+   * La firma de Sift, «la marca de lo que encaja»: lo encontrado, subrayado con un trazo
+   * del acento legible (--accent-ink, 4,5:1 sobre el fondo). Igual en todas partes: las
+   * palabras de una búsqueda exacta y, si el archivo llegó por significado, el pasaje
+   * entero que encaja. Sin caja de color: el texto se lee igual que el resto.
+   */
+  .sift-match {
+    background: none;
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: var(--accent-ink);
+    text-decoration-thickness: 2px;
+    /* Pegado al texto: las líneas de una fila se recortan (`truncate`) y más abajo el
+       trazo quedaría fuera. Las filas de la barra dejan además 2 px debajo (`pb-0.5`). */
+    text-underline-offset: 2px;
+    text-decoration-skip-ink: none;
+  }
+
+  /* Una tecla de un atajo (components/Keycap.tsx). */
+  .sift-key {
+    display: inline-flex;
+    min-width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-item);
+    background: var(--field);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 1;
+  }
+
   /* Superficie flotante de vidrio (diálogos). */
   .sift-glass {
     background: var(--glass);
@@ -224,7 +278,7 @@ body,
     height: 16px;
     margin-top: -8px;
     border-radius: 2px;
-    background: var(--accent);
+    background: var(--accent-ink);
   }
 
   /* Progreso indeterminado (el total no se conoce hasta terminar de recorrer). */

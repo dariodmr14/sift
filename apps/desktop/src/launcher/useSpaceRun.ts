@@ -9,7 +9,7 @@ import {
   type SetStateAction,
 } from "react";
 import { commands, events } from "../bindings";
-import { failedMode, type Mode, type SpaceView } from "./mode";
+import { addStep, failedMode, type Mode, type SpaceView } from "./mode";
 import { summarize } from "./runSummary";
 
 /** Por debajo de esto no se enseña el panel «en marcha»: no debe parpadear. */
@@ -40,7 +40,11 @@ export function useSpaceRun({
   // Por qué paso va el Espacio en marcha.
   useEffect(() => {
     const stop = events.spaceProgress.listen(({ payload }) =>
-      setMode((m) => (m.kind === "running" ? { ...m, progress: payload } : m)),
+      setMode((m) =>
+        m.kind === "running"
+          ? { ...m, progress: payload, steps: addStep(m.steps, payload) }
+          : m,
+      ),
     );
     return () => void stop.then((f) => f());
   }, [setMode]);
@@ -56,6 +60,7 @@ export function useSpaceRun({
             kind: "running",
             title,
             progress: null,
+            steps: [],
             cancelling: false,
           }),
         SLOW_MS,

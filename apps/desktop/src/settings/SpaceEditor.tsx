@@ -14,6 +14,7 @@ import {
 import { Button, ErrorText, Modal, TextInput } from "./ui";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SortableList } from "./Sortable";
+import { Glyph } from "../components/Glyph";
 import { SpaceIcon } from "../components/SpaceIcon";
 
 /** Ids solo para React: así, al reordenar, cada fila (y su estado) sigue a su acción. */
@@ -140,7 +141,7 @@ export function SpaceEditor({
               onClick={() => setEditingIcon(true)}
               aria-label="Cambiar icono"
               title="Cambiar icono"
-              className="group relative flex size-[88px] shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent"
+              className="group relative flex size-22 shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent-ink"
             >
               <SpaceIcon
                 icon={draft.icon}
@@ -150,7 +151,7 @@ export function SpaceEditor({
               />
               <span
                 aria-hidden
-                className="absolute inset-x-0 bottom-0 rounded-b-window bg-glass py-0.5 text-center text-[11px] text-muted opacity-0 backdrop-blur-xl group-hover:opacity-100 group-focus-visible:opacity-100"
+                className="absolute inset-x-0 bottom-0 rounded-b-window bg-glass py-0.5 text-center text-xs text-muted opacity-0 backdrop-blur-xl group-hover:opacity-100 group-focus-visible:opacity-100"
               >
                 Cambiar
               </span>
@@ -165,12 +166,10 @@ export function SpaceEditor({
                 onChange={(e) =>
                   setDraft({ ...draft, name: e.currentTarget.value })
                 }
-                className="h-10 text-lg font-semibold"
+                className="h-10 text-xl font-semibold"
               />
               <label className="flex h-9 items-center gap-3">
-                <span className="w-12 shrink-0 text-xs font-medium text-muted">
-                  Alias
-                </span>
+                <span className="w-12 shrink-0 text-xs text-muted">Alias</span>
                 <TextInput
                   placeholder="curro, oficina"
                   value={aliasText}
@@ -181,7 +180,8 @@ export function SpaceEditor({
               </label>
             </div>
           </div>
-          <p id="alias-hint" className="pl-[104px] text-xs text-muted">
+          {/* 104 px = avatar (88) + hueco (16): la ayuda empieza donde los campos. */}
+          <p id="alias-hint" className="pl-26 text-xs text-muted">
             Alias: otras palabras que lo encuentran en la barra, separadas por
             comas.
           </p>
@@ -209,7 +209,7 @@ export function SpaceEditor({
         )}
 
         <section className="space-y-2">
-          <h3 className="text-xs font-medium text-muted">Acciones, en orden</h3>
+          <h3 className="text-xs text-muted">Acciones, en orden</h3>
           {/* Anuncia a los lectores de pantalla los cambios de orden. */}
           <p aria-live="polite" className="sr-only">
             {announcement}
@@ -270,7 +270,8 @@ export function SpaceEditor({
                   )
                 }
               >
-                + {ACTION_LABELS[kind]}
+                <Glyph name="add" className="mr-2 text-xs" />
+                {ACTION_LABELS[kind]}
               </Button>
             ))}
           </div>

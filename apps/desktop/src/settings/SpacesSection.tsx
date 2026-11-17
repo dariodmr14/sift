@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { commands, events } from "../bindings";
+import { Glyph } from "../components/Glyph";
 import { SpaceIcon } from "../components/SpaceIcon";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SortableList, useSortableItem } from "./Sortable";
@@ -50,7 +51,7 @@ function SpaceRow({
             onMove(e.key === "ArrowUp" ? -1 : 1);
           }
         }}
-        className="sift-option flex min-w-0 flex-1 touch-none items-center gap-2 px-3 py-1.5 text-left text-sm outline-none select-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+        className="sift-option flex min-w-0 flex-1 touch-none items-center gap-2 px-3 py-1.5 text-left text-sm outline-none select-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-ink"
       >
         <SpaceIcon
           icon={view.space.icon}
@@ -139,7 +140,7 @@ export function SpacesSection() {
     if (r.data === null) return;
     setMessage({
       ok: true,
-      text: `${r.data} Espacio(s) importado(s). Los comandos pedirán confirmación la primera vez.`,
+      text: `${r.data === 1 ? "1 Espacio importado" : `${r.data} Espacios importados`}. Los comandos pedirán confirmación la primera vez.`,
     });
     void reload();
   }
@@ -160,7 +161,7 @@ export function SpacesSection() {
           className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pt-3"
         >
           {spaces?.length === 0 && (
-            <li className="p-2 text-sm text-muted">Aún no hay Espacios.</li>
+            <li className="p-2 text-sm text-muted">Aún no hay Espacios</li>
           )}
           <SortableList
             ids={(spaces ?? []).map((v) => String(v.space.id))}
@@ -191,7 +192,8 @@ export function SpacesSection() {
             aria-current={selection?.kind === "new"}
             onClick={() => setSelection({ kind: "new" })}
           >
-            + Nuevo Espacio
+            <Glyph name="add" className="mr-2" />
+            Nuevo Espacio
           </Button>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => void importFile()}>
@@ -256,7 +258,7 @@ export function SpacesSection() {
         )}
         {!selection && spaces?.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <p className="text-lg">Crea tu primer Espacio</p>
+            <p className="text-xl font-semibold">Crea tu primer Espacio</p>
             <p className="max-w-sm text-sm text-muted">
               Por ejemplo «Trabajo»: la carpeta del proyecto, el correo, el
               calendario y tu app de notas, todo con un Enter.
@@ -265,7 +267,8 @@ export function SpacesSection() {
               variant="primary"
               onClick={() => setSelection({ kind: "new" })}
             >
-              + Nuevo Espacio
+              <Glyph name="add" className="mr-2" />
+              Nuevo Espacio
             </Button>
           </div>
         )}

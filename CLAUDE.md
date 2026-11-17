@@ -16,7 +16,7 @@ El plan completo, con fases y criterios de "hecho", está en [PLAN.md](PLAN.md).
 - Claude Code explica cada decisión importante; Darío revisa y entiende el código antes de aceptarlo. Explicar el *porqué*, no solo el *qué*.
 - Decisiones de arquitectura nuevas → un ADR corto en `docs/adr/` (plantilla: `docs/adr/0001-*.md`).
 - Si aparece una idea nueva a mitad de una fase → al backlog de PLAN.md, salvo que bloquee la fase actual.
-- Al acabar cada fase: marcar casillas en PLAN.md, actualizar el README y apuntar qué se aprendió.
+- Al acabar cada fase: marcar casillas en PLAN.md, actualizar el README y apuntar qué se aprendió en `docs/aprendido.md`.
 
 ## Flujo de GitHub
 Claude hace push, abre el PR y lo fusiona, con `gh` (autenticado con un token que solo tiene acceso a este repo). El push usa un *credential helper* **local de este repo** (`.git/config`) que llama a `gh auth git-credential`; la configuración global de git y el gestor de credenciales de Windows no se tocan.

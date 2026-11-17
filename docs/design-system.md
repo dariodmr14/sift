@@ -39,7 +39,8 @@ Vidrio por defecto; **«Desactivar vidrio»** (Ajustes → General) deja toda la
 | `--hover` | `bg-hover` | blanco 5 % | negro 4 % | Fondo al pasar el ratón |
 | `--selected` | `bg-selected` | blanco 8 % | negro 6 % | Elemento seleccionado |
 | `--field` | `bg-field` | blanco 6 % | blanco 70 % | Fondo de campos |
-| `--accent` | `bg-accent`, `text-accent`… | Acento «Light 2» de Windows | Acento «Dark 1» de Windows | Selección, botón principal, foco |
+| `--accent` | `bg-accent` | Acento «Light 2» de Windows | Acento «Dark 1» de Windows | Relleno: botón principal, casillas |
+| `--accent-ink` | `text-accent-ink`, `ring-accent-ink`, `border-accent-ink`, `bg-accent-ink` | el acento, aclarado si hace falta | el acento, oscurecido si hace falta | El acento cuando es texto o trazo: foco, la píldora de selección, barras de progreso y la firma. Rust lo ajusta hasta 4,5:1 sobre el fondo (F9) |
 | `--accent-fg` | `text-accent-fg` | negro o blanco, el de más contraste | | Texto sobre el acento |
 | `--danger` | `text-danger` | `rgb(255 153 164)` | `rgb(196 43 28)` | Errores |
 | `--success` | `text-success` | `rgb(108 203 95)` | `rgb(15 123 15)` | Confirmaciones |
@@ -63,7 +64,10 @@ En Windows 10 la ventana de la barra es rectangular: Windows no redondea las ven
 
 | Rol | Familia | Tamaño |
 |---|---|---|
-| Interfaz | `Segoe UI Variable Text`, `Segoe UI` (la del sistema, sin carga) | Búsqueda 20 px (`text-xl`), título 15 px, detalle 12 px (`text-xs`) |
+| Interfaz | `Segoe UI Variable Text`, `Segoe UI` (la del sistema, sin carga) | La escala de Fluent: Caption 12 (`text-xs`), Body 14 (`text-sm`), Body Strong 14 en seminegrita, Subtitle 20 (`text-xl`, también la caja de búsqueda) |
+| Iconos | `Segoe Fluent Icons`, `Segoe MDL2 Assets` (`Glyph`) | 16 px, o 12 dentro de texto pequeño |
+
+Solo dos pesos: normal (400) y seminegrita (600). Cabeceras con mayúscula inicial, nunca en MAYÚSCULAS con espaciado (como Configuración de Windows 11). Cifras tabulares en toda la app (`font-variant-numeric` en `:root`).
 | Código y comandos | `Cascadia Mono`, `Consolas` (`font-mono`) | 13 px |
 
 ### Movimiento
@@ -85,7 +89,9 @@ Cuando la barra se oculta (por cualquier vía), Rust emite `LauncherHidden` y la
 - **`TitleBar`** (`src/settings/TitleBar.tsx`): barra de título propia de las ventanas de app (la nativa de Windows 10 es negra y no admite vidrio). Zona de arrastre con `data-tauri-drag-region` (el arrastre lo hace Windows: conserva el ajuste a los bordes, Win+flechas y el doble clic para maximizar) y botones de 46 × 32 px con los glifos de Windows. El de cerrar usa `bg-caption-close`.
 - **`.sift-glass`** (`index.css`): superficie flotante de vidrio para diálogos (`Modal` ya la usa).
 - **Reordenar arrastrando**: `SortableList` y `useSortableItem` (`src/settings/Sortable.tsx`), sobre [dnd-kit](https://dndkit.com). La tarjeta sigue al puntero, se levanta (`bg-glass` + `shadow-window`) y las demás se apartan con una transición de 180 ms solo de `transform` (ninguna con «reducir movimiento»). Mientras se arrastra, `<html class="sift-sorting">` impide seleccionar texto. El asa lleva `select-none touch-none` y las imágenes `draggable={false}`. Siempre con la alternativa de teclado Alt+↑/↓ y anuncios en español para lectores de pantalla.
-- **«Por significado»** (`App.tsx`): los resultados que llegan solo por la búsqueda inteligente empiezan su subtítulo con esa marca en `text-accent`. No tienen palabras que resaltar: se enseña el principio de su fragmento.
+- **La firma: «la marca de lo que encaja»** (`.sift-match`, `Highlighted` en `src/launcher/panels.tsx`): lo encontrado, subrayado con un trazo de 2 px de `--accent-ink`, sin caja de color. En una búsqueda exacta, las palabras; si el archivo llegó solo por significado (no contiene tus palabras), el pasaje entero que encaja, con la misma marca, y el subtítulo empieza por «Por significado». Ver [unslop-direccion.md](unslop-direccion.md).
+- **`Glyph`** (`src/components/Glyph.tsx`): iconos de la interfaz con la fuente de iconos de Windows; los códigos están comprobados en Segoe MDL2 Assets de Windows 10. Lucide solo para el icono que eliges en un Espacio.
+- **`Keycap` y `Shortcut`** (`src/components/Keycap.tsx`): atajos como teclas pequeñas, solo en el pie de la barra y en la fila seleccionada.
 - **`SpaceIcon`** (`src/components/SpaceIcon.tsx`): icono de un Espacio. Los SVG se pintan con `<img>` o máscara CSS, nunca como HTML.
 
 ## Textos

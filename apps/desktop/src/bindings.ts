@@ -239,6 +239,12 @@ export type Appearance = {
 	accent: string,
 	/**  Texto legible encima del acento (botones principales). */
 	accentText: string,
+	/**
+	 *  El acento cuando él mismo es el texto o el trazo (enlaces, anillo de foco, la
+	 *  marca de lo que encaja): el mismo tono, oscurecido o aclarado hasta leerse bien
+	 *  sobre el fondo de la app (auditoría de la Fase 7, F9).
+	 */
+	accentInk: string,
 };
 
 /**  Con qué mecanismo se está escuchando el atajo. */

@@ -75,7 +75,7 @@ export function AppPicker({
       <div className="space-y-2 p-4" onKeyDown={onKeyDown}>
         <TextInput
           autoFocus
-          placeholder="Buscar aplicación…"
+          placeholder="Buscar aplicación"
           value={query}
           onChange={(e) => {
             setQuery(e.currentTarget.value);

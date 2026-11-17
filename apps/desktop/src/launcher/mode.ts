@@ -16,10 +16,24 @@ export type Mode =
       kind: "running";
       title: string;
       progress: SpaceProgress | null;
+      /** Los pasos ya empezados, en orden (el último es el que está en marcha). */
+      steps: RunStep[];
       cancelling: boolean;
     }
   /** Algo falló, se paró o se canceló: qué se ejecutó y qué no. */
   | { kind: "result"; title: string; headline: string; lines: SummaryLine[] };
+
+export interface RunStep {
+  step: number;
+  label: string;
+}
+
+/** Apunta un aviso de progreso: un paso nuevo se añade; el mismo (una espera) no. */
+export function addStep(steps: RunStep[], p: SpaceProgress): RunStep[] {
+  const last = steps[steps.length - 1];
+  if (last?.step === p.step) return steps;
+  return [...steps, { step: p.step, label: p.label }];
+}
 
 /** El resumen de algo que no se pudo abrir (un archivo, un Espacio). */
 export function failedMode(title: string, detail: string): Mode {

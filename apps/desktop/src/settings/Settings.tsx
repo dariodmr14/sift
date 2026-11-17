@@ -5,6 +5,7 @@ import { TYPE_FILTERS } from "../launcher/filters";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
+import { Glyph } from "../components/Glyph";
 
 /** Cómo escucha Sift el atajo, explicado (solo en «Avanzado»). */
 const BACKEND_LABEL = {
@@ -51,7 +52,7 @@ function Settings() {
         setPage(p.id);
         if (p.id === "status") refreshStatus();
       }}
-      className="sift-option px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+      className="sift-option px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-ink"
     >
       {p.label}
     </button>
@@ -65,7 +66,7 @@ function Settings() {
           aria-label="Secciones"
           className="flex w-44 shrink-0 flex-col gap-1 border-r border-line px-3 pb-3"
         >
-          <h1 className="mb-3 px-2 text-lg font-semibold">Ajustes</h1>
+          <h1 className="mb-3 px-2 text-xl font-semibold">Ajustes</h1>
           {PAGES.map(navButton)}
           <span className="flex-1" />
           {status?.storageError && (
@@ -153,7 +154,7 @@ function QuickFilters() {
   const spoken: Record<string, string> = { codigo: "código", video: "vídeo" };
   return (
     <div className="space-y-2 pt-2">
-      <h3 className="text-sm font-medium">Buscar solo un tipo de archivo</h3>
+      <h3 className="text-sm font-semibold">Buscar solo un tipo de archivo</h3>
       <p className="text-xs text-muted">
         Empieza con una de estas palabras y un espacio; por ejemplo, «pdf
         contrato» busca «contrato» solo en tus PDF. La palabra se queda como
@@ -239,9 +240,7 @@ function Section({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">
-        {title}
-      </h2>
+      <h2 className="text-sm font-semibold">{title}</h2>
       {children}
     </section>
   );
@@ -282,12 +281,12 @@ function HotkeyForm({
           aria-label="Atajo"
           aria-describedby="hotkey-help"
           spellCheck={false}
-          className="flex-1 rounded-item border border-line bg-hover px-3 py-2 outline-none focus:border-accent"
+          className="flex-1 rounded-item border border-line bg-hover px-3 py-2 outline-none focus:border-accent-ink"
         />
         <button
           type="submit"
           disabled={value.trim() === saved}
-          className="rounded-item bg-accent px-4 py-2 font-medium text-accent-fg disabled:opacity-40"
+          className="rounded-item bg-accent px-4 py-2 text-accent-fg disabled:opacity-40"
         >
           Guardar
         </button>
@@ -372,12 +371,12 @@ function StatusList({ status }: { status: Status }) {
         </dd>
       </dl>
       <details className="group space-y-3">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold outline-none select-none focus-visible:ring-2 focus-visible:ring-accent-ink">
           <span
             aria-hidden
             className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
           >
-            ›
+            <Glyph name="chevronRight" className="text-xs" />
           </span>
           Avanzado
         </summary>
