@@ -98,7 +98,7 @@ export function PlacementEditor({
           aria-label="No colocar: donde la ponga Windows"
           title="No colocar: donde la ponga Windows"
           onClick={() => pick(null)}
-          className={`flex h-9 shrink-0 items-center rounded-item px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+          className={`flex h-9 shrink-0 items-center rounded-item px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-accent-ink ${
             current === null ? "bg-selected" : "hover:bg-hover"
           }`}
         >
@@ -118,7 +118,7 @@ export function PlacementEditor({
                     aria-label={z.label}
                     title={z.label}
                     onClick={() => pick(z.id)}
-                    className={`rounded-item p-1 outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                    className={`rounded-item p-1 outline-none focus-visible:ring-2 focus-visible:ring-accent-ink ${
                       current?.zone === z.id ? "bg-selected" : "hover:bg-hover"
                     }`}
                   >

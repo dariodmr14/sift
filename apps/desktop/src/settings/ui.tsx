@@ -25,7 +25,7 @@ export function Button({
   return (
     <button
       type="button"
-      className={`rounded-item px-3 py-1.5 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
+      className={`rounded-item px-3 py-1.5 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent-ink disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
       {...props}
     />
   );
@@ -38,7 +38,7 @@ export function TextInput({
   return (
     <input
       spellCheck={false}
-      className={`w-full rounded-item border border-line bg-hover px-3 py-1.5 text-sm outline-none focus:border-accent ${className}`}
+      className={`w-full rounded-item border border-line bg-hover px-3 py-1.5 text-sm outline-none focus:border-accent-ink ${className}`}
       {...props}
     />
   );
@@ -51,7 +51,7 @@ export function Select({
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      className={`rounded-item border border-line bg-hover px-2 py-1.5 text-sm outline-none focus:border-accent ${className}`}
+      className={`rounded-item border border-line bg-hover px-2 py-1.5 text-sm outline-none focus:border-accent-ink ${className}`}
       {...props}
     />
   );

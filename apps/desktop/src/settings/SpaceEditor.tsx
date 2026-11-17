@@ -140,7 +140,7 @@ export function SpaceEditor({
               onClick={() => setEditingIcon(true)}
               aria-label="Cambiar icono"
               title="Cambiar icono"
-              className="group relative flex size-22 shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent"
+              className="group relative flex size-22 shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent-ink"
             >
               <SpaceIcon
                 icon={draft.icon}

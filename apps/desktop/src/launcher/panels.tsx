@@ -75,7 +75,7 @@ export function RunningPanel({
 
 const LINE_MARK: Record<SummaryLine["state"], { mark: string; cls: string }> = {
   ok: { mark: "✓", cls: "text-success" },
-  warning: { mark: "!", cls: "text-accent" },
+  warning: { mark: "!", cls: "text-accent-ink" },
   failed: { mark: "✕", cls: "text-danger" },
   cancelled: { mark: "✕", cls: "text-muted" },
   notRun: { mark: "–", cls: "text-muted" },

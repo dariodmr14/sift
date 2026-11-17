@@ -254,7 +254,7 @@ function RootRow({
             aria-expanded={open}
             aria-controls={panelId}
             onClick={() => setOpen(!open)}
-            className="mt-1 flex items-center gap-1.5 rounded-item text-xs text-muted outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-1 flex items-center gap-1.5 rounded-item text-xs text-muted outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink"
           >
             <span
               aria-hidden
@@ -318,10 +318,10 @@ function ProgressBar({ value }: { value: number | "indeterminate" }) {
       className="h-1 overflow-hidden rounded-item bg-hover"
     >
       {indeterminate ? (
-        <div className="sift-progress h-full w-1/3 rounded-item bg-accent" />
+        <div className="sift-progress h-full w-1/3 rounded-item bg-accent-ink" />
       ) : (
         <div
-          className="h-full origin-left rounded-item bg-accent transition-transform duration-200 motion-reduce:transition-none"
+          className="h-full origin-left rounded-item bg-accent-ink transition-transform duration-200 motion-reduce:transition-none"
           style={{ transform: `scaleX(${value})` }}
         />
       )}
@@ -387,7 +387,7 @@ function Advanced() {
 
   return (
     <details className="group space-y-3">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink">
         <span
           aria-hidden
           className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
@@ -421,7 +421,7 @@ function Advanced() {
             rows={8}
             value={text}
             onChange={(e) => setText(e.currentTarget.value)}
-            className="w-full rounded-item border border-line bg-field px-3 py-2 font-mono text-sm outline-none focus:border-accent"
+            className="w-full rounded-item border border-line bg-field px-3 py-2 font-mono text-sm outline-none focus:border-accent-ink"
           />
         </label>
         <div className="flex items-center gap-3">

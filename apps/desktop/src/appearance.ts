@@ -2,7 +2,7 @@ import { commands } from "./bindings";
 
 /**
  * Aplica el tema y el acento de Windows (los lee Rust) a la página: `data-theme` y las
- * variables `--accent`/`--accent-fg` en <html>. El resto de tokens cambian solos con
+ * variables `--accent`/`--accent-fg`/`--accent-ink` en <html>. El resto de tokens cambian solos con
  * `data-theme` (src/index.css).
  */
 export async function applyAppearance(): Promise<void> {
@@ -11,6 +11,7 @@ export async function applyAppearance(): Promise<void> {
   root.dataset.theme = a.theme;
   root.style.setProperty("--accent", a.accent);
   root.style.setProperty("--accent-fg", a.accentText);
+  root.style.setProperty("--accent-ink", a.accentInk);
 }
 
 /**

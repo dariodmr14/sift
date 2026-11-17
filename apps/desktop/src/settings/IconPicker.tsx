@@ -159,7 +159,9 @@ function LibraryTab({
                   onChange({ kind: "library", name: hit.name, svg })
                 }
                 className={`flex aspect-square items-center justify-center rounded-item hover:bg-selected ${
-                  selected === hit.name ? "bg-selected ring-2 ring-accent" : ""
+                  selected === hit.name
+                    ? "bg-selected ring-2 ring-accent-ink"
+                    : ""
                 }`}
               >
                 <span
@@ -199,7 +201,7 @@ function EmojiTab({
             key={e}
             type="button"
             onClick={() => onChange({ kind: "emoji", value: e })}
-            className={`size-9 rounded-item text-xl hover:bg-selected ${value === e ? "ring-2 ring-accent" : ""}`}
+            className={`size-9 rounded-item text-xl hover:bg-selected ${value === e ? "ring-2 ring-accent-ink" : ""}`}
           >
             {e}
           </button>

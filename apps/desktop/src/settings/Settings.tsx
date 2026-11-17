@@ -51,7 +51,7 @@ function Settings() {
         setPage(p.id);
         if (p.id === "status") refreshStatus();
       }}
-      className="sift-option px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+      className="sift-option px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-ink"
     >
       {p.label}
     </button>
@@ -282,7 +282,7 @@ function HotkeyForm({
           aria-label="Atajo"
           aria-describedby="hotkey-help"
           spellCheck={false}
-          className="flex-1 rounded-item border border-line bg-hover px-3 py-2 outline-none focus:border-accent"
+          className="flex-1 rounded-item border border-line bg-hover px-3 py-2 outline-none focus:border-accent-ink"
         />
         <button
           type="submit"
@@ -372,7 +372,7 @@ function StatusList({ status }: { status: Status }) {
         </dd>
       </dl>
       <details className="group space-y-3">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink">
           <span
             aria-hidden
             className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"

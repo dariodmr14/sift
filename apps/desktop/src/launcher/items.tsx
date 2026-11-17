@@ -98,7 +98,7 @@ export function buildItems(s: ItemSources): Item[] {
       <>
         {hit.byMeaning && (
           <span
-            className="text-accent"
+            className="text-accent-ink"
             title="No contiene tus palabras: Sift lo ha encontrado por su significado"
           >
             Por significado ·{" "}

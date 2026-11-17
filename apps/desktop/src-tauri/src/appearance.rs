@@ -35,6 +35,18 @@ impl Rgb {
         0.2126 * lin(self.0) + 0.7152 * lin(self.1) + 0.0722 * lin(self.2)
     }
 
+    /// Contraste WCAG entre dos colores, de 1 (iguales) a 21 (negro sobre blanco).
+    pub fn contrast(self, other: Rgb) -> f64 {
+        let (a, b) = (self.luminance(), other.luminance());
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    /// Mezcla con `to` en proporción `t` (0 = este color, 1 = `to`).
+    fn mix(self, to: Rgb, t: f64) -> Rgb {
+        let ch = |a: u8, b: u8| (f64::from(a) + (f64::from(b) - f64::from(a)) * t).round() as u8;
+        Rgb(ch(self.0, to.0), ch(self.1, to.1), ch(self.2, to.2))
+    }
+
     /// Texto que se lee mejor encima de este color: negro o blanco (mayor contraste).
     pub fn readable_text(self) -> Rgb {
         let l = self.luminance();
@@ -57,6 +69,30 @@ pub struct Appearance {
     pub accent: String,
     /// Texto legible encima del acento (botones principales).
     pub accent_text: String,
+    /// El acento cuando él mismo es el texto o el trazo (enlaces, anillo de foco, la
+    /// marca de lo que encaja): el mismo tono, oscurecido o aclarado hasta leerse bien
+    /// sobre el fondo de la app (auditoría de la Fase 7, F9).
+    pub accent_ink: String,
+}
+
+/// Fondo opaco de la app en cada tema (`--surface-solid` en index.css).
+const SURFACE_DARK: Rgb = Rgb(32, 32, 36);
+const SURFACE_LIGHT: Rgb = Rgb(243, 243, 245);
+/// Contraste mínimo de texto normal (WCAG AA). Un trazo pide 3:1; con 4,5 vale para los dos.
+const INK_CONTRAST: f64 = 4.5;
+
+/// El acento como «tinta» legible: si no contrasta lo bastante con el fondo, se acerca a
+/// negro (tema claro) o a blanco (oscuro) en pasos del 5 % hasta llegar a 4,5:1. Así
+/// sigue siendo tu color, solo más oscuro o más claro.
+pub fn accent_ink(theme: Theme, accent: Rgb) -> Rgb {
+    let (surface, toward) = match theme {
+        Theme::Dark => (SURFACE_DARK, Rgb(255, 255, 255)),
+        Theme::Light => (SURFACE_LIGHT, Rgb(0, 0, 0)),
+    };
+    (0..=20)
+        .map(|step| accent.mix(toward, f64::from(step) * 0.05))
+        .find(|c| c.contrast(surface) >= INK_CONTRAST)
+        .unwrap_or(toward)
 }
 
 /// Acentos por defecto de Windows (azul) si no se puede leer el del usuario.
@@ -105,6 +141,7 @@ pub fn current() -> Appearance {
         theme,
         accent: accent.hex(),
         accent_text: accent.readable_text().hex(),
+        accent_ink: accent_ink(theme, accent).hex(),
     }
 }
 
@@ -222,6 +259,24 @@ mod tests {
         assert_eq!(accent_for(Theme::Dark, None, None), DEFAULT_DARK);
         assert_eq!(accent_for(Theme::Light, None, None), DEFAULT_LIGHT);
         assert!(parse_palette(&[0; 10]).is_none());
+    }
+
+    #[test]
+    fn accent_ink_reads_well_on_the_background_and_keeps_the_hue() {
+        let p = parse_palette(&PALETTE).unwrap();
+        // El lavanda de este PC en tema claro (#8499C8) solo da ~2,8:1 sobre el fondo.
+        let light = accent_for(Theme::Light, Some(p), None);
+        assert!(light.contrast(SURFACE_LIGHT) < 3.0);
+        let ink = accent_ink(Theme::Light, light);
+        assert!(ink.contrast(SURFACE_LIGHT) >= INK_CONTRAST);
+        assert!(ink.2 > ink.0, "sigue siendo azulado: {}", ink.hex());
+        // Lo que ya se lee bien no se toca.
+        let dark = accent_for(Theme::Dark, Some(p), None);
+        assert_eq!(accent_ink(Theme::Dark, dark), dark);
+        assert_eq!(accent_ink(Theme::Light, DEFAULT_LIGHT), DEFAULT_LIGHT);
+        // Un acento imposible acaba en negro o blanco, nunca ilegible.
+        let yellow = Rgb(255, 255, 0);
+        assert!(accent_ink(Theme::Light, yellow).contrast(SURFACE_LIGHT) >= INK_CONTRAST);
     }
 
     #[test]

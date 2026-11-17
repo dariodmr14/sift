@@ -50,7 +50,7 @@ function SpaceRow({
             onMove(e.key === "ArrowUp" ? -1 : 1);
           }
         }}
-        className="sift-option flex min-w-0 flex-1 touch-none items-center gap-2 px-3 py-1.5 text-left text-sm outline-none select-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent"
+        className="sift-option flex min-w-0 flex-1 touch-none items-center gap-2 px-3 py-1.5 text-left text-sm outline-none select-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-ink"
       >
         <SpaceIcon
           icon={view.space.icon}

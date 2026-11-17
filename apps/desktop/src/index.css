@@ -27,6 +27,8 @@
   --color-field: var(--field);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
+  /* El acento como texto o trazo, legible sobre el fondo (F9; lo calcula Rust). */
+  --color-accent-ink: var(--accent-ink);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-glass: var(--glass); /* barras fijas y diálogos sobre contenido */
@@ -58,6 +60,7 @@
   /* Acento por defecto (azul de Windows). Se sustituye por el del usuario al arrancar. */
   --accent: rgb(96 205 255);
   --accent-fg: rgb(0 0 0);
+  --accent-ink: rgb(96 205 255);
 
   --surface-solid: rgb(
     32 32 36
@@ -86,6 +89,7 @@
   --success: rgb(15 123 15);
   --accent: rgb(0 95 184);
   --accent-fg: rgb(255 255 255);
+  --accent-ink: rgb(0 95 184);
   color-scheme: light;
 }
 
@@ -224,7 +228,7 @@ body,
     height: 16px;
     margin-top: -8px;
     border-radius: 2px;
-    background: var(--accent);
+    background: var(--accent-ink);
   }
 
   /* Progreso indeterminado (el total no se conoce hasta terminar de recorrer). */
