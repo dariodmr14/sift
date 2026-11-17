@@ -61,7 +61,9 @@ describe("Welcome", () => {
   it("enseña los tres pasos y el atajo real", async () => {
     render(<Welcome mode="first-run" />);
     expect(
-      await screen.findByRole("heading", { name: "Bienvenido a Sift" }),
+      await screen.findByRole("heading", {
+        name: "Te damos la bienvenida a Sift",
+      }),
     ).toBeInTheDocument();
     expect(screen.getByText("El atajo")).toBeInTheDocument();
     expect(screen.getByText("Dónde buscar")).toBeInTheDocument();

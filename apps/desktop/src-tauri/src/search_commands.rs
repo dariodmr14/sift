@@ -159,6 +159,63 @@ pub async fn search_files(
     Ok(SearchResponse { seq, results })
 }
 
+/// Caracteres y líneas del fragmento ampliado de la vista previa.
+const PREVIEW_CHARS: usize = 900;
+const PREVIEW_LINES: usize = 12;
+
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct FilePreview {
+    /// El fragmento ampliado, con lo que encaja marcado (vacío si el archivo no tiene texto).
+    pub text: Vec<sift_search::Segment>,
+    /// Código: se enseña en fuente fija y con sus saltos de línea.
+    pub monospace: bool,
+    pub page: Option<u32>,
+}
+
+/// La vista previa de un resultado de la barra: un fragmento más largo que el de la
+/// lista, sacado de SQLite (no se lee el archivo). Solo se pide con la vista previa abierta.
+#[tauri::command]
+#[specta::specta]
+pub fn preview_file(
+    app: AppHandle,
+    file_id: i32,
+    chunk_id: i32,
+    query: String,
+) -> Result<FilePreview, AppError> {
+    // El guard de la base de datos se suelta al acabar esta línea: resaltar no la bloquea.
+    let chunk = db(&app).preview_chunk(file_id.into(), chunk_id.into())?;
+    let chunk = chunk.ok_or_else(|| {
+        AppError::NotFound(
+            "Sift ya no tiene este archivo: puede que se haya movido o borrado.".into(),
+        )
+    })?;
+    let ext = chunk.ext.to_lowercase();
+    let monospace =
+        sift_extract::type_filter("code").is_some_and(|code| code.contains(&ext.as_str()));
+    let text = if chunk.text.is_empty() {
+        vec![]
+    } else {
+        sift_search::snippet::preview(
+            &chunk.text,
+            &sift_search::ParsedQuery::parse(&query),
+            PREVIEW_CHARS,
+            PREVIEW_LINES,
+            monospace,
+        )
+    };
+    let page = if ext == "pdf" {
+        chunk.page.and_then(|p| u32::try_from(p).ok())
+    } else {
+        None
+    };
+    Ok(FilePreview {
+        text,
+        monospace,
+        page,
+    })
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn list_roots(app: AppHandle) -> Result<Vec<RootView>, AppError> {

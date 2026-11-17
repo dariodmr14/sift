@@ -33,7 +33,7 @@ const hit = (name: string, page: number | null = null) => ({
   name,
   ext: name.split(".").pop(),
   nameSegments: [{ text: name, hit: false }],
-  snippet: [],
+  snippet: [] as { text: string; hit: boolean }[],
   score: 1,
   boost: 1,
   byMeaning: false,
@@ -60,6 +60,16 @@ const commands = {
     }),
   ),
   getIcons: vi.fn((paths: string[]) => ok(paths.map(() => null))),
+  previewFile: vi.fn((_fileId: number, _chunkId: number, _query: string) =>
+    ok({
+      text: [
+        { text: "la clave ", hit: false },
+        { text: "primaria", hit: true },
+      ],
+      monospace: false,
+      page: 37,
+    }),
+  ),
   openFile: vi.fn(() => ok(null)),
   revealFile: vi.fn(() => ok(null)),
   runSpace: vi.fn(),
@@ -212,5 +222,120 @@ describe("barra", () => {
     await waitFor(() => expect(commands.runSpace).toHaveBeenCalledWith(1));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("listbox")).toBeInTheDocument();
+  });
+
+  describe("vista previa", () => {
+    async function openPreview() {
+      const { user, box } = await renderBar();
+      await user.type(box, "contrato");
+      await waitFor(() => expect(selectedText()).toContain("contrato.pdf"));
+      return { user, box };
+    }
+    const region = (name: string) =>
+      screen.findByRole("region", { name: `Vista previa de ${name}` });
+
+    it("Tab abre la vista previa del resultado seleccionado", async () => {
+      const { user } = await openPreview();
+      await user.keyboard("{Tab}");
+      const r = await region("contrato.pdf");
+      expect(r).toHaveTextContent("pág. 37");
+      expect(r).toHaveTextContent("primaria");
+      expect(commands.previewFile).toHaveBeenCalledWith(12, 1, "contrato");
+      expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    });
+
+    it("↓ cambia de resultado sin salir de la vista previa", async () => {
+      const { user } = await openPreview();
+      await user.keyboard("{Tab}");
+      await region("contrato.pdf");
+      await user.keyboard("{ArrowDown}");
+      expect(await region("notas.md")).toBeInTheDocument();
+    });
+
+    it("Esc y ← vuelven a la lista sin ocultar la barra", async () => {
+      const { user } = await openPreview();
+      await user.keyboard("{Tab}");
+      await region("contrato.pdf");
+      await user.keyboard("{Escape}");
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      expect(screen.queryByRole("region")).not.toBeInTheDocument();
+      expect(commands.hideLauncher).not.toHaveBeenCalled();
+      await user.keyboard("{Tab}");
+      await region("contrato.pdf");
+      await user.keyboard("{ArrowLeft}");
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+      expect(commands.hideLauncher).not.toHaveBeenCalled();
+    });
+
+    it("Enter abre el archivo, en su página", async () => {
+      const { user } = await openPreview();
+      await user.keyboard("{Tab}");
+      await region("contrato.pdf");
+      await user.keyboard("{Enter}");
+      expect(commands.openFile).toHaveBeenCalledWith(
+        "C:\\Docs\\contrato.pdf",
+        37,
+      );
+    });
+
+    it("→ abre con el cursor al final, pero no con el cursor en medio", async () => {
+      const { user, box } = await openPreview();
+      box.setSelectionRange(3, 3);
+      await user.keyboard("{ArrowRight}");
+      expect(screen.queryByRole("region")).not.toBeInTheDocument();
+      box.setSelectionRange(box.value.length, box.value.length);
+      await user.keyboard("{ArrowRight}");
+      expect(await region("contrato.pdf")).toBeInTheDocument();
+    });
+
+    it("escribir con la vista previa abierta vuelve a la lista", async () => {
+      const { user } = await openPreview();
+      await user.keyboard("{Tab}");
+      await region("contrato.pdf");
+      await user.keyboard("s");
+      expect(screen.queryByRole("region")).not.toBeInTheDocument();
+      expect(await screen.findByRole("listbox")).toBeInTheDocument();
+    });
+
+    it("dice por qué sale: palabras, significado o nombre", async () => {
+      const { user, box } = await renderBar();
+      const answer = (h: ReturnType<typeof hit>) =>
+        commands.searchFiles.mockImplementation((_q: string, seq: number) =>
+          ok({ seq, results: { hits: [h], tookMs: 1 } }),
+        );
+      const base = hit("contrato.pdf");
+      const cases: [ReturnType<typeof hit>, string][] = [
+        [
+          { ...base, snippet: [{ text: "primaria", hit: true }] },
+          "Contiene «primaria»",
+        ],
+        [
+          {
+            ...base,
+            snippet: [{ text: "primaria", hit: true }],
+            byMeaning: true,
+          },
+          "Trata de lo mismo",
+        ],
+        [base, "Por el nombre"],
+      ];
+      for (const [h, label] of cases) {
+        answer(h);
+        await user.clear(box);
+        await user.type(box, "clave");
+        await waitFor(() => expect(selectedText()).toContain("contrato.pdf"));
+        await user.keyboard("{Tab}");
+        expect(await region("contrato.pdf")).toHaveTextContent(label);
+        await user.keyboard("{Escape}");
+      }
+    });
+
+    it("Tab con un Espacio seleccionado no abre nada", async () => {
+      const { user } = await renderBar();
+      await screen.findByText("Espacios");
+      await user.keyboard("{Tab}");
+      expect(screen.queryByRole("region")).not.toBeInTheDocument();
+      expect(screen.getByRole("listbox")).toBeInTheDocument();
+    });
   });
 });

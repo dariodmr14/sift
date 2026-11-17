@@ -22,6 +22,8 @@ export interface Item {
   shortcut?: string;
   /** Ruta del archivo (solo archivos): Ctrl+↵ carpeta, Ctrl+Shift+C copiar. */
   path?: string;
+  /** El resultado de búsqueda del archivo (solo en esos): lo que enseña la vista previa. */
+  hit?: FileHit;
   /** Qué hace al elegirla (datos, no una función: lo ejecuta la barra). */
   action: ItemAction;
 }
@@ -117,6 +119,7 @@ export function buildItems(s: ItemSources): Item[] {
     ),
     icon: <FileIcon src={s.icons[hit.path]} />,
     path: hit.path,
+    hit,
     action: {
       kind: "file",
       path: hit.path,

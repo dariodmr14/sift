@@ -15,7 +15,7 @@ Además, la descarga del modelo es la única conexión que Sift hace a internet 
 
 ### 1. Dónde va la bienvenida
 
-**Elegido:** una página de Ajustes en «modo bienvenida» la primera vez. No tiene navegación lateral, va centrada y con el título «Bienvenido a Sift». Después de completarla queda como «Primeros pasos» en la navegación.
+**Elegido:** una página de Ajustes en «modo bienvenida» la primera vez. No tiene navegación lateral, va centrada y con el título «Te damos la bienvenida a Sift» (forma neutra, decidida por Darío el 2026-11-17). Después de completarla queda como «Primeros pasos» en la navegación.
 
 | Opción | A favor | En contra |
 |---|---|---|

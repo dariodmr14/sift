@@ -78,6 +78,11 @@ export const commands = {
 	/**  Busca archivos por nombre y contenido. Se mide el tiempo en Rust (objetivo < 50 ms). */
 	searchFiles: (query: string, seq: number, filter: string | null) => typedError<SearchResponse_Serialize, AppError>(__TAURI_INVOKE("search_files", { query, seq, filter })),
 	/**
+	 *  La vista previa de un resultado de la barra: un fragmento más largo que el de la
+	 *  lista, sacado de SQLite (no se lee el archivo). Solo se pide con la vista previa abierta.
+	 */
+	previewFile: (fileId: number, chunkId: number, query: string) => typedError<FilePreview_Serialize, AppError>(__TAURI_INVOKE("preview_file", { fileId, chunkId, query })),
+	/**
 	 *  Rutas del índice que encajan con lo que se escribe en el editor de acciones (por
 	 *  nombre; ver `sift_search::paths`). Lo que más abres va primero.
 	 */
@@ -354,6 +359,24 @@ export type FileHit_Serialize = {
 	 *  marca para que se entienda por qué está ahí.
 	 */
 	byMeaning: boolean,
+};
+
+export type FilePreview = FilePreview_Serialize | FilePreview_Deserialize;
+
+export type FilePreview_Deserialize = {
+	/**  El fragmento ampliado, con lo que encaja marcado (vacío si el archivo no tiene texto). */
+	text: Segment[],
+	/**  Código: se enseña en fuente fija y con sus saltos de línea. */
+	monospace: boolean,
+	page?: number | null,
+};
+
+export type FilePreview_Serialize = {
+	/**  El fragmento ampliado, con lo que encaja marcado (vacío si el archivo no tiene texto). */
+	text: Segment[],
+	/**  Código: se enseña en fuente fija y con sus saltos de línea. */
+	monospace: boolean,
+	page: number | null,
 };
 
 /**

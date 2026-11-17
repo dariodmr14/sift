@@ -13,12 +13,19 @@ import {
   ResultPanel,
   RunningPanel,
 } from "./launcher/panels";
+import {
+  PreviewPanel,
+  NO_PREVIEW_TEXT,
+  previewName,
+} from "./launcher/PreviewPanel";
+import { caretAtEnd, previewReason, reasonLabel } from "./launcher/preview";
 import { ResultsList } from "./launcher/ResultsList";
 import { moveSelection } from "./launcher/selection";
 import { resultsAnnouncement } from "./launcher/announce";
 import { useBarData } from "./launcher/useBarData";
 import { useDebounced } from "./launcher/useDebounced";
 import { useFileIcons, useFileSearch } from "./launcher/useFileSearch";
+import { usePreview } from "./launcher/usePreview";
 import { useSpaceRun } from "./launcher/useSpaceRun";
 import { Glyph } from "./components/Glyph";
 import { Shortcut } from "./components/Keycap";
@@ -29,6 +36,8 @@ function App() {
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   // Filtro rápido activo («pdf …»): una etiqueta junto a la caja; Retroceso lo quita.
   const [filter, setFilter] = useState<TypeFilter | null>(null);
+  // Vista previa del resultado seleccionado en lugar de la lista (Tab o →).
+  const [previewOpen, setPreviewOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLElement>(null);
 
@@ -41,6 +50,7 @@ function App() {
     setQuery("");
     setFilter(null);
     setSelected(0);
+    setPreviewOpen(false);
     setMode({ kind: "list" });
   }, []);
 
@@ -86,6 +96,11 @@ function App() {
     else openSettings(a.newSpace);
   };
 
+  const current: Item | undefined = items[selected];
+  // Sin resultado seleccionado, o fuera de la lista, no hay vista previa.
+  const showPreview = previewOpen && mode.kind === "list" && !!current;
+  const previewState = usePreview(current?.hit, query, showPreview);
+
   const isEmpty = spaces.length === 0 && recent.length === 0 && !query.trim();
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -107,7 +122,6 @@ function App() {
       openSettings(e.code === "KeyN");
       return;
     }
-    const current = items[selected];
     if (mode.kind === "list" && current?.path) {
       if (e.ctrlKey && e.key === "Enter") {
         e.preventDefault(); // Ctrl+↵: abrir la carpeta con el archivo seleccionado
@@ -133,6 +147,32 @@ function App() {
         dismiss();
       }
       return;
+    }
+    if (mode.kind === "list") {
+      const plain = !e.ctrlKey && !e.altKey && !e.metaKey;
+      if (plain && e.key === "Tab") {
+        e.preventDefault(); // que el foco no se vaya de la caja
+        if (showPreview) setPreviewOpen(false);
+        else if (current?.hit && !e.shiftKey) setPreviewOpen(true);
+        return;
+      }
+      if (
+        plain &&
+        !e.shiftKey &&
+        e.key === "ArrowRight" &&
+        !showPreview &&
+        current?.hit &&
+        caretAtEnd(box.value, box.selectionStart, box.selectionEnd)
+      ) {
+        e.preventDefault();
+        setPreviewOpen(true);
+        return;
+      }
+      if (showPreview && (e.key === "Escape" || e.key === "ArrowLeft")) {
+        e.preventDefault(); // vuelve a la lista; Esc no cierra la barra
+        setPreviewOpen(false);
+        return;
+      }
     }
     switch (e.key) {
       case "ArrowDown":
@@ -166,9 +206,17 @@ function App() {
   );
 
   const activeId =
-    mode.kind === "list" && items[selected]
-      ? `result-${items[selected].key}`
+    mode.kind === "list" && !showPreview && current
+      ? `result-${current.key}`
       : undefined;
+  const previewAnnouncement =
+    showPreview && current
+      ? `Vista previa de ${previewName(current, current.hit)}. ${
+          current.hit
+            ? `${reasonLabel(previewReason(current.hit))}.`
+            : NO_PREVIEW_TEXT
+        }`
+      : "";
 
   return (
     <main ref={rootRef} className="sift-from flex h-full flex-col bg-surface">
@@ -201,6 +249,7 @@ function App() {
               setQuery(text);
             }
             setSelected(0); // al escribir, la selección vuelve al primer resultado
+            setPreviewOpen(false);
             setMode({ kind: "list" });
           }}
           onKeyDown={onKeyDown}
@@ -210,7 +259,9 @@ function App() {
           spellCheck={false}
           role="combobox"
           aria-label="Buscar"
-          aria-expanded={mode.kind === "list" && items.length > 0}
+          aria-expanded={
+            mode.kind === "list" && !showPreview && items.length > 0
+          }
           aria-controls="results"
           aria-activedescendant={activeId}
           className="min-w-0 flex-1 bg-transparent py-4 text-xl text-fg outline-none placeholder:text-muted"
@@ -222,6 +273,7 @@ function App() {
           mode: mode.kind,
           isEmpty,
           hasItems: items.length > 0,
+          preview: showPreview,
         })}
         className="sift-swap min-h-0 flex-1"
       >
@@ -237,6 +289,13 @@ function App() {
             title={mode.title}
             headline={mode.headline}
             lines={mode.lines}
+          />
+        ) : showPreview && current ? (
+          <PreviewPanel
+            item={current}
+            hit={current.hit}
+            state={previewState}
+            icon={iconsHidden ? undefined : current.icon}
           />
         ) : isEmpty ? (
           <EmptyState />
@@ -261,7 +320,11 @@ function App() {
 
       {/* Siempre montada: un lector de pantalla no suele leer una región recién puesta. */}
       <p role="status" aria-live="polite" className="sr-only">
-        {mode.kind === "list" ? announcement : ""}
+        {mode.kind === "list"
+          ? showPreview
+            ? previewAnnouncement
+            : announcement
+          : ""}
       </p>
 
       <footer className="flex items-center gap-4 border-t border-line px-5 py-2 text-xs text-muted">
@@ -269,11 +332,19 @@ function App() {
           <Hint keys="Esc">cancelar (lo ya abierto sigue abierto)</Hint>
         ) : mode.kind === "result" ? (
           <Hint keys="Esc">cerrar</Hint>
+        ) : showPreview ? (
+          <>
+            <Hint keys="↑+↓">cambiar</Hint>
+            <Hint keys="enter">abrir</Hint>
+            <Hint keys="Esc">volver</Hint>
+            {current?.path && <Hint keys="Ctrl+enter">carpeta</Hint>}
+          </>
         ) : (
           <>
             <Hint keys="↑+↓">moverse</Hint>
             <Hint keys="enter">abrir</Hint>
-            {items[selected]?.path ? (
+            {current?.hit && <Hint keys="Tab">vista previa</Hint>}
+            {current?.path ? (
               <>
                 <Hint keys="Ctrl+enter">carpeta</Hint>
                 <Hint keys="Ctrl+Shift+C">copiar ruta</Hint>
