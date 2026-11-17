@@ -192,9 +192,7 @@ function App() {
           onKeyDown={onKeyDown}
           // Mientras se abre un Espacio, escribir no cambia nada (Esc sigue cancelando).
           readOnly={mode.kind === "running"}
-          placeholder={
-            filter ? `Buscar en tus ${filter.plural}…` : "Buscar en Sift…"
-          }
+          placeholder={filter ? `Buscar en tus ${filter.plural}` : "Buscar"}
           spellCheck={false}
           role="combobox"
           aria-label="Buscar"

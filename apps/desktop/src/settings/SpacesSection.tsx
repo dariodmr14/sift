@@ -140,7 +140,7 @@ export function SpacesSection() {
     if (r.data === null) return;
     setMessage({
       ok: true,
-      text: `${r.data} Espacio(s) importado(s). Los comandos pedirán confirmación la primera vez.`,
+      text: `${r.data === 1 ? "1 Espacio importado" : `${r.data} Espacios importados`}. Los comandos pedirán confirmación la primera vez.`,
     });
     void reload();
   }
@@ -161,7 +161,7 @@ export function SpacesSection() {
           className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pt-3"
         >
           {spaces?.length === 0 && (
-            <li className="p-2 text-sm text-muted">Aún no hay Espacios.</li>
+            <li className="p-2 text-sm text-muted">Aún no hay Espacios</li>
           )}
           <SortableList
             ids={(spaces ?? []).map((v) => String(v.space.id))}

@@ -138,7 +138,8 @@ function LibraryTab({
   return (
     <div className="space-y-2">
       <TextInput
-        placeholder="Buscar icono (en español o inglés): carpeta, base, código…"
+        placeholder="Buscar icono"
+        title="En español o en inglés: carpeta, base, código…"
         value={query}
         onChange={(e) => setQuery(e.currentTarget.value)}
       />
