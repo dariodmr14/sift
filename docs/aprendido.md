@@ -57,3 +57,14 @@ Lo más útil de cada fase de Sift, contado al terminarla. El resumen está en e
 - Las apps más usadas (VS Code, navegadores, el Explorador) no abren un proceso nuevo: le piden al que ya tienen que abra otra ventana. Seguir el proceso lanzado no sirve; lo que funciona es buscar una ventana **nueva** del programa esperado.
 - Windows 10 rodea las ventanas de un borde invisible de unos 7 px: si se mueve la ventana a la zona tal cual, quedan huecos. Hay que preguntar a DWM qué parte se ve y compensar.
 - Probar ventanas sin tocar el ratón: una prueba abre ventanas de verdad, las coloca y mide dónde quedan. Para la interfaz, el protocolo de DevTools del WebView permite manejar la app real por script y hacer capturas.
+
+**Fase 7**
+- unslop dio un método: primero una dirección escrita (carácter, momentos y firma) y luego pasadas por orden (espaciado, color, iconos, textos, tipo y detalles). Con una dirección aprobada, cada pantalla se decide sola.
+- La firma, «la marca de lo que encaja» (un subrayado de 2 px con el acento legible), une la lista, la vista previa y la búsqueda por significado con una sola idea visual.
+- El acento de Windows no garantiza contraste. Rust calcula una variante que cumple 4,5:1 (`--accent-ink`) para el texto y los trazos; el acento sin cambios queda para los rellenos.
+- Accesibilidad que se prueba: diálogos que atrapan el foco, anuncios con `aria-live` y objetivos de 24 px. El script de capturas lo comprueba con teclas reales por el protocolo de DevTools.
+- Pedir permiso antes de la única descarga grande (el modelo, ~135 MB) en la bienvenida, en vez de descargar en silencio. La decisión y sus alternativas están en el [ADR 0015](adr/0015-bienvenida-y-permiso-de-descarga.md).
+- La vista previa sale de SQLite (los fragmentos ya guardados), no del archivo: no lee disco y no afecta a la apertura de la barra ni a la búsqueda.
+- Verla en pantalla cambió decisiones: el Markdown en un solo párrafo era ilegible, y se pasó a conservar los saltos de línea (salvo en PDF). Los tests no lo habrían visto.
+- Las pruebas de extremo a extremo destapan supuestos: la barra solo busca al cambiar el texto, así que en el primer indexado la prueba fallaba. Ahora repite la búsqueda hasta que hay resultados.
+- Con Enter por el protocolo de DevTools hay que mandar el carácter `\r`: sin él, el botón no se activa.
