@@ -52,7 +52,7 @@ function Settings() {
         setPage(p.id);
         if (p.id === "status") refreshStatus();
       }}
-      className="sift-option px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-ink"
+      className="sift-option sift-option-soft px-3 py-1.5 text-left text-sm outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent-ink"
     >
       {p.label}
     </button>

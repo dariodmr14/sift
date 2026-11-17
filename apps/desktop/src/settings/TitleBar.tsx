@@ -39,7 +39,7 @@ function CaptionButton({
       // Como en Windows, no se llega con Tab: Alt+F4, Win+↑/↓ y Alt+Espacio ya lo cubren.
       tabIndex={-1}
       onClick={onClick}
-      className={`sift-caption-glyph flex h-8 w-[46px] items-center justify-center text-fg outline-none ${
+      className={`sift-caption-glyph flex h-8 w-[46px] items-center justify-center text-fg transition-colors duration-(--dur-state) outline-none motion-reduce:transition-none ${
         close
           ? "hover:bg-caption-close hover:text-caption-close-fg"
           : "hover:bg-hover active:bg-selected"

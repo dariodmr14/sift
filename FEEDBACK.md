@@ -73,7 +73,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **La carpeta de la uni dice 86.509 archivos** (quedan 11.888 útiles; ver ADR 0007), exagerado. Indexar solo formatos útiles (texto, código, documentos) e ignorar por defecto binarios, compilados, imágenes, vídeos, cachés, entornos virtuales y dependencias. Explicar qué había en esos 86.509.
 
 ### Para la Fase 7 (pulido)
-- [ ] ⏳ Las animaciones del arrastre de acciones cambian de color de golpe al coger y al soltar la tarjeta: tienen que ser transiciones suaves. Habrá que pulir a fondo todas las animaciones.
+- [x] ✅ Las animaciones del arrastre de acciones cambian de color de golpe al coger y al soltar la tarjeta: tienen que ser transiciones suaves. Habrá que pulir a fondo todas las animaciones — fondo y sombra con transición de 150 ms al coger y soltar; cambios de panel en la barra y estados de los botones también suaves (Fase 7, bloque 5).
 
 ## 2026-11-12 (2) — Tras probar los ajustes de la ventana y del indexado
 
