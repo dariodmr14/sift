@@ -24,6 +24,8 @@ use sift_spaces::{Action, Icon, SpaceDraft};
 pub const IDENTIFIER: &str = "dev.sift.app-dev";
 pub const PRODUCT_NAME: &str = "Sift (desarrollo)";
 pub const HOTKEY: &str = "Ctrl+Alt+Space";
+/// Arrancar la versión de desarrollo sin datos de prueba (ver [`seed`]).
+const NO_SEED_ENV: &str = "SIFT_DEV_NO_SEED";
 
 /// ¿Es la versión de desarrollo? Toda compilación de depuración lo es.
 pub const fn is_dev() -> bool {
@@ -58,8 +60,11 @@ fn repo_root() -> PathBuf {
 
 /// Datos de prueba para una base de datos de desarrollo vacía: la carpeta `docs/` del
 /// repositorio y un Espacio de ejemplo. Si ya hay algo, no toca nada.
+///
+/// Con `SIFT_DEV_NO_SEED=1` no se rellena: así se puede ver la bienvenida, que solo sale
+/// sin datos (lo usa `scripts/capturas-final.mjs`). Solo en desarrollo.
 pub fn seed(db: &mut sift_storage::Database) {
-    if !is_dev() {
+    if !is_dev() || std::env::var(NO_SEED_ENV).is_ok_and(|v| v == "1") {
         return;
     }
     let empty =
