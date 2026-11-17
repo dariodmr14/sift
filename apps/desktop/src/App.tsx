@@ -209,6 +209,7 @@ function App() {
           <RunningPanel
             title={mode.title}
             progress={mode.progress}
+            steps={mode.steps}
             cancelling={mode.cancelling}
           />
         ) : mode.kind === "result" ? (

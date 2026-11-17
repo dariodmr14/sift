@@ -6,6 +6,7 @@ import {
   type Segment,
   type SpaceProgress_Deserialize,
 } from "../bindings";
+import type { RunStep } from "./mode";
 import { progressText, type SummaryLine } from "./runSummary";
 import { Glyph, type GlyphName } from "../components/Glyph";
 import { Keycap } from "../components/Keycap";
@@ -66,24 +67,67 @@ export function EmptyState() {
   );
 }
 
+/**
+ * Un Espacio abriéndose, como una secuencia viva (uno de los dos momentos de la
+ * dirección de diseño): lo ya abierto con su ✓, lo que está en marcha y cuánto falta.
+ */
 export function RunningPanel({
   title,
   progress,
+  steps,
   cancelling,
 }: {
   title: string;
   progress: SpaceProgress | null;
+  steps: RunStep[];
   cancelling: boolean;
 }) {
+  const current = steps[steps.length - 1] as RunStep | undefined;
+  const left = progress ? progress.total - progress.step : 0;
   return (
-    <div role="status" aria-live="polite" className="h-full p-5">
-      <p className="mb-1 text-sm font-semibold">Abriendo «{title}»</p>
-      <p className="text-sm text-muted">
-        {cancelling
-          ? "Cancelando…"
-          : progress
-            ? progressText({ ...progress, waited: progress.waited ?? null })
-            : "Empezando…"}
+    <div
+      role="status"
+      aria-live="polite"
+      className="h-full overflow-y-auto p-5"
+    >
+      <p className="mb-3 text-sm font-semibold">Abriendo «{title}»</p>
+      <ol className="space-y-1.5 text-sm">
+        {steps.slice(0, -1).map((s) => (
+          <li key={s.step} className="flex gap-2">
+            <span className="w-4 shrink-0 text-center text-success">
+              <Glyph name="check" />
+            </span>
+            <span className="min-w-0 truncate">{s.label}</span>
+          </li>
+        ))}
+        {current && (
+          <li className="flex gap-2">
+            <span className="w-4 shrink-0 text-center text-accent-ink">
+              <Glyph name="chevronRight" />
+            </span>
+            <span className="min-w-0 truncate">
+              {cancelling
+                ? "Cancelando…"
+                : progress
+                  ? progressText({
+                      ...progress,
+                      waited: progress.waited ?? null,
+                    })
+                  : current.label}
+            </span>
+          </li>
+        )}
+      </ol>
+      <p className="mt-3 text-xs text-muted">
+        {!current
+          ? cancelling
+            ? "Cancelando…"
+            : "Empezando…"
+          : left > 0
+            ? left === 1
+              ? "Falta 1 paso"
+              : `Faltan ${left} pasos`
+            : "Último paso"}
       </p>
     </div>
   );
