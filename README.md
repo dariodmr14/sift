@@ -22,6 +22,7 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **Lo que usas, primero**: lo que abres a menudo y hace poco sube en los resultados (frecencia), sin colar nada que no encaje con lo que buscas.
 - **Barra vacía útil**: sin escribir nada, tus Espacios y lo último que abriste desde Sift.
 - **Filtros rápidos**: «pdf contrato», «código árbol», «imagen playa»… buscan solo ese tipo de archivo (la palabra queda como etiqueta; Retroceso la quita).
+- **Vista previa**: sin salir de la barra (Tab), por qué sale cada resultado y un fragmento más largo, con lo que encaja subrayado.
 - **PDF en su página**: un PDF se abre en la página que encaja con tu búsqueda («pág. 37»), con el lector que tengas (Edge, Chrome, Adobe, Sumatra…).
 - **Espacios y archivos en la misma lista**: si escribes el nombre o un alias de un Espacio, sale el primero; si encaja a medias, se coloca entre los archivos según lo que más uses.
 - **Colocar ventanas**: cada cosa que abre un Espacio puede ir a una zona de la pantalla (mitades, tercios, cuartos o toda la pantalla), en la pantalla que elijas; si ya estaba abierta, se mueve en vez de abrir otra.
@@ -124,10 +125,12 @@ node scripts/e2e.mjs
 - [ADR 0008](docs/adr/0008-distribucion-de-pdfium.md): PDFium para los PDF y cómo llega `pdfium.dll` (dentro del instalador, versión y hash fijados).
 - [ADR 0009](docs/adr/0009-busqueda-por-significado.md): búsqueda por significado (modelo elegido midiendo, vectores en SQLite, HNSW derivado, fusión y evaluación).
 - [ADR 0010](docs/adr/0010-ranking-hibrido.md): ranking híbrido (diagnóstico, búsqueda de palabras relajada, suma por archivo, frecencia, benchmark).
-- [ADR 0014](docs/adr/0014-colocar-ventanas.md): colocar ventanas en zonas (encontrar la ventana nueva, bordes invisibles, varias pantallas).
-- [ADR 0013](docs/adr/0013-pdf-en-su-pagina-y-filtros.md): PDF en su página, filtros rápidos por tipo y barra vacía con lo reciente.
-- [ADR 0012](docs/adr/0012-esperas-en-los-espacios.md): esperas en los Espacios (solo cosas de tu equipo, el comando esperado sin ventana, cancelar sin cerrar nada).
 - [ADR 0011](docs/adr/0011-espacios-en-los-resultados.md): Espacios mezclados con los archivos (exactos primero, parciales en la escala de los archivos) y rutas sugeridas del índice.
+- [ADR 0012](docs/adr/0012-esperas-en-los-espacios.md): esperas en los Espacios (solo cosas de tu equipo, el comando esperado sin ventana, cancelar sin cerrar nada).
+- [ADR 0013](docs/adr/0013-pdf-en-su-pagina-y-filtros.md): PDF en su página, filtros rápidos por tipo y barra vacía con lo reciente.
+- [ADR 0014](docs/adr/0014-colocar-ventanas.md): colocar ventanas en zonas (encontrar la ventana nueva, bordes invisibles, varias pantallas).
+- [ADR 0015](docs/adr/0015-bienvenida-y-permiso-de-descarga.md): bienvenida la primera vez y permiso antes de descargar el modelo.
+- [ADR 0016](docs/adr/0016-campos-y-movimiento-al-escribir.md): borde inferior de los campos a 3:1 y sin animación al escribir.
 
 ## Créditos
 

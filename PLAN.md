@@ -227,14 +227,16 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 **Hecho cuando:** un Espacio abre VS Code en la mitad derecha y el navegador en la izquierda del monitor elegido, aunque alguna de las dos ya estuviera abierta. ✅ Comprobado con el Bloc de notas y el Explorador (que, como VS Code, reutiliza su proceso) en las dos pantallas; con VS Code y el navegador de Darío, pendiente de su uso real.
 
 ### Fase 7 — Pulido
-- [ ] Instalar y usar la skill unslop (https://github.com/heydamir/unslop, licencia CC BY 4.0: citar a Damir Sokolovsky en el README) para auditar y rediseñar la interfaz, respetando el sistema de diseño Vidrio y justificando cualquier cambio en un ADR. Usarla también para el vídeo de LinkedIn.
-- [ ] Diseño final: tipografía, espaciado, tema claro/oscuro según Windows.
+- [x] Instalar y usar la skill unslop (https://github.com/heydamir/unslop, licencia CC BY 4.0: citar a Damir Sokolovsky en el README) para auditar y rediseñar la interfaz, respetando el sistema de diseño Vidrio y justificando cualquier cambio en un ADR. Usarla también para el vídeo de LinkedIn.
+- [x] Diseño final: tipografía, espaciado, tema claro/oscuro según Windows.
 - [x] Animaciones de entrada/salida y de lista (rápidas, sin estorbar).
-- [ ] Vista previa del resultado seleccionado.
+- [x] Vista previa del resultado seleccionado.
 - [x] Pantalla de bienvenida: elegir carpetas y crear el primer Espacio.
 - [x] Accesibilidad básica: contraste, foco visible, lector de pantalla.
 
 **Hecho cuando:** una persona que no lo conoce lo instala y lo usa sin explicaciones.
+
+**Estado (2026-11-18):** todas las tareas hechas y comprobadas en pantalla (`docs/capturas/final/`). Falta lo único que no se puede comprobar solo: que alguien que no conoce Sift lo instale y lo use sin explicaciones. Cuando Darío lo pruebe con una persona, se cierra la fase.
 
 ### Fase 8 — Lanzamiento
 - [ ] Instalador (NSIS/MSI) y release en GitHub con GitHub Actions.

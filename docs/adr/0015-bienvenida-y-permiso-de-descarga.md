@@ -42,7 +42,7 @@ Así no sale a quien ya usa Sift ni a los datos de desarrollo.
 **Elegido:** un ajuste `modelDownloadAllowed`, falso por defecto. Si el modelo ya está en disco, se usa igual. Sin permiso:
 
 - el estado de la búsqueda por significado es `awaitingPermission` («esperando permiso»);
-- Ajustes → General y la bienvenida muestran el botón «Descargar (120 MB)».
+- Ajustes → General y la bienvenida muestran el botón «Descargar (135 MB)»: el tamaño real lo da la ficha del modelo (las cifras de 120 MB de este ADR eran una estimación previa).
 
 La descarga sigue con su hash fijado, como dice [ADR 0009](0009-busqueda-por-significado.md).
 
