@@ -263,6 +263,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - Búsqueda: reordenar los primeros resultados con un *reranker* local, si las ideas siguen fallando y cabe en los 50 ms (ADR 0010).
 - Búsqueda: calcular el vector de cada fragmento con el contexto de su documento (título, asignatura). Obliga a recalcular todos los vectores (ADR 0010).
 - Búsqueda: agrupar copias del mismo archivo en varias carpetas (hoy `clarin.txt` puede salir tres veces seguidas).
+- Barra: volver a buscar sola cuando el indexado termina, si está abierta (hoy, durante el primer indexado, los resultados no se actualizan hasta que cambias el texto).
 
 ---
 

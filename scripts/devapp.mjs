@@ -16,13 +16,14 @@ const PORT = 9223;
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/** Arranca `npm run tauri dev` con el puerto de depuración del WebView2. */
-export function startDevApp() {
+/** Arranca `npm run tauri dev` con el puerto de depuración del WebView2 (y `env` de más). */
+export function startDevApp(env = {}) {
   // `npm` es un .cmd: hace falta cmd.exe. La orden es fija, sin nada que venga de fuera.
   const app = spawn(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "npm run tauri dev"], {
     cwd: desktop,
     env: {
       ...process.env,
+      ...env,
       WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${PORT}`,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -61,6 +62,18 @@ export async function waitFor(fn, ms, what) {
   }
   throw new Error(`no llegó a tiempo: ${what}`);
 }
+
+/** Teclas que se pueden pulsar con `press`. */
+const KEYS = {
+  Tab: { code: "Tab", vk: 9 },
+  // Con su carácter: sin él, Enter no activa botones.
+  Enter: { code: "Enter", vk: 13, text: "\r" },
+  Escape: { code: "Escape", vk: 27 },
+  ArrowLeft: { code: "ArrowLeft", vk: 37 },
+  ArrowUp: { code: "ArrowUp", vk: 38 },
+  ArrowRight: { code: "ArrowRight", vk: 39 },
+  ArrowDown: { code: "ArrowDown", vk: 40 },
+};
 
 /** Conexión a una página: evaluar JavaScript, capturas y errores de la consola. */
 export async function connect(urlPart) {
@@ -108,7 +121,21 @@ export async function connect(urlPart) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, Buffer.from(r.result.data, "base64"));
   };
-  return { evaluate, shot, errors, close: () => ws.close() };
+  /** Pulsa una tecla de verdad (como el teclado: mueve el foco, dispara keydown…). */
+  const press = async (key, { shift = false } = {}) => {
+    const k = KEYS[key];
+    if (!k) throw new Error(`tecla sin definir: ${key}`);
+    for (const type of ["keyDown", "keyUp"])
+      await send("Input.dispatchKeyEvent", {
+        type,
+        key,
+        code: k.code,
+        windowsVirtualKeyCode: k.vk,
+        modifiers: shift ? 8 : 0,
+        ...(type === "keyDown" && k.text ? { text: k.text } : {}),
+      });
+  };
+  return { evaluate, shot, press, errors, close: () => ws.close() };
 }
 
 /** Escribe en la caja de la barra como lo haría una persona (dispara `input`). */
@@ -119,4 +146,24 @@ export function typeInBar(bar, text) {
     set.call(box, ${JSON.stringify(text)});
     box.dispatchEvent(new Event('input', { bubbles: true }));
   })()`);
+}
+
+/**
+ * Busca en la barra hasta que salgan resultados que cumplan `ok`. La barra solo busca al
+ * cambiar el texto: en un primer arranque el índice aún se está llenando, así que se
+ * vuelve a escribir (vaciando antes la caja) hasta que llegan.
+ */
+export async function searchUntil(bar, text, ok, ms) {
+  const until = Date.now() + ms;
+  let last = "";
+  while (Date.now() < until) {
+    await typeInBar(bar, "");
+    await typeInBar(bar, text);
+    await sleep(1500);
+    last = await bar.evaluate(
+      "[...document.querySelectorAll('[role=option]')].map(o => o.textContent).join(' | ')",
+    );
+    if (ok(last)) return last;
+  }
+  return last;
 }

@@ -193,6 +193,9 @@ pub fn preview_file(
     let ext = chunk.ext.to_lowercase();
     let monospace =
         sift_extract::type_filter("code").is_some_and(|code| code.contains(&ext.as_str()));
+    // Se conservan los saltos de línea (párrafos, listas, tablas de Markdown) salvo en los
+    // PDF: su texto viene cortado por la maquetación de la página y se lee mejor seguido.
+    let keep_lines = ext != "pdf";
     let text = if chunk.text.is_empty() {
         vec![]
     } else {
@@ -201,7 +204,7 @@ pub fn preview_file(
             &sift_search::ParsedQuery::parse(&query),
             PREVIEW_CHARS,
             PREVIEW_LINES,
-            monospace,
+            keep_lines,
         )
     };
     let page = if ext == "pdf" {
