@@ -7,6 +7,7 @@ import type {
   ReactNode,
   SelectHTMLAttributes,
 } from "react";
+import { Glyph } from "../components/Glyph";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -100,7 +101,7 @@ export function Modal({
         <header className="flex items-center justify-between border-b border-line px-4 py-3">
           <h3 className="font-medium">{title}</h3>
           <Button variant="ghost" onClick={onClose} aria-label="Cerrar">
-            ✕
+            <Glyph name="close" />
           </Button>
         </header>
         {children}

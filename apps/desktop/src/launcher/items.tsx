@@ -3,6 +3,7 @@
 
 import type { ReactNode } from "react";
 import type { FileHit, RecentFile } from "../bindings";
+import { Glyph, type GlyphName } from "../components/Glyph";
 import { SpaceIcon } from "../components/SpaceIcon";
 import { matchBuiltins, type BuiltinId } from "./builtins";
 import { sectionStarts, shortFolder, type Section } from "./files";
@@ -30,9 +31,9 @@ export type ItemAction =
   | { kind: "file"; path: string; name: string; page: number | null }
   | { kind: "settings"; newSpace: boolean };
 
-const BUILTIN_ICON: Record<BuiltinId, string> = {
-  settings: "⚙️",
-  newSpace: "➕",
+const BUILTIN_ICON: Record<BuiltinId, GlyphName> = {
+  settings: "settings",
+  newSpace: "add",
 };
 
 function subtitleFor(view: SpaceView): string {
@@ -146,7 +147,7 @@ export function buildItems(s: ItemSources): Item[] {
     section: "commands",
     title: c.title,
     subtitle: c.subtitle,
-    icon: <span className="text-xl">{BUILTIN_ICON[c.id]}</span>,
+    icon: <Glyph name={BUILTIN_ICON[c.id]} className="text-xl" />,
     shortcut: c.shortcut,
     action: { kind: "settings", newSpace: c.id === "newSpace" },
   }));

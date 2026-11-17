@@ -7,6 +7,7 @@ import {
   type SpaceProgress_Deserialize,
 } from "../bindings";
 import { progressText, type SummaryLine } from "./runSummary";
+import { Glyph, type GlyphName } from "../components/Glyph";
 
 export type SpaceProgress = SpaceProgress_Deserialize;
 
@@ -73,12 +74,15 @@ export function RunningPanel({
   );
 }
 
-const LINE_MARK: Record<SummaryLine["state"], { mark: string; cls: string }> = {
-  ok: { mark: "✓", cls: "text-success" },
-  warning: { mark: "!", cls: "text-accent-ink" },
-  failed: { mark: "✕", cls: "text-danger" },
-  cancelled: { mark: "✕", cls: "text-muted" },
-  notRun: { mark: "–", cls: "text-muted" },
+const LINE_MARK: Record<
+  SummaryLine["state"],
+  { mark: GlyphName; cls: string }
+> = {
+  ok: { mark: "check", cls: "text-success" },
+  warning: { mark: "warning", cls: "text-accent-ink" },
+  failed: { mark: "close", cls: "text-danger" },
+  cancelled: { mark: "close", cls: "text-muted" },
+  notRun: { mark: "dash", cls: "text-muted" },
 };
 
 export function ResultPanel({
@@ -99,10 +103,9 @@ export function ResultPanel({
         {lines.map((l, i) => (
           <li key={i} className="flex gap-2">
             <span
-              aria-hidden
               className={`w-4 shrink-0 text-center ${LINE_MARK[l.state].cls}`}
             >
-              {LINE_MARK[l.state].mark}
+              <Glyph name={LINE_MARK[l.state].mark} />
             </span>
             <span className="min-w-0">
               <span className={l.state === "notRun" ? "text-muted" : ""}>

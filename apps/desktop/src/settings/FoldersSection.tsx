@@ -7,6 +7,7 @@ import {
   type UnreadGroupView,
 } from "../bindings";
 import { Button, ErrorText } from "./ui";
+import { Glyph } from "../components/Glyph";
 import { count, duration, files, since } from "../format";
 import {
   folderName,
@@ -73,7 +74,8 @@ export function FoldersSection() {
             Carpetas
           </h2>
           <Button variant="primary" onClick={() => void add()}>
-            + Añadir carpeta…
+            <Glyph name="add" className="mr-2" />
+            Añadir carpeta…
           </Button>
         </header>
         <p className="text-sm text-muted">
@@ -262,7 +264,7 @@ function RootRow({
                 open ? "rotate-90" : ""
               }`}
             >
-              ›
+              <Glyph name="chevronRight" className="text-xs" />
             </span>
             {root.errors === 1
               ? "1 archivo no se pudo leer"
@@ -392,7 +394,7 @@ function Advanced() {
           aria-hidden
           className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
         >
-          ›
+          <Glyph name="chevronRight" className="text-xs" />
         </span>
         Avanzado
       </summary>

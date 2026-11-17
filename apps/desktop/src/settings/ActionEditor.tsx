@@ -7,6 +7,7 @@ import { PlacementEditor } from "./PlacementEditor";
 import { useSortableItem } from "./Sortable";
 import { Button, ErrorText, Field, TextInput } from "./ui";
 import { canCheckNow, WaitEditor } from "./WaitEditor";
+import { Glyph } from "../components/Glyph";
 
 type TestState =
   | { kind: "idle" }
@@ -95,7 +96,7 @@ export function ActionEditor({
           title="Arrastra para reordenar (o Alt+↑/↓)"
           className="cursor-grab touch-none rounded-item px-1 text-muted outline-none select-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink active:cursor-grabbing"
         >
-          <span aria-hidden>⠿</span>
+          <Glyph name="gripper" />
         </button>
         <span className="text-xs text-muted">{index + 1}.</span>
         <span className="flex-1 text-sm font-medium">
@@ -117,8 +118,13 @@ export function ActionEditor({
         >
           {test.kind === "running" ? "Probando…" : "Probar"}
         </Button>
-        <Button variant="danger" aria-label="Quitar acción" onClick={onRemove}>
-          ✕
+        <Button
+          variant="danger"
+          aria-label="Quitar acción"
+          title="Quitar acción"
+          onClick={onRemove}
+        >
+          <Glyph name="delete" />
         </Button>
       </div>
 

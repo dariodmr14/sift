@@ -18,6 +18,7 @@ import { moveSelection } from "./launcher/selection";
 import { useBarData } from "./launcher/useBarData";
 import { useFileIcons, useFileSearch } from "./launcher/useFileSearch";
 import { useSpaceRun } from "./launcher/useSpaceRun";
+import { Glyph } from "./components/Glyph";
 
 function App() {
   const [query, setQuery] = useState("");
@@ -168,9 +169,7 @@ function App() {
             className="shrink-0 rounded-item bg-selected px-2 py-0.5 text-sm text-fg hover:bg-hover"
           >
             {filter.label}{" "}
-            <span aria-hidden className="text-muted">
-              ×
-            </span>
+            <Glyph name="close" className="ml-1 text-xs text-muted" />
           </button>
         )}
         <input
@@ -267,9 +266,9 @@ function App() {
           onClick={() => openSettings()}
           title="Ajustes (Ctrl+,)"
           aria-label="Ajustes"
-          className="ml-auto rounded px-1 text-base leading-none opacity-60 hover:opacity-100"
+          className="ml-auto rounded-item p-1 leading-none hover:bg-hover hover:text-fg"
         >
-          ⚙
+          <Glyph name="settings" />
         </button>
       </footer>
     </main>

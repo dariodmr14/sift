@@ -5,6 +5,7 @@ import { TYPE_FILTERS } from "../launcher/filters";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
+import { Glyph } from "../components/Glyph";
 
 /** Cómo escucha Sift el atajo, explicado (solo en «Avanzado»). */
 const BACKEND_LABEL = {
@@ -377,7 +378,7 @@ function StatusList({ status }: { status: Status }) {
             aria-hidden
             className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
           >
-            ›
+            <Glyph name="chevronRight" className="text-xs" />
           </span>
           Avanzado
         </summary>

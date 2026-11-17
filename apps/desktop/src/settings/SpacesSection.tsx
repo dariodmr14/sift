@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { commands, events } from "../bindings";
+import { Glyph } from "../components/Glyph";
 import { SpaceIcon } from "../components/SpaceIcon";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SortableList, useSortableItem } from "./Sortable";
@@ -191,7 +192,8 @@ export function SpacesSection() {
             aria-current={selection?.kind === "new"}
             onClick={() => setSelection({ kind: "new" })}
           >
-            + Nuevo Espacio
+            <Glyph name="add" className="mr-2" />
+            Nuevo Espacio
           </Button>
           <div className="flex gap-2">
             <Button className="flex-1" onClick={() => void importFile()}>
@@ -265,7 +267,8 @@ export function SpacesSection() {
               variant="primary"
               onClick={() => setSelection({ kind: "new" })}
             >
-              + Nuevo Espacio
+              <Glyph name="add" className="mr-2" />
+              Nuevo Espacio
             </Button>
           </div>
         )}
