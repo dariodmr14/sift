@@ -140,7 +140,7 @@ export function SpaceEditor({
               onClick={() => setEditingIcon(true)}
               aria-label="Cambiar icono"
               title="Cambiar icono"
-              className="group relative flex size-[88px] shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent"
+              className="group relative flex size-22 shrink-0 items-center justify-center rounded-window border border-line bg-hover outline-none hover:bg-selected focus-visible:ring-2 focus-visible:ring-accent"
             >
               <SpaceIcon
                 icon={draft.icon}
@@ -181,7 +181,8 @@ export function SpaceEditor({
               </label>
             </div>
           </div>
-          <p id="alias-hint" className="pl-[104px] text-xs text-muted">
+          {/* 104 px = avatar (88) + hueco (16): la ayuda empieza donde los campos. */}
+          <p id="alias-hint" className="pl-26 text-xs text-muted">
             Alias: otras palabras que lo encuentran en la barra, separadas por
             comas.
           </p>
