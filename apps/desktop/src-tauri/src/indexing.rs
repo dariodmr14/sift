@@ -105,6 +105,8 @@ pub struct SmartStatus {
     /// Descarga del modelo, en MB.
     pub downloaded_mb: u32,
     pub download_mb: u32,
+    /// Falta el «sí» del usuario para descargar el modelo: la UI enseña el botón.
+    pub awaiting_permission: bool,
     /// Por qué no está lista (sin conexión, etc.), en palabras.
     pub note: Option<String>,
 }
@@ -764,6 +766,23 @@ impl Worker {
             return done;
         }
         let missing = self.embedder.is_none() || self.target_vectors.is_none();
+        if missing && self.awaiting_permission(card) {
+            // No es un error: es lo normal hasta que la persona acepte la descarga. El
+            // siguiente `smart_changed()` (al aceptar) lo vuelve a intentar.
+            tracing::info!("búsqueda inteligente a la espera del permiso para descargar");
+            let total_mb = (card.download_bytes() / 1_000_000) as u32;
+            self.update(|s| {
+                s.running = false;
+                s.phase = IndexPhase::Idle;
+                s.smart = SmartStatus {
+                    enabled: true,
+                    awaiting_permission: true,
+                    download_mb: total_mb,
+                    ..SmartStatus::default()
+                };
+            });
+            return done;
+        }
         if missing && let Err(note) = self.prepare_smart(card) {
             tracing::warn!(%note, "búsqueda inteligente no disponible por ahora");
             self.update(|s| {
@@ -780,6 +799,20 @@ impl Worker {
             return done;
         }
         self.embed_pending(card, extractor, rx)
+    }
+
+    /// ¿Falta el modelo y la persona aún no ha dicho que sí a descargarlo?
+    fn awaiting_permission(&self, card: &'static sift_embeddings::ModelCard) -> bool {
+        let Ok(app_data) = self.app.path().app_data_dir() else {
+            return false;
+        };
+        let dir = crate::models::model_dir(&app_data, card);
+        needs_permission(
+            crate::models::is_ready(&dir, card),
+            crate::load_settings(&self.app)
+                .indexing
+                .model_download_allowed,
+        )
     }
 
     /// Descarga el modelo si falta, lo carga (dos veces: indexado y consultas) y carga o
@@ -1187,9 +1220,22 @@ struct SmartOutcome {
     sync: bool,
 }
 
+/// El modelo nunca se descarga sin un «sí» explícito; si ya está en disco, se usa igual.
+fn needs_permission(model_ready: bool, allowed: bool) -> bool {
+    !model_ready && !allowed
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn download_needs_an_explicit_yes() {
+        assert!(needs_permission(false, false));
+        assert!(!needs_permission(false, true));
+        assert!(!needs_permission(true, false));
+        assert!(!needs_permission(true, true));
+    }
 
     #[test]
     fn draining_merges_recent_changes_and_remembers_a_sync_request() {

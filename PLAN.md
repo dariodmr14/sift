@@ -229,10 +229,10 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 ### Fase 7 — Pulido
 - [ ] Instalar y usar la skill unslop (https://github.com/heydamir/unslop, licencia CC BY 4.0: citar a Damir Sokolovsky en el README) para auditar y rediseñar la interfaz, respetando el sistema de diseño Vidrio y justificando cualquier cambio en un ADR. Usarla también para el vídeo de LinkedIn.
 - [ ] Diseño final: tipografía, espaciado, tema claro/oscuro según Windows.
-- [ ] Animaciones de entrada/salida y de lista (rápidas, sin estorbar).
+- [x] Animaciones de entrada/salida y de lista (rápidas, sin estorbar).
 - [ ] Vista previa del resultado seleccionado.
-- [ ] Pantalla de bienvenida: elegir carpetas y crear el primer Espacio.
-- [ ] Accesibilidad básica: contraste, foco visible, lector de pantalla.
+- [x] Pantalla de bienvenida: elegir carpetas y crear el primer Espacio.
+- [x] Accesibilidad básica: contraste, foco visible, lector de pantalla.
 
 **Hecho cuando:** una persona que no lo conoce lo instala y lo usa sin explicaciones.
 

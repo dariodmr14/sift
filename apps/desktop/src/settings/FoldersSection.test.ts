@@ -57,6 +57,7 @@ describe("statusLine", () => {
       total: 0,
       downloadedMb: 0,
       downloadMb: 0,
+      awaitingPermission: false,
     },
   };
 

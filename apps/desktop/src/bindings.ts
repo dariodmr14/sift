@@ -109,6 +109,14 @@ export const commands = {
 	setIndexMedia: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_index_media", { enabled })),
 	/**  Elige una carpeta con el diálogo de Windows y empieza a indexarla. */
 	addRoot: () => typedError<string | null, AppError>(__TAURI_INVOKE("add_root")),
+	/**  Datos de la bienvenida: si ya se vio, el atajo y las carpetas sugeridas. */
+	getWelcome: () => typedError<WelcomeView, AppError>(__TAURI_INVOKE("get_welcome")),
+	/**  Añade Documentos o Escritorio (la bienvenida). */
+	addSuggestedFolder: (kind: SuggestedKind) => typedError<null, AppError>(__TAURI_INVOKE("add_suggested_folder", { kind })),
+	/**  Termina la bienvenida. Con `open_launcher`, cierra Ajustes y muestra la barra. */
+	finishWelcome: (openLauncher: boolean) => typedError<null, AppError>(__TAURI_INVOKE("finish_welcome", { openLauncher })),
+	/**  El usuario acepta descargar el modelo de búsqueda inteligente (unos 120 MB). */
+	allowModelDownload: () => typedError<null, AppError>(__TAURI_INVOKE("allow_model_download")),
 	/**  Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan). */
 	removeRoot: (id: number) => typedError<null, AppError>(__TAURI_INVOKE("remove_root", { id })),
 	getIgnorePatterns: () => typedError<string[], AppError>(__TAURI_INVOKE("get_ignore_patterns")),
@@ -662,6 +670,8 @@ export type SmartStatus_Deserialize = {
 	/**  Descarga del modelo, en MB. */
 	downloadedMb: number,
 	downloadMb: number,
+	/**  Falta el «sí» del usuario para descargar el modelo: la UI enseña el botón. */
+	awaitingPermission: boolean,
 	/**  Por qué no está lista (sin conexión, etc.), en palabras. */
 	note?: string | null,
 };
@@ -676,6 +686,8 @@ export type SmartStatus_Serialize = {
 	/**  Descarga del modelo, en MB. */
 	downloadedMb: number,
 	downloadMb: number,
+	/**  Falta el «sí» del usuario para descargar el modelo: la UI enseña el botón. */
+	awaitingPermission: boolean,
 	/**  Por qué no está lista (sin conexión, etc.), en palabras. */
 	note: string | null,
 };
@@ -809,6 +821,17 @@ export type Status_Serialize = {
 	searchLatency: LatencySummary | null,
 };
 
+export type SuggestedFolder = {
+	kind: SuggestedKind,
+	label: string,
+	path: string,
+	/**  Ya se indexa (la carpeta, o una que la contiene). */
+	added: boolean,
+};
+
+/**  Carpetas que la bienvenida propone (la UI nunca manda rutas: solo elige entre estas). */
+export type SuggestedKind = "Documents" | "Desktop";
+
 export type Theme = "light" | "dark";
 
 /**  Archivos que no se pudieron leer por un mismo motivo, con unos pocos ejemplos. */
@@ -848,6 +871,13 @@ export type WaitUntil =
 { kind: "commandFinished" } | 
 /**  Unos segundos, sin comprobar nada. */
 { kind: "seconds"; secs: number };
+
+export type WelcomeView = {
+	done: boolean,
+	/**  El atajo real configurado, p. ej. «Alt+Space». */
+	hotkey: string,
+	suggested: SuggestedFolder[],
+};
 
 /**  Zonas predefinidas (las propias, al backlog). */
 export type Zone = "maximized" | "leftHalf" | "rightHalf" | "topHalf" | "bottomHalf" | "leftThird" | "centerThird" | "rightThird" | "leftTwoThirds" | "rightTwoThirds" | "topLeft" | "topRight" | "bottomLeft" | "bottomRight";

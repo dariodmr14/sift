@@ -223,10 +223,133 @@ pub async fn add_root(app: AppHandle) -> Result<Option<String>, AppError> {
     .await
     .map_err(|e| AppError::System(e.to_string()))?;
     let Some(path) = picked else { return Ok(None) };
-    db(&app).add_root(&path)?;
+    add_root_path(&app, &path)?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Añade una carpeta a las que se indexan y pide una revisión. La comparten «Añadir
+/// carpeta» y las carpetas sugeridas de la bienvenida.
+fn add_root_path(app: &AppHandle, path: &std::path::Path) -> Result<(), AppError> {
+    db(app).add_root(path)?;
     tracing::info!(root = %path.display(), "carpeta añadida");
     app.state::<Indexing>().sync();
-    Ok(Some(path.display().to_string()))
+    Ok(())
+}
+
+/// Carpetas que la bienvenida propone (la UI nunca manda rutas: solo elige entre estas).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+pub enum SuggestedKind {
+    Documents,
+    Desktop,
+}
+
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SuggestedFolder {
+    pub kind: SuggestedKind,
+    pub label: String,
+    pub path: String,
+    /// Ya se indexa (la carpeta, o una que la contiene).
+    pub added: bool,
+}
+
+#[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub struct WelcomeView {
+    pub done: bool,
+    /// El atajo real configurado, p. ej. «Alt+Space».
+    pub hotkey: String,
+    pub suggested: Vec<SuggestedFolder>,
+}
+
+fn suggested_path(app: &AppHandle, kind: SuggestedKind) -> Option<PathBuf> {
+    let dir = match kind {
+        SuggestedKind::Documents => app.path().document_dir(),
+        SuggestedKind::Desktop => app.path().desktop_dir(),
+    };
+    dir.ok().filter(|p| p.is_dir())
+}
+
+/// ¿`path` ya está cubierta por alguna de las carpetas indexadas? Sin distinguir
+/// mayúsculas, como Windows.
+fn is_covered(path: &std::path::Path, roots: &[PathBuf]) -> bool {
+    let norm = |p: &std::path::Path| {
+        let s = p.display().to_string().replace('/', "\\").to_lowercase();
+        format!("{}\\", s.trim_end_matches('\\'))
+    };
+    let target = norm(path);
+    roots.iter().any(|r| target.starts_with(&norm(r)))
+}
+
+/// Datos de la bienvenida: si ya se vio, el atajo y las carpetas sugeridas.
+#[tauri::command]
+#[specta::specta]
+pub fn get_welcome(app: AppHandle) -> Result<WelcomeView, AppError> {
+    let settings = crate::load_settings(&app);
+    let roots: Vec<PathBuf> = db(&app).list_roots()?.into_iter().map(|r| r.path).collect();
+    let suggested = [
+        (SuggestedKind::Documents, "Documentos"),
+        (SuggestedKind::Desktop, "Escritorio"),
+    ]
+    .into_iter()
+    .filter_map(|(kind, label)| {
+        let path = suggested_path(&app, kind)?;
+        Some(SuggestedFolder {
+            kind,
+            label: label.to_owned(),
+            added: is_covered(&path, &roots),
+            path: path.display().to_string(),
+        })
+    })
+    .collect();
+    Ok(WelcomeView {
+        done: settings.welcome_done,
+        hotkey: settings.hotkey.to_string(),
+        suggested,
+    })
+}
+
+/// Añade Documentos o Escritorio (la bienvenida).
+#[tauri::command]
+#[specta::specta]
+pub fn add_suggested_folder(app: AppHandle, kind: SuggestedKind) -> Result<(), AppError> {
+    let path = suggested_path(&app, kind)
+        .ok_or_else(|| AppError::NotFound("la carpeta no existe en este PC".into()))?;
+    add_root_path(&app, &path)
+}
+
+/// Termina la bienvenida. Con `open_launcher`, cierra Ajustes y muestra la barra.
+#[tauri::command]
+#[specta::specta]
+pub fn finish_welcome(app: AppHandle, open_launcher: bool) -> Result<(), AppError> {
+    crate::update_settings(&app, |s| s.welcome_done = true)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    if open_launcher {
+        let handle = app.clone();
+        app.run_on_main_thread(move || {
+            if let Some(window) = handle.get_webview_window(crate::settings_window::LABEL)
+                && let Err(e) = window.close()
+            {
+                tracing::warn!(error = %e, "no se pudo cerrar la ventana de ajustes");
+            }
+            crate::launcher::show(&handle);
+        })
+        .map_err(|e| AppError::System(e.to_string()))?;
+    }
+    Ok(())
+}
+
+/// El usuario acepta descargar el modelo de búsqueda inteligente (unos 120 MB).
+#[tauri::command]
+#[specta::specta]
+pub fn allow_model_download(app: AppHandle) -> Result<(), AppError> {
+    crate::update_settings(&app, |s| {
+        s.indexing.model_download_allowed = true;
+        s.indexing.disable_smart_search = false;
+    })
+    .map_err(|e| AppError::System(format!("{e:#}")))?;
+    app.state::<Indexing>().smart_changed();
+    Ok(())
 }
 
 /// Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan).
@@ -405,4 +528,30 @@ pub fn reveal_file(app: AppHandle, path: String) -> Result<(), AppError> {
         ));
     }
     crate::shell::reveal_in_explorer(&path).map_err(AppError::System)
+}
+
+#[cfg(test)]
+mod welcome_tests {
+    use super::*;
+
+    #[test]
+    fn a_folder_is_covered_by_itself_or_by_a_parent_ignoring_case() {
+        let roots = vec![PathBuf::from(r"C:\Users\Ana\Documents")];
+        assert!(is_covered(
+            std::path::Path::new(r"c:\users\ana\documents"),
+            &roots
+        ));
+        assert!(is_covered(
+            std::path::Path::new(r"C:\Users\Ana\Documents\Uni"),
+            &roots
+        ));
+        assert!(!is_covered(
+            std::path::Path::new(r"C:\Users\Ana\Desktop"),
+            &roots
+        ));
+        assert!(!is_covered(
+            std::path::Path::new(r"C:\Users\Ana\Documents2"),
+            &roots
+        ));
+    }
 }
