@@ -69,8 +69,10 @@ export function ResultsList({
               </span>
             )}
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm">{item.title}</span>
-              <span className="block truncate text-xs text-muted">
+              <span className="block truncate pb-0.5 text-sm">
+                {item.title}
+              </span>
+              <span className="block truncate pb-0.5 text-xs text-muted">
                 {item.subtitle}
               </span>
             </span>

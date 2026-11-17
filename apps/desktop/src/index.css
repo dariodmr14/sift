@@ -217,7 +217,9 @@ body,
     text-decoration-line: underline;
     text-decoration-color: var(--accent-ink);
     text-decoration-thickness: 2px;
-    text-underline-offset: 3px;
+    /* Pegado al texto: las líneas de una fila se recortan (`truncate`) y más abajo el
+       trazo quedaría fuera. Las filas de la barra dejan además 2 px debajo (`pb-0.5`). */
+    text-underline-offset: 2px;
     text-decoration-skip-ink: none;
   }
 

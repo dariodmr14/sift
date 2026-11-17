@@ -14,6 +14,7 @@ import {
 import { Button, ErrorText, Modal, TextInput } from "./ui";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SortableList } from "./Sortable";
+import { Glyph } from "../components/Glyph";
 import { SpaceIcon } from "../components/SpaceIcon";
 
 /** Ids solo para React: así, al reordenar, cada fila (y su estado) sigue a su acción. */
@@ -269,7 +270,8 @@ export function SpaceEditor({
                   )
                 }
               >
-                + {ACTION_LABELS[kind]}
+                <Glyph name="add" className="mr-2 text-xs" />
+                {ACTION_LABELS[kind]}
               </Button>
             ))}
           </div>
