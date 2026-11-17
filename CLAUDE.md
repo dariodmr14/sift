@@ -12,7 +12,7 @@ El plan completo, con fases y criterios de "hecho", está en [PLAN.md](PLAN.md).
 - Pruebas en pantalla (abrir ventanas, ratón, teclado): pide permiso antes; si Darío dice que se va o que sigas solo, puedes hacerlas sin preguntar.
 - Una rama y un PR por tarea o grupo pequeño de tareas; nunca todo de golpe.
 - Cada PR con tests y la CI local (`scripts/ci.ps1`) en verde antes de fusionar.
-- Commits pequeños con [Conventional Commits](https://www.conventionalcommits.org/es/): `feat:`, `fix:`, `chore:`, `docs:`, `ci:`, `refactor:`, `test:`…
+- Commits pequeños con [Conventional Commits](https://www.conventionalcommits.org/es/): `feat:`, `fix:`, `chore:`, `docs:`, `ci:`, `refactor:`, `test:`… Sin líneas de atribución (`Co-Authored-By`, «Generated with…») en commits ni PR: lo desactiva `.claude/settings.json`.
 - Claude Code explica cada decisión importante; Darío revisa y entiende el código antes de aceptarlo. Explicar el *porqué*, no solo el *qué*.
 - Decisiones de arquitectura nuevas → un ADR corto en `docs/adr/` (plantilla: `docs/adr/0001-*.md`).
 - Si aparece una idea nueva a mitad de una fase → al backlog de PLAN.md, salvo que bloquee la fase actual.
