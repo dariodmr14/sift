@@ -3,20 +3,43 @@ import { addStep, panelKey } from "./mode";
 
 describe("qué ocupa la barra", () => {
   it("los paneles mandan sobre la lista", () => {
-    const base = { isEmpty: true, hasItems: true };
+    const base = { isEmpty: true, hasItems: true, preview: true };
     expect(panelKey({ ...base, mode: "running" })).toBe("running");
     expect(panelKey({ ...base, mode: "result" })).toBe("result");
   });
   it("en la lista: vacía, con resultados o sin resultados", () => {
-    expect(panelKey({ mode: "list", isEmpty: true, hasItems: false })).toBe(
-      "empty",
-    );
-    expect(panelKey({ mode: "list", isEmpty: false, hasItems: true })).toBe(
-      "list",
-    );
-    expect(panelKey({ mode: "list", isEmpty: false, hasItems: false })).toBe(
-      "none",
-    );
+    expect(
+      panelKey({
+        mode: "list",
+        isEmpty: true,
+        hasItems: false,
+        preview: false,
+      }),
+    ).toBe("empty");
+    expect(
+      panelKey({
+        mode: "list",
+        isEmpty: false,
+        hasItems: true,
+        preview: false,
+      }),
+    ).toBe("list");
+    expect(
+      panelKey({
+        mode: "list",
+        isEmpty: false,
+        hasItems: false,
+        preview: false,
+      }),
+    ).toBe("none");
+  });
+});
+
+describe("vista previa", () => {
+  it("ocupa el lugar de la lista, y la lista vuelve al cerrarla", () => {
+    const base = { mode: "list" as const, isEmpty: false, hasItems: true };
+    expect(panelKey({ ...base, preview: true })).toBe("preview");
+    expect(panelKey({ ...base, preview: false })).toBe("list");
   });
 });
 

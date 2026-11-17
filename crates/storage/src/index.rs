@@ -90,6 +90,15 @@ pub struct StoredChunk {
     pub text: String,
 }
 
+/// Lo que enseña la vista previa de la barra: ver [`Database::preview_chunk`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PreviewChunk {
+    pub ext: String,
+    /// Texto del fragmento (vacío si el archivo no tiene texto: imágenes, vídeos…).
+    pub text: String,
+    pub page: Option<i64>,
+}
+
 impl Database {
     pub fn list_roots(&self) -> Result<Vec<Root>, StorageError> {
         let mut stmt = self.conn.prepare(
@@ -609,6 +618,40 @@ impl Database {
         Ok(pages)
     }
 
+    /// Lo que la vista previa de la barra enseña de un archivo: su extensión y el texto y la
+    /// página de un fragmento. Con `chunk_id` 0 (resultado solo por nombre) o un fragmento que
+    /// ya no existe, el primero del archivo. `None` si el archivo no está en el índice.
+    pub fn preview_chunk(
+        &self,
+        file_id: i64,
+        chunk_id: i64,
+    ) -> Result<Option<PreviewChunk>, StorageError> {
+        let ext: Option<String> = self
+            .conn
+            .prepare_cached("SELECT ext FROM files WHERE id = ?1")?
+            .query_row([file_id], |r| r.get(0))
+            .optional()?;
+        let Some(ext) = ext else {
+            return Ok(None);
+        };
+        let mut found: Option<(String, Option<i64>)> = self
+            .conn
+            .prepare_cached("SELECT text, page FROM chunks WHERE id = ?1 AND file_id = ?2")?
+            .query_row(params![chunk_id, file_id], |r| Ok((r.get(0)?, r.get(1)?)))
+            .optional()?;
+        if found.is_none() {
+            found = self
+                .conn
+                .prepare_cached(
+                    "SELECT text, page FROM chunks WHERE file_id = ?1 ORDER BY ordinal LIMIT 1",
+                )?
+                .query_row([file_id], |r| Ok((r.get(0)?, r.get(1)?)))
+                .optional()?;
+        }
+        let (text, page) = found.unwrap_or_default();
+        Ok(Some(PreviewChunk { ext, text, page }))
+    }
+
     /// Todos los archivos del índice: (id, ruta). Para sugerir rutas en el editor de
     /// acciones (unos miles: se lee en pocos milisegundos).
     pub fn file_paths(&self) -> Result<Vec<(i64, String)>, StorageError> {
@@ -672,6 +715,47 @@ mod tests {
             start: i * 100,
             text: text.into(),
         }
+    }
+
+    #[test]
+    fn preview_chunk_picks_the_requested_or_the_first_chunk() {
+        let mut db = Database::open_in_memory().unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        let (a, a_chunks) = db
+            .upsert_file(
+                &file(root, r"C:\Uni\a.md"),
+                &[chunk(0, "cero"), chunk(1, "uno")],
+            )
+            .unwrap();
+        let paged = NewChunk {
+            page: Some(37),
+            ordinal: 0,
+            start: 0,
+            text: "con página".into(),
+        };
+        let (b, b_chunks) = db
+            .upsert_file(&file(root, r"C:\Uni\b.md"), &[paged])
+            .unwrap();
+        let (c, _) = db.upsert_file(&file(root, r"C:\Uni\c.md"), &[]).unwrap();
+
+        let p = db.preview_chunk(a, a_chunks[1]).unwrap().unwrap();
+        assert_eq!(
+            (p.ext.as_str(), p.text.as_str(), p.page),
+            ("md", "uno", None)
+        );
+        assert_eq!(db.preview_chunk(a, 0).unwrap().unwrap().text, "cero");
+        // Un fragmento de otro archivo no se enseña: el primero de este.
+        assert_eq!(
+            db.preview_chunk(a, b_chunks[0]).unwrap().unwrap().text,
+            "cero"
+        );
+        assert_eq!(
+            db.preview_chunk(b, b_chunks[0]).unwrap().unwrap().page,
+            Some(37)
+        );
+        let empty = db.preview_chunk(c, 0).unwrap().unwrap();
+        assert_eq!((empty.text.as_str(), empty.page), ("", None));
+        assert!(db.preview_chunk(9999, 0).unwrap().is_none());
     }
 
     #[test]

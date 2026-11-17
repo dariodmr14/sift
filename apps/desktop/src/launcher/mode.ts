@@ -40,8 +40,11 @@ export function panelKey(args: {
   mode: Mode["kind"];
   isEmpty: boolean;
   hasItems: boolean;
-}): "running" | "result" | "empty" | "list" | "none" {
+  /** La vista previa del resultado seleccionado ocupa el lugar de la lista. */
+  preview: boolean;
+}): "running" | "result" | "preview" | "empty" | "list" | "none" {
   if (args.mode === "running" || args.mode === "result") return args.mode;
+  if (args.preview) return "preview";
   if (args.isEmpty) return "empty";
   return args.hasItems ? "list" : "none";
 }

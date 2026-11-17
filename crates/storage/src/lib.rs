@@ -7,7 +7,9 @@ mod spaces;
 mod vectors;
 
 pub use db::Database;
-pub use index::{ChunkText, FileRow, FileState, NewChunk, NewFile, Root, StoredChunk, UnreadGroup};
+pub use index::{
+    ChunkText, FileRow, FileState, NewChunk, NewFile, PreviewChunk, Root, StoredChunk, UnreadGroup,
+};
 pub use vectors::{EmbedPolicy, text_hash};
 
 #[derive(Debug, thiserror::Error)]

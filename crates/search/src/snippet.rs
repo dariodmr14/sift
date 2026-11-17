@@ -54,18 +54,7 @@ fn matches(stem: &str, folded_word: &str, q: &ParsedQuery) -> bool {
 /// Resalta `text` y, si es más largo que `max_chars`, recorta una ventana alrededor de
 /// la primera coincidencia (con «…» donde se corta).
 pub fn highlight(text: &str, q: &ParsedQuery, max_chars: usize) -> Vec<Segment> {
-    let hits: Vec<(usize, usize)> = ANALYZERS.with_borrow_mut(|(stemmer, folder)| {
-        tokens(stemmer, text)
-            .into_iter()
-            .filter(|t| {
-                let word = tokens(folder, &text[t.from..t.to]);
-                let folded = word.first().map_or("", |w| w.text.as_str());
-                matches(&t.text, folded, q)
-            })
-            .map(|t| (t.from, t.to))
-            .collect()
-    });
-
+    let hits = find_hits(text, q);
     let (start, end) = window(text, hits.first().map(|h| h.0), max_chars);
     let mut segments = Vec::new();
     let mut push = |s: &str, hit: bool| {
@@ -90,6 +79,81 @@ pub fn highlight(text: &str, q: &ParsedQuery, max_chars: usize) -> Vec<Segment> 
         push("…", false);
     }
     segments
+}
+
+/// Fragmento ampliado para la vista previa: como [`highlight`], pero más largo y, si
+/// `keep_lines` (código), conservando los saltos de línea y cortando por líneas: hasta
+/// `max_lines` líneas empezando dos antes de la primera coincidencia.
+pub fn preview(
+    text: &str,
+    q: &ParsedQuery,
+    max_chars: usize,
+    max_lines: usize,
+    keep_lines: bool,
+) -> Vec<Segment> {
+    if !keep_lines {
+        return highlight(text, q, max_chars);
+    }
+    let text = text.replace('\r', "");
+    let hits = find_hits(&text, q);
+    // Inicio de cada línea, en bytes.
+    let mut line_starts = vec![0];
+    line_starts.extend(text.match_indices('\n').map(|(i, _)| i + 1));
+    let hit_line = hits
+        .first()
+        .map_or(0, |h| line_starts.partition_point(|&s| s <= h.0) - 1);
+    let first_line = hit_line.saturating_sub(2);
+    let start = line_starts[first_line];
+    let last_line = first_line + max_lines.max(1);
+    let mut cut_end = last_line < line_starts.len();
+    let mut end = if cut_end {
+        line_starts[last_line] - 1
+    } else {
+        text.len()
+    };
+    if let Some((i, _)) = text[start..end].char_indices().nth(max_chars) {
+        end = start + i;
+        cut_end = true;
+    }
+
+    let mut segments = Vec::new();
+    let mut push = |s: &str, hit: bool| {
+        if !s.is_empty() {
+            segments.push(Segment {
+                text: s.to_owned(),
+                hit,
+            });
+        }
+    };
+    if start > 0 {
+        push("…\n", false);
+    }
+    let mut cursor = start;
+    for &(from, to) in hits.iter().filter(|(f, t)| *f >= start && *t <= end) {
+        push(&text[cursor..from], false);
+        push(&text[from..to], true);
+        cursor = to;
+    }
+    push(&text[cursor..end], false);
+    if cut_end {
+        push("\n…", false);
+    }
+    segments
+}
+
+/// Posiciones (inicio, fin en bytes) de las palabras de `text` que encajan con la consulta.
+fn find_hits(text: &str, q: &ParsedQuery) -> Vec<(usize, usize)> {
+    ANALYZERS.with_borrow_mut(|(stemmer, folder)| {
+        tokens(stemmer, text)
+            .into_iter()
+            .filter(|t| {
+                let word = tokens(folder, &text[t.from..t.to]);
+                let folded = word.first().map_or("", |w| w.text.as_str());
+                matches(&t.text, folded, q)
+            })
+            .map(|t| (t.from, t.to))
+            .collect()
+    })
 }
 
 thread_local! {
@@ -223,6 +287,61 @@ mod tests {
         let s = highlight("línea uno\n\n  línea dos", &ParsedQuery::parse("dos "), 500);
         let joined: String = s.into_iter().map(|x| x.text).collect();
         assert_eq!(joined, "línea uno línea dos");
+    }
+
+    fn joined(s: &[Segment]) -> String {
+        s.iter().map(|x| x.text.as_str()).collect()
+    }
+
+    fn numbered(n: usize) -> String {
+        (0..n)
+            .map(|i| format!("línea {i}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    #[test]
+    fn preview_without_keep_lines_is_highlight() {
+        let text = "uno\n\n  dos tres";
+        let q = ParsedQuery::parse("dos ");
+        assert_eq!(preview(text, &q, 500, 12, false), highlight(text, &q, 500));
+    }
+
+    #[test]
+    fn preview_keeps_line_breaks_and_indentation() {
+        let text = "fn main() {\n    let primaria = 1;\n}";
+        let s = preview(text, &ParsedQuery::parse("primaria "), 500, 12, true);
+        assert_eq!(joined(&s), text);
+        assert_eq!(hits(&s), vec!["primaria"]);
+    }
+
+    #[test]
+    fn preview_starts_two_lines_before_the_hit() {
+        let text = format!("{}\nla primaria\nfin", numbered(10));
+        let s = preview(&text, &ParsedQuery::parse("primaria "), 900, 12, true);
+        assert_eq!(joined(&s), "…\nlínea 8\nlínea 9\nla primaria\nfin");
+        assert_eq!(hits(&s), vec!["primaria"]);
+    }
+
+    #[test]
+    fn preview_respects_max_lines() {
+        let text = numbered(30);
+        let s = preview(&text, &ParsedQuery::parse("zzz "), 900, 3, true);
+        assert_eq!(joined(&s), "línea 0\nlínea 1\nlínea 2\n…");
+    }
+
+    #[test]
+    fn preview_without_hits_starts_at_line_zero() {
+        let s = preview("a\nb\nc", &ParsedQuery::parse("zzz "), 900, 12, true);
+        assert_eq!(joined(&s), "a\nb\nc");
+    }
+
+    #[test]
+    fn preview_strips_carriage_returns_and_cuts_by_chars() {
+        let s = preview("uno\r\ndos\r\n", &ParsedQuery::parse("zzz "), 900, 12, true);
+        assert_eq!(joined(&s), "uno\ndos\n");
+        let long = preview("áéíóúáéíóú", &ParsedQuery::parse("zzz "), 4, 12, true);
+        assert_eq!(joined(&long), "áéíó\n…");
     }
 
     #[test]
