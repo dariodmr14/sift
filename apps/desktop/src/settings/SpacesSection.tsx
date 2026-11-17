@@ -258,7 +258,7 @@ export function SpacesSection() {
         )}
         {!selection && spaces?.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <p className="text-lg">Crea tu primer Espacio</p>
+            <p className="text-xl font-semibold">Crea tu primer Espacio</p>
             <p className="max-w-sm text-sm text-muted">
               Por ejemplo «Trabajo»: la carpeta del proyecto, el correo, el
               calendario y tu app de notas, todo con un Enter.

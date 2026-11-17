@@ -12,7 +12,7 @@ import { Glyph } from "../components/Glyph";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-accent text-accent-fg font-medium hover:brightness-110",
+  primary: "bg-accent text-accent-fg hover:brightness-110",
   secondary: "bg-hover hover:bg-selected",
   ghost: "hover:bg-hover",
   danger: "text-danger hover:bg-danger/15",
@@ -69,7 +69,7 @@ export function Field({
 }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-muted">{label}</span>
+      <span className="text-xs text-muted">{label}</span>
       {children}
       {hint && <span className="block text-xs text-muted">{hint}</span>}
     </label>
@@ -99,7 +99,7 @@ export function Modal({
         className="flex max-h-full w-full max-w-lg flex-col sift-glass"
       >
         <header className="flex items-center justify-between border-b border-line px-4 py-3">
-          <h3 className="font-medium">{title}</h3>
+          <h3 className="font-semibold">{title}</h3>
           <Button variant="ghost" onClick={onClose} aria-label="Cerrar">
             <Glyph name="close" />
           </Button>

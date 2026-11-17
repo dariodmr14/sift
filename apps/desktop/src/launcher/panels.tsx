@@ -34,7 +34,7 @@ export function Highlighted({ segments }: { segments: Segment[] }) {
 export function EmptyState() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-      <p className="text-lg">Aún no tienes Espacios</p>
+      <p className="text-xl font-semibold">Aún no tienes Espacios</p>
       <p className="max-w-sm text-sm text-muted">
         Un Espacio abre de golpe todo lo de un contexto: carpetas, webs, apps y
         comandos.
@@ -62,7 +62,7 @@ export function RunningPanel({
 }) {
   return (
     <div role="status" aria-live="polite" className="h-full p-5">
-      <p className="mb-1 text-[15px]">Abriendo «{title}»</p>
+      <p className="mb-1 text-sm font-semibold">Abriendo «{title}»</p>
       <p className="text-sm text-muted">
         {cancelling
           ? "Cancelando…"
@@ -96,7 +96,7 @@ export function ResultPanel({
 }) {
   return (
     <div role="alert" className="h-full overflow-y-auto p-5">
-      <p className="mb-3 text-[15px]">
+      <p className="mb-3 text-sm font-semibold">
         «{title}»: {headline}
       </p>
       <ul className="space-y-1.5 text-sm select-text">

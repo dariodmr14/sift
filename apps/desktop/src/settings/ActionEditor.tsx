@@ -99,7 +99,7 @@ export function ActionEditor({
           <Glyph name="gripper" />
         </button>
         <span className="text-xs text-muted">{index + 1}.</span>
-        <span className="flex-1 text-sm font-medium">
+        <span className="flex-1 text-sm font-semibold">
           {ACTION_LABELS[action.kind]}
         </span>
         <Button

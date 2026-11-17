@@ -82,9 +82,7 @@ export function PlacementEditor({
 
   return (
     <div className="space-y-2">
-      <span className="block text-xs font-medium text-muted">
-        Colocar su ventana
-      </span>
+      <span className="block text-xs text-muted">Colocar su ventana</span>
       {/* Por filas con sentido (completa y mitades · tercios · cuartos), no como caigan. */}
       <div
         role="radiogroup"

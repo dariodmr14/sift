@@ -73,6 +73,8 @@
 
   color-scheme: dark;
   font-family: var(--font-sans);
+  /* Cifras del mismo ancho: los números que cambian («Leyendo 32 de 120», ms) no bailan. */
+  font-variant-numeric: tabular-nums;
   color: var(--fg);
 }
 

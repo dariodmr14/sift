@@ -150,7 +150,7 @@ export function SpaceEditor({
               />
               <span
                 aria-hidden
-                className="absolute inset-x-0 bottom-0 rounded-b-window bg-glass py-0.5 text-center text-[11px] text-muted opacity-0 backdrop-blur-xl group-hover:opacity-100 group-focus-visible:opacity-100"
+                className="absolute inset-x-0 bottom-0 rounded-b-window bg-glass py-0.5 text-center text-xs text-muted opacity-0 backdrop-blur-xl group-hover:opacity-100 group-focus-visible:opacity-100"
               >
                 Cambiar
               </span>
@@ -165,12 +165,10 @@ export function SpaceEditor({
                 onChange={(e) =>
                   setDraft({ ...draft, name: e.currentTarget.value })
                 }
-                className="h-10 text-lg font-semibold"
+                className="h-10 text-xl font-semibold"
               />
               <label className="flex h-9 items-center gap-3">
-                <span className="w-12 shrink-0 text-xs font-medium text-muted">
-                  Alias
-                </span>
+                <span className="w-12 shrink-0 text-xs text-muted">Alias</span>
                 <TextInput
                   placeholder="curro, oficina"
                   value={aliasText}
@@ -210,7 +208,7 @@ export function SpaceEditor({
         )}
 
         <section className="space-y-2">
-          <h3 className="text-xs font-medium text-muted">Acciones, en orden</h3>
+          <h3 className="text-xs text-muted">Acciones, en orden</h3>
           {/* Anuncia a los lectores de pantalla los cambios de orden. */}
           <p aria-live="polite" className="sr-only">
             {announcement}

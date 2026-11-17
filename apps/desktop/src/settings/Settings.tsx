@@ -66,7 +66,7 @@ function Settings() {
           aria-label="Secciones"
           className="flex w-44 shrink-0 flex-col gap-1 border-r border-line px-3 pb-3"
         >
-          <h1 className="mb-3 px-2 text-lg font-semibold">Ajustes</h1>
+          <h1 className="mb-3 px-2 text-xl font-semibold">Ajustes</h1>
           {PAGES.map(navButton)}
           <span className="flex-1" />
           {status?.storageError && (
@@ -154,7 +154,7 @@ function QuickFilters() {
   const spoken: Record<string, string> = { codigo: "código", video: "vídeo" };
   return (
     <div className="space-y-2 pt-2">
-      <h3 className="text-sm font-medium">Buscar solo un tipo de archivo</h3>
+      <h3 className="text-sm font-semibold">Buscar solo un tipo de archivo</h3>
       <p className="text-xs text-muted">
         Empieza con una de estas palabras y un espacio; por ejemplo, «pdf
         contrato» busca «contrato» solo en tus PDF. La palabra se queda como
@@ -240,9 +240,7 @@ function Section({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">
-        {title}
-      </h2>
+      <h2 className="text-sm font-semibold">{title}</h2>
       {children}
     </section>
   );
@@ -288,7 +286,7 @@ function HotkeyForm({
         <button
           type="submit"
           disabled={value.trim() === saved}
-          className="rounded-item bg-accent px-4 py-2 font-medium text-accent-fg disabled:opacity-40"
+          className="rounded-item bg-accent px-4 py-2 text-accent-fg disabled:opacity-40"
         >
           Guardar
         </button>
@@ -373,7 +371,7 @@ function StatusList({ status }: { status: Status }) {
         </dd>
       </dl>
       <details className="group space-y-3">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink">
+        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold outline-none select-none focus-visible:ring-2 focus-visible:ring-accent-ink">
           <span
             aria-hidden
             className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"

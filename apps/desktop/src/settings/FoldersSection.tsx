@@ -70,9 +70,7 @@ export function FoldersSection() {
     <div className="h-full space-y-8 overflow-y-auto p-6">
       <section className="space-y-3">
         <header className="flex items-baseline justify-between gap-4">
-          <h2 className="text-sm font-semibold tracking-wide text-muted uppercase">
-            Carpetas
-          </h2>
+          <h2 className="text-sm font-semibold">Carpetas</h2>
           <Button variant="primary" onClick={() => void add()}>
             <Glyph name="add" className="mr-2" />
             Añadir carpeta…
@@ -143,7 +141,7 @@ function StatusPanel({
     <div className="space-y-2 rounded-window border border-line px-4 py-3">
       <div className="flex items-center justify-between gap-4">
         {/* Se anuncia solo el texto, no cada avance de la barra. */}
-        <p role="status" className="text-sm font-medium">
+        <p role="status" className="text-sm font-semibold">
           {line.text}
         </p>
         <Button
@@ -207,7 +205,7 @@ function RootRow({
       <div className="flex items-center gap-3">
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline gap-2">
-            <span className="truncate text-sm font-medium">
+            <span className="truncate text-sm font-semibold">
               {folderName(root.path)}
             </span>
             <span className="truncate text-xs text-muted" title={root.path}>
@@ -277,7 +275,7 @@ function RootRow({
                 return (
                   <li key={g.kind}>
                     <p>
-                      <span className="font-medium">{reason.label}</span>
+                      <span className="font-semibold">{reason.label}</span>
                       <span className="text-muted"> · {count(g.count)}</span>
                     </p>
                     <p className="text-xs text-muted">{reason.hint}</p>
@@ -389,7 +387,7 @@ function Advanced() {
 
   return (
     <details className="group space-y-3">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold tracking-wide text-muted uppercase outline-none select-none hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink">
+      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold outline-none select-none focus-visible:ring-2 focus-visible:ring-accent-ink">
         <span
           aria-hidden
           className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
