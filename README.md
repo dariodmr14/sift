@@ -138,10 +138,10 @@ node scripts/e2e.mjs
 
 ## Cómo se ha construido
 
-Sift lo he desarrollado yo, con Claude Code (el asistente de programación de Anthropic) como apoyo. El reparto ha sido este:
+Sift lo he ideado, diseñado y dirigido yo; la mayor parte del código la ha escrito Claude Code (el asistente de programación de Anthropic) siguiendo mi plan. El reparto ha sido este:
 
 - **Lo que he hecho yo:** la idea y para qué sirve la app; el plan por fases con lo que tenía que cumplir cada una; las prioridades y las decisiones de producto y de diseño, eligiendo entre las opciones que salían; revisar y entender cada cambio antes de aceptarlo; y usar Sift a diario para encontrar lo que fallaba o sobraba ([FEEDBACK.md](FEEDBACK.md)).
-- **En lo que me ha apoyado Claude:** escribir buena parte del código y de los tests a partir de ese plan, proponer alternativas con sus pros y contras, medir (benchmarks y la evaluación de `eval/`) y dejar por escrito las decisiones en los [ADR](docs/adr/).
+- **En lo que me ha apoyado Claude:** escribir la mayor parte del código y de los tests a partir de ese plan, proponer alternativas con sus pros y contras, medir (benchmarks y la evaluación de `eval/`) y dejar por escrito las decisiones en los [ADR](docs/adr/).
 
 Cada cambio ha ido en su rama y su PR, con la CI local en verde y con mi visto bueno antes de fusionarse.
 
