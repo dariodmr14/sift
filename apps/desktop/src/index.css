@@ -205,6 +205,39 @@ body,
     vertical-align: -0.125em;
   }
 
+  /*
+   * La firma de Sift, «la marca de lo que encaja»: lo encontrado, subrayado con un trazo
+   * del acento legible (--accent-ink, 4,5:1 sobre el fondo). Igual en todas partes: las
+   * palabras de una búsqueda exacta y, si el archivo llegó por significado, el pasaje
+   * entero que encaja. Sin caja de color: el texto se lee igual que el resto.
+   */
+  .sift-match {
+    background: none;
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: var(--accent-ink);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    text-decoration-skip-ink: none;
+  }
+
+  /* Una tecla de un atajo (components/Keycap.tsx). */
+  .sift-key {
+    display: inline-flex;
+    min-width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-item);
+    background: var(--field);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    line-height: 1;
+  }
+
   /* Superficie flotante de vidrio (diálogos). */
   .sift-glass {
     background: var(--glass);

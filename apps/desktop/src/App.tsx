@@ -19,6 +19,7 @@ import { useBarData } from "./launcher/useBarData";
 import { useFileIcons, useFileSearch } from "./launcher/useFileSearch";
 import { useSpaceRun } from "./launcher/useSpaceRun";
 import { Glyph } from "./components/Glyph";
+import { Shortcut } from "./components/Keycap";
 
 function App() {
   const [query, setQuery] = useState("");
@@ -239,20 +240,20 @@ function App() {
 
       <footer className="flex items-center gap-4 border-t border-line px-5 py-2 text-xs text-muted">
         {mode.kind === "running" ? (
-          <span>Esc cancelar (lo ya abierto sigue abierto)</span>
+          <Hint keys="Esc">cancelar (lo ya abierto sigue abierto)</Hint>
         ) : mode.kind === "result" ? (
-          <span>Esc cerrar</span>
+          <Hint keys="Esc">cerrar</Hint>
         ) : (
           <>
-            <span>↑↓ moverse</span>
-            <span>↵ abrir</span>
+            <Hint keys="↑+↓">moverse</Hint>
+            <Hint keys="enter">abrir</Hint>
             {items[selected]?.path ? (
               <>
-                <span>Ctrl+↵ carpeta</span>
-                <span>Ctrl+Shift+C copiar ruta</span>
+                <Hint keys="Ctrl+enter">carpeta</Hint>
+                <Hint keys="Ctrl+Shift+C">copiar ruta</Hint>
               </>
             ) : (
-              <span>Ctrl+N nuevo Espacio</span>
+              <Hint keys="Ctrl+N">nuevo Espacio</Hint>
             )}
           </>
         )}
@@ -270,6 +271,16 @@ function App() {
         </button>
       </footer>
     </main>
+  );
+}
+
+/** Un atajo del pie: sus teclas y qué hace. */
+function Hint({ keys, children }: { keys: string; children: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <Shortcut keys={keys} />
+      {children}
+    </span>
   );
 }
 

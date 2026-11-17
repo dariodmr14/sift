@@ -1,6 +1,7 @@
 // La lista de resultados de la barra: filas seleccionables con cabeceras de sección.
 
 import { Fragment, useEffect, useMemo, useRef } from "react";
+import { Shortcut } from "../components/Keycap";
 import { SECTION_LABEL, sectionStarts } from "./files";
 import type { Item } from "./items";
 
@@ -73,16 +74,10 @@ export function ResultsList({
                 {item.subtitle}
               </span>
             </span>
-            {item.shortcut ? (
-              <kbd className="text-xs text-muted" aria-hidden>
-                {item.shortcut}
-              </kbd>
-            ) : (
-              i === selected && (
-                <kbd className="text-xs text-muted" aria-hidden>
-                  ↵
-                </kbd>
-              )
+            {i === selected && (
+              <span aria-hidden className="shrink-0">
+                <Shortcut keys={item.shortcut ?? "enter"} />
+              </span>
             )}
           </li>
         </Fragment>

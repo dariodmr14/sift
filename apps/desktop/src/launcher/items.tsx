@@ -98,10 +98,7 @@ export function buildItems(s: ItemSources): Item[] {
     subtitle: (
       <>
         {hit.byMeaning && (
-          <span
-            className="text-accent-ink"
-            title="No contiene tus palabras: Sift lo ha encontrado por su significado"
-          >
+          <span title="No contiene tus palabras: Sift lo ha encontrado por su significado. Lo marcado es el pasaje que encaja.">
             Por significado ·{" "}
           </span>
         )}
@@ -109,7 +106,10 @@ export function buildItems(s: ItemSources): Item[] {
           <span title="Se abre en esta página">pág. {hit.page} · </span>
         )}
         {hit.snippet.length ? (
-          <Highlighted segments={hit.snippet} />
+          <Highlighted
+            segments={hit.snippet}
+            whole={hit.byMeaning && !hit.snippet.some((s) => s.hit)}
+          />
         ) : (
           shortFolder(hit.path)
         )}

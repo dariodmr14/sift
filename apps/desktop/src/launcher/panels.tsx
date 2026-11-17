@@ -8,19 +8,34 @@ import {
 } from "../bindings";
 import { progressText, type SummaryLine } from "./runSummary";
 import { Glyph, type GlyphName } from "../components/Glyph";
+import { Keycap } from "../components/Keycap";
 
 export type SpaceProgress = SpaceProgress_Deserialize;
 
 export const openSettings = (newSpace = false) =>
   void commands.openSettings(newSpace);
 
-/** Texto con las partes encontradas resaltadas (los trozos vienen de Rust). */
-export function Highlighted({ segments }: { segments: Segment[] }) {
+/**
+ * Texto con lo que encaja marcado con la firma (`.sift-match`). Los trozos vienen de
+ * Rust. `whole`: el texto entero es lo que encaja (un pasaje que llegó por significado,
+ * sin tus palabras dentro).
+ */
+export function Highlighted({
+  segments,
+  whole = false,
+}: {
+  segments: Segment[];
+  whole?: boolean;
+}) {
+  if (whole)
+    return (
+      <mark className="sift-match">{segments.map((s) => s.text).join("")}</mark>
+    );
   return (
     <>
       {segments.map((s, i) =>
         s.hit ? (
-          <mark key={i} className="rounded-[2px] bg-accent/25 text-fg">
+          <mark key={i} className="sift-match">
             {s.text}
           </mark>
         ) : (
@@ -45,7 +60,7 @@ export function EmptyState() {
         onClick={() => openSettings(true)}
         className="mt-2 rounded-item bg-selected px-4 py-2 text-sm"
       >
-        Crear tu primer Espacio <kbd className="ml-2 text-muted">↵</kbd>
+        Crear tu primer Espacio <Keycap k="enter" />
       </button>
     </div>
   );
