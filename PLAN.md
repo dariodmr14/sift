@@ -262,7 +262,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - Colocar también la ventana de un comando (`code .`): habría que saber qué programa abre.
 - Búsqueda: reordenar los primeros resultados con un *reranker* local, si las ideas siguen fallando y cabe en los 50 ms (ADR 0010).
 - Búsqueda: calcular el vector de cada fragmento con el contexto de su documento (título, asignatura). Obliga a recalcular todos los vectores (ADR 0010).
-- Búsqueda: agrupar copias del mismo archivo en varias carpetas (hoy `clarin.txt` puede salir tres veces seguidas).
+- ~~Búsqueda: agrupar copias del mismo archivo en varias carpetas~~ ✅ Hecho (2026-11-18): una copia con el mismo nombre y el mismo fragmento ya no se repite (39 → 12 repeticiones en `eval/`, sin cambiar recall ni MRR). Falta decidir si decir «y N copias más» (ver `docs/pendiente-decidir.md`).
 - Barra: volver a buscar sola cuando el indexado termina, si está abierta (hoy, durante el primer indexado, los resultados no se actualizan hasta que cambias el texto).
 
 ---
