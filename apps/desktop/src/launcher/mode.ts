@@ -35,6 +35,17 @@ export function addStep(steps: RunStep[], p: SpaceProgress): RunStep[] {
   return [...steps, { step: p.step, label: p.label }];
 }
 
+/** Qué ocupa la barra bajo la caja; si cambia, el panel entra con una animación breve. */
+export function panelKey(args: {
+  mode: Mode["kind"];
+  isEmpty: boolean;
+  hasItems: boolean;
+}): "running" | "result" | "empty" | "list" | "none" {
+  if (args.mode === "running" || args.mode === "result") return args.mode;
+  if (args.isEmpty) return "empty";
+  return args.hasItems ? "list" : "none";
+}
+
 /** El resumen de algo que no se pudo abrir (un archivo, un Espacio). */
 export function failedMode(title: string, detail: string): Mode {
   return {

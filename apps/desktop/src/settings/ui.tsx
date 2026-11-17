@@ -14,10 +14,10 @@ import { useFocusTrap } from "../components/useFocusTrap";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-accent text-accent-fg hover:brightness-110",
-  secondary: "bg-hover hover:bg-selected",
-  ghost: "hover:bg-hover",
-  danger: "text-danger hover:bg-danger/15",
+  primary: "bg-accent text-accent-fg hover:brightness-110 active:brightness-95",
+  secondary: "bg-hover hover:bg-selected active:bg-hover",
+  ghost: "hover:bg-hover active:bg-selected",
+  danger: "text-danger hover:bg-danger/15 active:bg-danger/25",
 };
 
 export function Button({
@@ -28,7 +28,7 @@ export function Button({
   return (
     <button
       type="button"
-      className={`rounded-item px-3 py-1.5 text-sm whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-accent-ink disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
+      className={`rounded-item px-3 py-1.5 text-sm whitespace-nowrap transition-[background-color,filter] duration-(--dur-state) ease-out outline-none focus-visible:ring-2 focus-visible:ring-accent-ink motion-reduce:transition-none disabled:opacity-40 ${VARIANTS[variant]} ${className}`}
       {...props}
     />
   );

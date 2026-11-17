@@ -102,6 +102,22 @@ export function SortableList({
 }
 
 /**
+ * Fondo y sombra del elemento en la mano: se funden al cogerlo y al soltarlo. La
+ * transición en línea de dnd-kit (solo `transform`) pisa cualquier clase, así que se une.
+ */
+const LIFT_TRANSITION =
+  "background-color var(--dur-state) cubic-bezier(0, 0, 0, 1), box-shadow var(--dur-state) cubic-bezier(0, 0, 0, 1)";
+
+/** Une la transición de dnd-kit con la del fondo y la sombra (sin animar con «reducir»). */
+export function composeTransition(
+  dnd: string | undefined,
+  reduced: boolean,
+): string | undefined {
+  if (reduced) return dnd;
+  return dnd ? `${dnd}, ${LIFT_TRANSITION}` : LIFT_TRANSITION;
+}
+
+/**
  * Para cada elemento de una `SortableList`: `itemProps` van en el elemento que se mueve,
  * `handleProps` en el asa que se coge. `dragging` es si es el que va en la mano.
  */
@@ -127,7 +143,10 @@ export function useSortableItem(id: UniqueIdentifier) {
     itemProps: {
       ref: setNodeRef,
       // Solo traslación: con escala, las tarjetas de distinta altura se deformarían.
-      style: { transform: CSS.Translate.toString(transform), transition },
+      style: {
+        transform: CSS.Translate.toString(transform),
+        transition: composeTransition(transition, prefersReducedMotion()),
+      },
     },
     handleProps: {
       ref: setActivatorNodeRef,

@@ -6,7 +6,7 @@ import { commands } from "./bindings";
 import { dismissLauncher, useLauncher } from "./useLauncher";
 import { detectFilter, type TypeFilter } from "./launcher/filters";
 import { buildItems, type Item } from "./launcher/items";
-import { failedMode, type Mode } from "./launcher/mode";
+import { failedMode, panelKey, type Mode } from "./launcher/mode";
 import {
   EmptyState,
   openSettings,
@@ -217,7 +217,14 @@ function App() {
         />
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div
+        key={panelKey({
+          mode: mode.kind,
+          isEmpty,
+          hasItems: items.length > 0,
+        })}
+        className="sift-swap min-h-0 flex-1"
+      >
         {mode.kind === "running" ? (
           <RunningPanel
             title={mode.title}

@@ -77,11 +77,20 @@ Solo dos pesos: normal (400) y seminegrita (600). Cabeceras con mayúscula inici
 |---|---|---|
 | `--dur-enter` | 120 ms | Entrada de la barra |
 | `--dur-exit` | 80 ms | Salida de la barra (Esc o tras abrir un Espacio) |
+| `--dur-state` | 150 ms | Cambios de estado: coger y soltar al arrastrar, pasar el ratón y pulsar (el "fast" de Fluent) |
 | `--ease-enter` | `cubic-bezier(0, 0, 0, 1)` | La curva "decelerate" de Fluent |
 
 La entrada va de opacidad 0,5 y escala 0,98 a su estado normal. **Empieza en 0,5, no en 0**, para que el primer fotograma ya enseñe el contenido: la animación no retrasa la apertura percibida (objetivo < 100 ms; ver métricas en el README).
 
 Cuando la barra se oculta (por cualquier vía), Rust emite `LauncherHidden` y la UI se reinicia con la ventana invisible. Así, al volver a abrirse, nunca se ve un fotograma con la búsqueda anterior.
+
+**Arrastre:** al coger una tarjeta, su fondo de vidrio y su sombra aparecen con una transición de `--dur-state`, y al soltarla se desvanecen igual. La transición se suma a la de dnd-kit en el estilo en línea (`composeTransition` en `settings/Sortable.tsx`), porque si no la de dnd-kit la pisa.
+
+**Cambio de panel en la barra:** al pasar de vacía a resultados, a "sin resultados" o a los paneles de confirmar, en marcha y resumen, el contenido entra con opacidad y 4 px (`.sift-swap`, `--dur-enter`). No se anima al escribir, para que la lista se lea al instante, ni al abrir la barra.
+
+**Pulsar:** los botones oscurecen un paso al pulsarlos, sin escalar, como en Fluent. Hover y pulsado cambian de color con `--dur-state`. Las filas de la barra no se animan: la selección con flechas es instantánea.
+
+Con "reducir movimiento" no hay ninguna de estas transiciones.
 
 ## Componentes
 
