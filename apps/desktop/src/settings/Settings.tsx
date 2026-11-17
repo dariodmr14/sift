@@ -281,7 +281,7 @@ function HotkeyForm({
           aria-label="Atajo"
           aria-describedby="hotkey-help"
           spellCheck={false}
-          className="flex-1 rounded-item border border-line bg-hover px-3 py-2 outline-none focus:border-accent-ink"
+          className="sift-field flex-1 bg-hover px-3 py-2"
         />
         <button
           type="submit"

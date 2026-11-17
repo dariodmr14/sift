@@ -15,7 +15,9 @@ import {
 } from "./launcher/panels";
 import { ResultsList } from "./launcher/ResultsList";
 import { moveSelection } from "./launcher/selection";
+import { resultsAnnouncement } from "./launcher/announce";
 import { useBarData } from "./launcher/useBarData";
+import { useDebounced } from "./launcher/useDebounced";
 import { useFileIcons, useFileSearch } from "./launcher/useFileSearch";
 import { useSpaceRun } from "./launcher/useSpaceRun";
 import { Glyph } from "./components/Glyph";
@@ -152,6 +154,17 @@ function App() {
     }
   }
 
+  // Se anuncia 400 ms después del último cambio, para no leer cada pulsación.
+  const announcement = useDebounced(
+    resultsAnnouncement({
+      query,
+      filter,
+      count: items.length,
+      empty: !query.trim() && !filter,
+    }),
+    400,
+  );
+
   const activeId =
     mode.kind === "list" && items[selected]
       ? `result-${items[selected].key}`
@@ -238,6 +251,11 @@ function App() {
           </p>
         )}
       </div>
+
+      {/* Siempre montada: un lector de pantalla no suele leer una región recién puesta. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {mode.kind === "list" ? announcement : ""}
+      </p>
 
       <footer className="flex items-center gap-4 border-t border-line px-5 py-2 text-xs text-muted">
         {mode.kind === "running" ? (

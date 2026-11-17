@@ -36,6 +36,7 @@ Vidrio por defecto; **«Desactivar vidrio»** (Ajustes → General) deja toda la
 | `--fg` | `text-fg` | `rgb(243 244 246)` | `rgb(27 27 31)` | Texto principal |
 | `--muted` | `text-muted` | `rgb(166 173 187)` | `rgb(92 99 112)` | Texto secundario, ayudas |
 | `--line` | `border-line` | blanco 8 % | negro 8 % | Separadores y bordes |
+| `--line-strong` | `border-line-strong` | blanco 36 % | negro 44 % | Trazo inferior de los campos: 3:1 frente al fondo (WCAG 1.4.11) |
 | `--hover` | `bg-hover` | blanco 5 % | negro 4 % | Fondo al pasar el ratón |
 | `--selected` | `bg-selected` | blanco 8 % | negro 6 % | Elemento seleccionado |
 | `--field` | `bg-field` | blanco 6 % | blanco 70 % | Fondo de campos |
@@ -66,9 +67,9 @@ En Windows 10 la ventana de la barra es rectangular: Windows no redondea las ven
 |---|---|---|
 | Interfaz | `Segoe UI Variable Text`, `Segoe UI` (la del sistema, sin carga) | La escala de Fluent: Caption 12 (`text-xs`), Body 14 (`text-sm`), Body Strong 14 en seminegrita, Subtitle 20 (`text-xl`, también la caja de búsqueda) |
 | Iconos | `Segoe Fluent Icons`, `Segoe MDL2 Assets` (`Glyph`) | 16 px, o 12 dentro de texto pequeño |
+| Código y comandos | `Cascadia Mono`, `Consolas` (`font-mono`) | 13 px |
 
 Solo dos pesos: normal (400) y seminegrita (600). Cabeceras con mayúscula inicial, nunca en MAYÚSCULAS con espaciado (como Configuración de Windows 11). Cifras tabulares en toda la app (`font-variant-numeric` en `:root`).
-| Código y comandos | `Cascadia Mono`, `Consolas` (`font-mono`) | 13 px |
 
 ### Movimiento
 
@@ -104,3 +105,10 @@ Números y tiempos se escriben como los diría una persona, siempre con `src/for
 2. Si es una lista, usa `.sift-option`. Si es un control de formulario, usa los de `ui.tsx`.
 3. Si se anima, usa los tokens de movimiento y comprueba que con «reducir movimiento» no se mueve.
 4. `npm test` comprueba que no se ha colado ningún color literal.
+
+## Accesibilidad
+
+- **Campos (`.sift-field`)**: TextInput, Select y el resto de cajas de Ajustes usan `.sift-field`: borde suave (`--line`) y trazo inferior de 3:1 (`--line-strong`), como los TextBox de Fluent. Con el foco, el mismo anillo de 2 px del acento legible que los botones (F10, F11).
+- **Diálogos (`Modal`)**: atrapan el foco (Tab y Mayús+Tab no salen del diálogo), Esc y el clic fuera lo cierran y, al cerrarse, el foco vuelve al control que lo abrió (`components/useFocusTrap.ts`, F12).
+- **Anuncios de la barra**: una región `role="status"` oculta lee el número de resultados y el filtro («12 resultados en tus PDF») 400 ms después de dejar de escribir (`launcher/announce.ts`, F13).
+- **Objetivos táctiles**: todo botón de solo icono mide al menos 24 × 24 px; el asa de arrastre, también (F14).
