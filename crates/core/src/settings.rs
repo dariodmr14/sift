@@ -21,6 +21,14 @@ pub struct Settings {
     pub appearance: AppearanceSettings,
     /// Qué se indexa además de textos, código y documentos.
     pub indexing: IndexingSettings,
+    /// La bienvenida ya se vio. Sin fichero de ajustes (primera vez) es `false`; un
+    /// fichero de antes que no tiene el campo cuenta como ya visto.
+    #[serde(default = "yes")]
+    pub welcome_done: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -32,6 +40,9 @@ pub struct IndexingSettings {
     /// Sin «búsqueda inteligente» (por significado): ni se descarga el modelo ni se
     /// calculan vectores. Por defecto está activada.
     pub disable_smart_search: bool,
+    /// El usuario ha dicho que sí a descargar el modelo (unos 120 MB). Sin esto nunca se
+    /// descarga; si ya está en disco, se usa igual.
+    pub model_download_allowed: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -98,7 +109,9 @@ mod tests {
             indexing: IndexingSettings {
                 skip_media: true,
                 disable_smart_search: true,
+                model_download_allowed: true,
             },
+            welcome_done: true,
         };
         s.save(&path).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), s);
@@ -110,7 +123,23 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("settings.json");
         std::fs::write(&path, r#"{ "campoDelFuturo": 1 }"#).unwrap();
-        assert_eq!(Settings::load(&path).unwrap(), Settings::default());
+        let s = Settings::load(&path).unwrap();
+        // Un fichero existente sin `welcomeDone` es de un usuario de antes: ya visto.
+        assert!(s.welcome_done);
+        assert!(!s.indexing.model_download_allowed);
+        assert_eq!(
+            s,
+            Settings {
+                welcome_done: true,
+                ..Settings::default()
+            }
+        );
+    }
+
+    #[test]
+    fn default_settings_have_not_seen_the_welcome() {
+        assert!(!Settings::default().welcome_done);
+        assert!(!Settings::default().indexing.model_download_allowed);
     }
 
     #[test]

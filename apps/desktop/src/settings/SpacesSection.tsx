@@ -65,10 +65,10 @@ function SpaceRow({
   );
 }
 
-export function SpacesSection() {
+export function SpacesSection({ startNew = false }: { startNew?: boolean }) {
   const [spaces, setSpaces] = useState<SpaceView[] | null>(null);
   const [selection, setSelection] = useState<Selection>(
-    startsWithNew ? { kind: "new" } : null,
+    startsWithNew || startNew ? { kind: "new" } : null,
   );
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
     null,

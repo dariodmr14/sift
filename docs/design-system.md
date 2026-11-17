@@ -103,6 +103,7 @@ Con "reducir movimiento" no hay ninguna de estas transiciones.
 - **`Glyph`** (`src/components/Glyph.tsx`): iconos de la interfaz con la fuente de iconos de Windows; los códigos están comprobados en Segoe MDL2 Assets de Windows 10. Lucide solo para el icono que eliges en un Espacio.
 - **`Keycap` y `Shortcut`** (`src/components/Keycap.tsx`): atajos como teclas pequeñas, solo en el pie de la barra y en la fila seleccionada.
 - **`SpaceIcon`** (`src/components/SpaceIcon.tsx`): icono de un Espacio. Los SVG se pintan con `<img>` o máscara CSS, nunca como HTML.
+- **Bienvenida (`src/settings/Welcome.tsx`)**: columna centrada de 560 px como máximo. Pasos numerados con un círculo de 24 px (`bg-hover`), título en 14 seminegrita y cuerpo en 14. El atajo se muestra con `Shortcut` (keycaps). Un solo botón principal por pantalla («Empezar»). En modo Ajustes, la misma guía aparece con la navegación lateral.
 
 ## Textos
 

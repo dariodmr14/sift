@@ -63,6 +63,12 @@ fn read_settings(path: &std::path::Path) -> anyhow::Result<Settings> {
     Ok(Settings::load(path)?)
 }
 
+/// La bienvenida sale solo en un equipo nuevo: sin verla antes y sin carpetas ni
+/// Espacios todavía.
+fn shows_welcome(welcome_done: bool, has_data: bool) -> bool {
+    !welcome_done && !has_data
+}
+
 pub(crate) fn load_settings(app: &AppHandle) -> Settings {
     let loaded = settings_path(app).and_then(|p| read_settings(&p));
     loaded.unwrap_or_else(|e| {
@@ -204,6 +210,10 @@ pub fn run() {
             let (mut db, storage_error) = open_database(handle);
             // En desarrollo, datos de prueba la primera vez (ver `dev`).
             dev::seed(&mut db);
+            // ¿Hay ya algo tuyo (carpetas o Espacios)? Entonces no es un equipo nuevo y
+            // no hace falta la bienvenida. Si no se puede leer, se supone que sí lo hay.
+            let has_data = db.list_roots().map_or(true, |r| !r.is_empty())
+                || db.list_spaces().map_or(true, |s| !s.is_empty());
             app.manage(spaces_commands::Db(Mutex::new(db)));
             app.manage(StorageStatus(storage_error));
             let index = open_search_index(handle);
@@ -227,7 +237,19 @@ pub fn run() {
 
             // Al arrancar a mano se muestra el lanzador, para que se vea que Sift está
             // funcionando. Al arrancar con Windows, no: espera en la bandeja.
-            if !autostarted {
+            // La primera vez se abre la bienvenida (en Ajustes) en vez de la barra.
+            if shows_welcome(settings.welcome_done, has_data) {
+                settings_window::open_welcome(handle);
+            } else if !settings.welcome_done {
+                // Ajustes sin el campo pero con carpetas o Espacios (p. ej. datos de
+                // desarrollo): se da por vista para no volver a preguntarlo.
+                if let Err(e) = update_settings(handle, |s| s.welcome_done = true) {
+                    tracing::warn!(error = %e, "no se pudo guardar que la bienvenida ya no hace falta");
+                }
+                if !autostarted {
+                    launcher::show(handle);
+                }
+            } else if !autostarted {
                 launcher::show(handle);
             }
             Ok(())
@@ -269,4 +291,17 @@ pub fn run() {
             context
         })
         .expect("error al arrancar la aplicación Tauri");
+}
+
+#[cfg(test)]
+mod welcome_tests {
+    use super::shows_welcome;
+
+    #[test]
+    fn the_welcome_only_shows_on_a_new_computer() {
+        assert!(shows_welcome(false, false));
+        assert!(!shows_welcome(false, true)); // ya hay carpetas o Espacios
+        assert!(!shows_welcome(true, false));
+        assert!(!shows_welcome(true, true));
+    }
 }

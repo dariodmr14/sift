@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
-import { commands, type SettingsView, type Status } from "../bindings";
+import {
+  commands,
+  events,
+  type SettingsView,
+  type SmartStatus,
+  type Status,
+} from "../bindings";
 import { applyWindowMaterial } from "../appearance";
 import { TYPE_FILTERS } from "../launcher/filters";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
+import { Welcome } from "./Welcome";
+import { Button } from "./ui";
 import { Glyph } from "../components/Glyph";
 
 /** Cómo escucha Sift el atajo, explicado (solo en «Avanzado»). */
@@ -15,10 +23,15 @@ const BACKEND_LABEL = {
     "Hook de teclado: Windows no dejó registrar el atajo (quizá otro programa lo usa), así que Sift escucha el teclado para detectarlo.",
 } as const;
 
-type Page = "spaces" | "folders" | "general" | "status";
+type Page = "spaces" | "folders" | "general" | "welcome" | "status";
 
 /** ¿Se abrió desde la barra con «Crear Espacio»? Entonces se empieza en Espacios. */
 const startsWithNew = new URLSearchParams(window.location.search).has("new");
+
+/** ¿Es la primera vez? Entonces se abre la bienvenida, sin navegación. */
+const startsWelcome = new URLSearchParams(window.location.search).has(
+  "welcome",
+);
 
 // El orden de las apps de Windows (Configuración, Terminal, PowerToys): lo general
 // primero, después lo propio de la app, y la información («Estado») al final, abajo.
@@ -28,6 +41,7 @@ const PAGES: { id: Page; label: string }[] = [
   { id: "folders", label: "Carpetas" },
 ];
 const FOOTER_PAGES: { id: Page; label: string }[] = [
+  { id: "welcome", label: "Primeros pasos" },
   { id: "status", label: "Estado" },
 ];
 
@@ -35,6 +49,9 @@ function Settings() {
   const [page, setPage] = useState<Page>(startsWithNew ? "spaces" : "general");
   const [status, setStatus] = useState<Status | null>(null);
   const [settings, setSettings] = useState<SettingsView | null>(null);
+  // La bienvenida de la primera vez: mientras no se termine, no hay navegación.
+  const [inWelcome, setInWelcome] = useState(startsWelcome);
+  const [newSpace, setNewSpace] = useState(false);
 
   const refreshStatus = () => void commands.getStatus().then(setStatus);
 
@@ -58,6 +75,24 @@ function Settings() {
     </button>
   );
 
+  if (inWelcome) {
+    return (
+      <div className="flex h-full flex-col bg-surface">
+        <TitleBar title="Sift" />
+        <main className="min-h-0 flex-1 select-text">
+          <Welcome
+            mode="first-run"
+            onCreateSpace={() => {
+              setNewSpace(true);
+              setPage("spaces");
+              setInWelcome(false);
+            }}
+          />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col bg-surface">
       <TitleBar title="Ajustes de Sift" />
@@ -79,7 +114,10 @@ function Settings() {
         </nav>
 
         <main className="min-w-0 flex-1 select-text">
-          {page === "spaces" && <SpacesSection />}
+          {page === "spaces" && <SpacesSection startNew={newSpace} />}
+          {page === "welcome" && (
+            <Welcome mode="settings" onGoTo={(p) => setPage(p)} />
+          )}
           {page === "folders" && <FoldersSection />}
           {page === "general" && (
             <div className="h-full space-y-8 overflow-y-auto p-6">
@@ -115,8 +153,16 @@ function Settings() {
 /** «Búsqueda inteligente»: buscar por significado (ADR 0009). Activada por defecto. */
 function SmartSearchToggle() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [smart, setSmart] = useState<SmartStatus | null>(null);
   useEffect(() => {
     void commands.getSmartSearch().then(setEnabled);
+    void commands.indexStatus().then((s) => setSmart(s.smart));
+    const unlisten = events.indexProgress.listen((e) =>
+      setSmart(e.payload.smart),
+    );
+    return () => {
+      void unlisten.then((stop) => stop());
+    };
   }, []);
   return (
     <Section title="Búsqueda">
@@ -137,12 +183,25 @@ function SmartSearchToggle() {
           <span className="block text-xs text-muted">
             Encuentra también lo que trata de lo mismo aunque use otras
             palabras: buscando «viaje» salen también las reservas de hotel o los
-            billetes de tren. Funciona en tu PC, sin enviar nada: la primera vez
-            descarga unos 120 MB y luego prepara tus archivos poco a poco,
-            cuando no estás usando mucho el ordenador.
+            billetes de tren. Funciona en tu PC, sin enviar nada. Prepara tus
+            archivos poco a poco, cuando no estás usando mucho el ordenador.
           </span>
         </span>
       </label>
+      {smart?.awaitingPermission && (
+        <div className="space-y-2 pl-7">
+          <p className="text-xs text-muted">
+            Falta descargar el modelo (unos {smart.downloadMb} MB). Funciona en
+            tu PC, sin enviar nada.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => void commands.allowModelDownload()}
+          >
+            Descargar ({smart.downloadMb} MB)
+          </Button>
+        </div>
+      )}
       <QuickFilters />
     </Section>
   );

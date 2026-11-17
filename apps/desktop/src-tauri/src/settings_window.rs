@@ -62,6 +62,15 @@ pub fn on_closed(app: &AppHandle) {
 
 /// Abre los ajustes. Con `new_space`, directamente en "crear Espacio".
 pub fn open(app: &AppHandle, new_space: bool, origin: Origin) {
+    open_page(app, new_space, false, origin);
+}
+
+/// Abre los ajustes en modo bienvenida (la primera vez que arranca Sift).
+pub fn open_welcome(app: &AppHandle) {
+    open_page(app, false, true, Origin::Tray);
+}
+
+fn open_page(app: &AppHandle, new_space: bool, welcome: bool, origin: Origin) {
     // Cuenta el último sitio desde el que se pidieron, también si ya estaban abiertos.
     app.state::<ReturnToLauncher>()
         .0
@@ -76,7 +85,9 @@ pub fn open(app: &AppHandle, new_space: bool, origin: Origin) {
         return;
     }
     // Si no, se crea; el parámetro de la URL le dice que empiece creando un Espacio.
-    let page = if new_space {
+    let page = if welcome {
+        "settings.html?welcome=1"
+    } else if new_space {
         "settings.html?new=1"
     } else {
         "settings.html"
