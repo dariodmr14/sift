@@ -14,7 +14,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { connect, root, sleep, startDevApp, typeInBar, waitFor } from "./devapp.mjs";
+import { connect, root, searchUntil, sleep, startDevApp, waitFor } from "./devapp.mjs";
 
 const out = path.join(root, "target", "e2e");
 fs.mkdirSync(out, { recursive: true });
@@ -43,15 +43,8 @@ try {
   );
 
   // 2. Buscar como lo haría una persona: escribir en la caja y esperar resultados.
-  await typeInBar(bar, "vidrio");
-  const found = await waitFor(
-    () =>
-      bar.evaluate(
-        "[...document.querySelectorAll('[role=option]')].map(o => o.textContent).join(' | ')",
-      ),
-    30_000,
-    "resultados de «vidrio»",
-  ).catch(() => "");
+  // En un primer arranque el índice de docs/ aún se está llenando: se repite la búsqueda.
+  const found = await searchUntil(bar, "vidrio", (r) => r.includes("design-system"), 120_000);
   check("Buscar «vidrio» trae la guía de diseño", found.includes("design-system"), found.slice(0, 120));
   await bar.shot(path.join(out, "barra.png"));
 

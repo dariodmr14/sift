@@ -74,7 +74,7 @@ export function PreviewPanel({
           )}
         </div>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div className="min-h-0 flex-1 overflow-hidden px-5 py-4">
         {!hit ? (
           <p className="text-sm text-muted">{NO_PREVIEW_TEXT}</p>
         ) : state?.status === "error" ? (
@@ -89,7 +89,7 @@ export function PreviewPanel({
               className={
                 preview.monospace
                   ? "font-mono text-xs leading-relaxed whitespace-pre-wrap"
-                  : "text-sm leading-relaxed"
+                  : "text-sm leading-relaxed whitespace-pre-line"
               }
             >
               <Highlighted
