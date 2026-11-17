@@ -94,7 +94,7 @@ export function ActionEditor({
           {...handleProps}
           aria-label={`Mover acción ${index + 1}: arrastra, o Alt+↑/↓`}
           title="Arrastra para reordenar (o Alt+↑/↓)"
-          className="cursor-grab touch-none rounded-item px-1 text-muted outline-none select-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink active:cursor-grabbing"
+          className="flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-item text-muted outline-none select-none hover:bg-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-ink active:cursor-grabbing"
         >
           <Glyph name="gripper" />
         </button>
@@ -234,7 +234,7 @@ export function ActionEditor({
                     args: argsFromText(e.currentTarget.value),
                   })
                 }
-                className="w-full rounded-item border border-line bg-hover px-3 py-1.5 font-mono text-sm outline-none focus:border-accent-ink"
+                className="sift-field w-full bg-hover px-3 py-1.5 font-mono text-sm"
               />
             </Field>
           </div>

@@ -113,6 +113,14 @@ describe("barra", () => {
     expect(screen.getByText("informe.docx")).toBeInTheDocument();
   });
 
+  it("anuncia el número de resultados (con retardo) en la zona de estado", async () => {
+    const { user, box } = await renderBar();
+    await user.type(box, "contrato");
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/^\d+ resultados?/),
+    );
+  });
+
   it("«pdf » se convierte en etiqueta, busca solo PDF y Retroceso la quita", async () => {
     const { user, box } = await renderBar();
     await user.type(box, "pdf contrato");

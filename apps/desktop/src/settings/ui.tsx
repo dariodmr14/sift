@@ -1,6 +1,7 @@
 // Piezas de UI compartidas de la ventana de ajustes. Cuando se elija la dirección visual
 // (punto 5), se cambian aquí y todo el editor la sigue.
 
+import { useRef } from "react";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -8,6 +9,7 @@ import type {
   SelectHTMLAttributes,
 } from "react";
 import { Glyph } from "../components/Glyph";
+import { useFocusTrap } from "../components/useFocusTrap";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -39,7 +41,7 @@ export function TextInput({
   return (
     <input
       spellCheck={false}
-      className={`w-full rounded-item border border-line bg-hover px-3 py-1.5 text-sm outline-none focus:border-accent-ink ${className}`}
+      className={`sift-field w-full bg-hover px-3 py-1.5 text-sm ${className}`}
       {...props}
     />
   );
@@ -52,7 +54,7 @@ export function Select({
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
-      className={`rounded-item border border-line bg-hover px-2 py-1.5 text-sm outline-none focus:border-accent-ink ${className}`}
+      className={`sift-field bg-hover px-2 py-1.5 text-sm ${className}`}
       {...props}
     />
   );
@@ -86,6 +88,8 @@ export function Modal({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef);
   return (
     <div
       className="fixed inset-0 z-10 flex items-center justify-center bg-scrim p-6"
@@ -93,10 +97,12 @@ export function Modal({
       onKeyDown={(e) => e.key === "Escape" && onClose()}
     >
       <div
+        ref={dialogRef}
         role="dialog"
-        aria-modal
+        aria-modal="true"
+        tabIndex={-1}
         aria-label={title}
-        className="flex max-h-full w-full max-w-lg flex-col sift-glass"
+        className="flex max-h-full w-full max-w-lg flex-col outline-none sift-glass"
       >
         <header className="flex items-center justify-between border-b border-line px-4 py-3">
           <h3 className="font-semibold">{title}</h3>

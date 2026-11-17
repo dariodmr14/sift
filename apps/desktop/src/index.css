@@ -22,6 +22,7 @@
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-hover: var(--hover);
   --color-selected: var(--selected);
   --color-field: var(--field);
@@ -52,6 +53,9 @@
   --fg: rgb(243 244 246);
   --muted: rgb(166 173 187);
   --line: rgb(255 255 255 / 0.08);
+  /* Trazo inferior de los campos: 3:1 sobre --surface opaco (WCAG 1.4.11); en oscuro
+     ≈ rgb(107) sobre rgb(32), en claro ≈ rgb(141) sobre rgb(243). */
+  --line-strong: rgb(255 255 255 / 0.36);
   --hover: rgb(255 255 255 / 0.05);
   --selected: rgb(255 255 255 / 0.08);
   --field: rgb(255 255 255 / 0.06);
@@ -84,6 +88,7 @@
   --fg: rgb(27 27 31);
   --muted: rgb(92 99 112);
   --line: rgb(0 0 0 / 0.08);
+  --line-strong: rgb(0 0 0 / 0.44);
   --hover: rgb(0 0 0 / 0.04);
   --selected: rgb(0 0 0 / 0.06);
   --field: rgb(255 255 255 / 0.7);
@@ -186,6 +191,20 @@ body,
 }
 
 @layer components {
+  /* Campo de texto o desplegable (F10, F11): borde suave y trazo inferior de 3:1, como los
+     TextBox de Fluent; con el foco, el mismo anillo de 2 px que los botones. */
+  .sift-field {
+    border: 1px solid var(--line);
+    border-bottom-color: var(--line-strong);
+    border-radius: var(--radius-item);
+    outline: none;
+  }
+  .sift-field:focus-visible,
+  .sift-field:focus {
+    border-bottom-color: var(--accent-ink);
+    box-shadow: 0 0 0 2px var(--accent-ink);
+  }
+
   /* Glifos de minimizar/maximizar/cerrar: la fuente de iconos de Windows (10 y 11). */
   .sift-caption-glyph {
     font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";

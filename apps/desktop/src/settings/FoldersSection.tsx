@@ -421,7 +421,7 @@ function Advanced() {
             rows={8}
             value={text}
             onChange={(e) => setText(e.currentTarget.value)}
-            className="w-full rounded-item border border-line bg-field px-3 py-2 font-mono text-sm outline-none focus:border-accent-ink"
+            className="sift-field w-full bg-field px-3 py-2 font-mono text-sm"
           />
         </label>
         <div className="flex items-center gap-3">
