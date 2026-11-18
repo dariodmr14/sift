@@ -58,6 +58,26 @@ fn repo_root() -> PathBuf {
         .join("..")
 }
 
+/// La carpeta sugerida en la introducción, en una versión de desarrollo arrancada **sin
+/// datos de prueba** (`SIFT_DEV_NO_SEED=1`): en vez de tus Documentos de verdad, la
+/// carpeta `docs/` del repositorio (nada personal), y ningún Escritorio. Así se puede
+/// recorrer la introducción entera, y hacer sus capturas, sin leer archivos personales.
+/// `None`: no hay nada que cambiar (la versión diaria, o desarrollo con datos de prueba).
+pub fn suggested_folder(documents: bool) -> Option<Option<PathBuf>> {
+    if !is_dev() || !std::env::var(NO_SEED_ENV).is_ok_and(|v| v == "1") {
+        return None;
+    }
+    Some(documents.then(|| repo_root().join("docs")).and_then(|p| {
+        let p = p.canonicalize().ok()?;
+        Some(PathBuf::from(
+            p.display()
+                .to_string()
+                .trim_start_matches(r"\\?\")
+                .to_owned(),
+        ))
+    }))
+}
+
 /// Datos de prueba para una base de datos de desarrollo vacía: la carpeta `docs/` del
 /// repositorio y un Espacio de ejemplo. Si ya hay algo, no toca nada.
 ///

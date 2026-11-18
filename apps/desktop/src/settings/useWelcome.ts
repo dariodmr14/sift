@@ -62,6 +62,7 @@ export function useWelcome() {
   return {
     view,
     error,
+    status,
     smart,
     downloadMb: smart?.downloadMb || FALLBACK_MB,
     skipped,
