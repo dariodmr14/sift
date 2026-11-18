@@ -149,6 +149,13 @@ pub fn theme() -> Theme {
     platform::theme()
 }
 
+/// El tema de la barra de tareas, que puede no ser el de las apps (en Windows 10, por
+/// defecto, las apps van en claro y la barra de tareas en oscuro). Para el icono de la
+/// bandeja.
+pub fn taskbar_theme() -> Theme {
+    platform::taskbar_theme()
+}
+
 #[cfg(windows)]
 #[allow(unsafe_code)] // Lectura del registro con RegGetValueW.
 mod platform {
@@ -198,6 +205,17 @@ mod platform {
         }
     }
 
+    pub fn taskbar_theme() -> Theme {
+        // 1 = la barra de tareas va en claro. Sin la clave (Windows antiguo), oscura.
+        match dword(
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+            "SystemUsesLightTheme",
+        ) {
+            Some(1) => Theme::Light,
+            _ => Theme::Dark,
+        }
+    }
+
     pub fn palette() -> Option<[Rgb; 7]> {
         let mut buf = [0u8; 32];
         let n = read(
@@ -218,6 +236,9 @@ mod platform {
 mod platform {
     use super::{Rgb, Theme};
     pub fn theme() -> Theme {
+        Theme::Dark
+    }
+    pub fn taskbar_theme() -> Theme {
         Theme::Dark
     }
     pub fn palette() -> Option<[Rgb; 7]> {
