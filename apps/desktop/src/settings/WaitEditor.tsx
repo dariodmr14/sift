@@ -50,7 +50,7 @@ export function WaitEditor({
       {until.kind === "webResponds" && (
         <Field
           label="Dirección"
-          hint="Una web de tu equipo, como http://localhost:8080. Vale cualquier respuesta, aunque sea «página no encontrada»: significa que ya está en marcha."
+          hint="La dirección donde se abre tu web o tu servicio cuando está listo, normalmente localhost con un número, como http://localhost:8080. Sift la prueba hasta que contesta, y así sabe que puede seguir. Vale cualquier respuesta, aunque sea «página no encontrada»."
         >
           <TextInput
             placeholder="http://localhost:8080"

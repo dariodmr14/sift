@@ -8,7 +8,7 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 
 - `Alt+Espacio` (configurable) abre una barra flotante de vidrio (Acrylic), desde cualquier app.
 - Se maneja solo con teclado: escribir, ↑ ↓, Enter, Esc. Se oculta también al hacer clic fuera.
-- **Espacios**: escribe su nombre o un alias y con Enter se abre todo de golpe (carpetas, archivos, webs, apps y comandos). Se crean, editan, duplican, reordenan, exportan e importan desde Ajustes, y se guardan en SQLite.
+- **Espacios**: escribe su nombre o una de sus palabras clave y con Enter se abre todo de golpe (carpetas, archivos, webs, apps y comandos). Se crean, editan, duplican, reordenan, exportan e importan desde Ajustes, y se guardan en SQLite.
 - **Seguro por diseño**: los comandos se ejecutan con programa y argumentos separados, sin shell, y piden confirmación la primera vez (y otra vez si cambian).
 - **Iconos**: el real de Windows para apps y archivos, una librería con buscador, emoji o imagen propia; o «solo texto».
 - **Ajustes desde la barra**: `Ctrl+,`, el engranaje o escribiendo «ajustes».
@@ -24,7 +24,7 @@ Lanzador y buscador semántico de escritorio para Windows. Pulsas un atajo, escr
 - **Filtros rápidos**: «pdf contrato», «código árbol», «imagen playa»… buscan solo ese tipo de archivo (la palabra queda como etiqueta; Retroceso la quita).
 - **Vista previa**: sin salir de la barra (Tab), por qué sale cada resultado y un fragmento más largo, con lo que encaja subrayado.
 - **PDF en su página**: un PDF se abre en la página que encaja con tu búsqueda («pág. 37»), con el lector que tengas (Edge, Chrome, Adobe, Sumatra…).
-- **Espacios y archivos en la misma lista**: si escribes el nombre o un alias de un Espacio, sale el primero; si encaja a medias, se coloca entre los archivos según lo que más uses.
+- **Espacios y archivos en la misma lista**: si escribes el nombre o una palabra clave de un Espacio, sale el primero; si encaja a medias, se coloca entre los archivos según lo que más uses.
 - **Colocar ventanas**: cada cosa que abre un Espacio puede ir a una zona de la pantalla (mitades, tercios, cuartos o toda la pantalla), en la pantalla que elijas; si ya estaba abierta, se mueve en vez de abrir otra.
 - **Esperas en los Espacios**: «Esperar a que responda una web de tu equipo», «…un servicio acepte conexiones (como una base de datos)», «…termine el comando anterior» o unos segundos, con «Si no ocurre en X segundos: no seguir y avisarme / seguir igualmente». La barra dice por qué paso va, Esc cancela (lo ya abierto sigue abierto) y al final cuenta qué se ejecutó y qué no.
 - **Rutas sugeridas** en el editor de Espacios: escribe el nombre de un archivo o carpeta y Sift te la sugiere desde su índice (o elígela con el diálogo de Windows).

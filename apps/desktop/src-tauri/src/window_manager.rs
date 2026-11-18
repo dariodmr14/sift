@@ -40,6 +40,10 @@ impl WindowManager for Win32Windows {
     fn place(&self, window: isize, zone: Zone, monitor: &MonitorInfo) -> Result<(), String> {
         platform::place(window, zone, monitor)
     }
+
+    fn focus(&self, window: isize) -> Result<(), String> {
+        platform::focus(window)
+    }
 }
 
 /// Qué ventana buscar tras abrir una acción. `default_exe` dice qué programa abre un tipo
@@ -334,6 +338,20 @@ mod platform {
         Some((to_rect(window), to_rect(visible)))
     }
 
+    /// Trae al frente una ventana ya abierta, sin moverla («usar la que ya está abierta»).
+    pub fn focus(window: isize) -> Result<(), String> {
+        let hwnd = HWND(window as *mut _);
+        // SAFETY: restaurar y traer al frente una ventana existente; si ya no existe, las
+        // llamadas fallan sin más. Windows puede negarse a darle el foco: no es un error.
+        unsafe {
+            if IsIconic(hwnd).as_bool() {
+                let _ = ShowWindow(hwnd, SW_RESTORE);
+            }
+            let _ = SetForegroundWindow(hwnd);
+        }
+        Ok(())
+    }
+
     pub fn place(window: isize, zone: Zone, monitor: &MonitorInfo) -> Result<(), String> {
         let hwnd = HWND(window as *mut _);
         let move_to = |r: Rect| {
@@ -401,6 +419,10 @@ mod platform {
     pub fn default_exe(_: &str) -> Option<String> {
         None
     }
+    pub fn focus(_: isize) -> Result<(), String> {
+        Err("solo en Windows".into())
+    }
+
     pub fn place(_: isize, _: Zone, _: &MonitorInfo) -> Result<(), String> {
         Err("solo en Windows".into())
     }
@@ -585,7 +607,7 @@ mod tests {
         let action = Action::OpenFolder {
             path: folder.clone(),
             place: Some(sift_spaces::placement::Placement {
-                zone: Zone::RightHalf,
+                zone: Some(Zone::RightHalf),
                 monitor: sift_spaces::placement::MonitorChoice::Primary,
                 reuse_window: false,
             }),

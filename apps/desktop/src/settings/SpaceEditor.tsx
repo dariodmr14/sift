@@ -129,10 +129,10 @@ export function SpaceEditor({
     >
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 pt-6 pb-6">
         {/*
-        Tarjeta de contacto: avatar a la izquierda y, a su derecha, nombre y alias.
+        Tarjeta de contacto: avatar a la izquierda y, a su derecha, nombre y palabras clave.
         El avatar mide exactamente lo que el bloque de campos (40 + 12 + 36 = 88 px, en la
         rejilla de 4 px), así sus bordes superior e inferior coinciden con los de los
-        campos. La ayuda de los alias va debajo, a lo ancho, para no descuadrarlo.
+        campos. La ayuda de las palabras clave va debajo, a lo ancho, para no descuadrarlo.
       */}
         <div className="space-y-2">
           <div className="flex gap-4">
@@ -169,7 +169,9 @@ export function SpaceEditor({
                 className="h-10 text-xl font-semibold"
               />
               <label className="flex h-9 items-center gap-3">
-                <span className="w-12 shrink-0 text-xs text-muted">Alias</span>
+                <span className="w-24 shrink-0 text-xs text-muted">
+                  Palabras clave
+                </span>
                 <TextInput
                   placeholder="curro, oficina"
                   value={aliasText}
@@ -182,7 +184,7 @@ export function SpaceEditor({
           </div>
           {/* 104 px = avatar (88) + hueco (16): la ayuda empieza donde los campos. */}
           <p id="alias-hint" className="pl-26 text-xs text-muted">
-            Alias: otras palabras que lo encuentran en la barra, separadas por
+            Otras palabras con las que encontrarlo en la barra, separadas por
             comas.
           </p>
         </div>

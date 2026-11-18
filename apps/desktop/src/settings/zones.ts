@@ -49,11 +49,27 @@ export const ZONES: ZoneInfo[] = [
   },
 ];
 
-/** Cómo se enseñan, por filas: completa y mitades · tercios · cuartos. */
-export const ZONE_ROWS: Zone[][] = [
-  ["maximized", "leftHalf", "rightHalf", "topHalf", "bottomHalf"],
-  ["leftThird", "centerThird", "rightThird", "leftTwoThirds", "rightTwoThirds"],
-  ["topLeft", "topRight", "bottomLeft", "bottomRight"],
+/** Cómo se enseñan: una fila por grupo, con su nombre. `null` es «No colocar». */
+export const ZONE_GROUPS: { label: string; zones: (Zone | null)[] }[] = [
+  { label: "General", zones: [null, "maximized"] },
+  {
+    label: "Mitades",
+    zones: ["leftHalf", "rightHalf", "topHalf", "bottomHalf"],
+  },
+  {
+    label: "Tercios",
+    zones: [
+      "leftThird",
+      "centerThird",
+      "rightThird",
+      "leftTwoThirds",
+      "rightTwoThirds",
+    ],
+  },
+  {
+    label: "Cuartos",
+    zones: ["topLeft", "topRight", "bottomLeft", "bottomRight"],
+  },
 ];
 
 export interface MonitorOption {
@@ -63,58 +79,61 @@ export interface MonitorOption {
   choice: MonitorChoice;
 }
 
-/** Dónde está cada pantalla, de izquierda a derecha («izquierda», «centro», «derecha»). */
-function positions(count: number): string[] {
-  if (count === 2) return ["izquierda", "derecha"];
-  if (count === 3) return ["izquierda", "centro", "derecha"];
-  return Array.from(
-    { length: count },
-    (_, i) => `${i + 1}.ª desde la izquierda`,
-  );
-}
+/** El nombre que pone Windows cuando no sabe el modelo («Pantalla 2»): no dice nada más. */
+const GENERIC_NAME = /^Pantalla \d+$/;
 
 /**
- * Las opciones de «en qué pantalla»: la principal, la del ratón y, si hay varias, cada
- * una con dónde está («Pantalla 1, la de la derecha»). Si la guardada ya no está
+ * Las opciones de «Pantalla»: cada pantalla con su número (de izquierda a derecha), su
+ * modelo y cuál es la principal («Pantalla 1 · DELL U2720Q (principal)»), y al final
+ * «Donde esté el ratón». La principal se guarda como «la principal» y no como esa pantalla
+ * concreta: si cambias de principal en Windows, la sigue. Si la guardada ya no está
  * conectada, se añade para no perderla al editar.
  */
 export function monitorOptions(
   monitors: MonitorInfo[],
   current: MonitorChoice,
 ): MonitorOption[] {
-  const options: MonitorOption[] = [
-    {
+  const sorted = [...monitors].sort(
+    (a, b) => a.bounds.left - b.bounds.left || a.bounds.top - b.bounds.top,
+  );
+  const options: MonitorOption[] = sorted.map((m, i) => {
+    const label = `Pantalla ${i + 1}${GENERIC_NAME.test(m.name) ? "" : ` · ${m.name}`}`;
+    // Un Espacio guardado antes puede tener la principal elegida como pantalla concreta:
+    // se respeta tal cual.
+    const savedAsThis =
+      current.kind === "specific" &&
+      current.name === m.name &&
+      current.left === m.bounds.left &&
+      current.top === m.bounds.top;
+    return m.primary && !savedAsThis
+      ? {
+          value: "primary",
+          label: `${label} (principal)`,
+          choice: { kind: "primary" },
+        }
+      : {
+          value: `specific:${i}`,
+          label: m.primary ? `${label} (principal)` : label,
+          choice: {
+            kind: "specific",
+            name: m.name,
+            left: m.bounds.left,
+            top: m.bounds.top,
+          },
+        };
+  });
+  // Mientras llega la lista de pantallas (o si Windows no da ninguna).
+  if (options.length === 0)
+    options.unshift({
       value: "primary",
-      label: "la pantalla principal",
+      label: "Pantalla principal",
       choice: { kind: "primary" },
-    },
-    {
-      value: "underMouse",
-      label: "la pantalla donde esté el ratón",
-      choice: { kind: "underMouse" },
-    },
-  ];
-  if (monitors.length > 1) {
-    const sorted = [...monitors].sort(
-      (a, b) => a.bounds.left - b.bounds.left || a.bounds.top - b.bounds.top,
-    );
-    const where = positions(sorted.length);
-    sorted.forEach((m, i) =>
-      options.push({
-        value: `specific:${i}`,
-        label:
-          `${m.name}, la de la ${where[i]}${m.primary ? " (principal)" : ""}`
-            .replace("la de la centro", "la del centro")
-            .replace(/la de la (\d)/, "la $1"),
-        choice: {
-          kind: "specific",
-          name: m.name,
-          left: m.bounds.left,
-          top: m.bounds.top,
-        },
-      }),
-    );
-  }
+    });
+  options.push({
+    value: "underMouse",
+    label: "Donde esté el ratón",
+    choice: { kind: "underMouse" },
+  });
   if (
     current.kind === "specific" &&
     !options.some((o) => sameChoice(o.choice, current))

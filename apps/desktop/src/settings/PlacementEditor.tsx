@@ -1,6 +1,6 @@
-// «Colocar su ventana» en una acción que abre algo (Fase 6.5, ADR 0014): una rejilla de
-// miniaturas de pantalla con cada zona pintada, en qué pantalla y si mover la que ya
-// esté abierta.
+// «Colocar su ventana» en una acción que abre algo (Fase 6.5, ADR 0014): miniaturas de
+// pantalla con cada zona pintada, por filas con nombre (General, Mitades, Tercios,
+// Cuartos), en qué pantalla y si usar la ventana que ya esté abierta.
 
 import { useEffect, useState } from "react";
 import {
@@ -9,16 +9,25 @@ import {
   type MonitorInfo,
   type Zone,
 } from "../bindings";
-import { Select } from "./ui";
-import { monitorOptions, sameChoice, ZONE_ROWS, ZONES } from "./zones";
+import { Glyph } from "../components/Glyph";
+import { Field, Select } from "./ui";
+import { monitorOptions, sameChoice, ZONE_GROUPS, ZONES } from "./zones";
 
 export interface PlacementValue {
-  zone: Zone;
+  /** `null` = no colocarla (pero sí usar la ya abierta, si `reuseWindow`). */
+  zone: Zone | null;
   monitor: MonitorChoice;
   reuseWindow: boolean;
 }
 
-/** Una miniatura de pantalla con la zona en el color de acento. */
+/** Sin zona ni «usar la ya abierta», no hay nada que guardar: la acción va sin `place`. */
+export function normalizePlacement(
+  value: PlacementValue,
+): PlacementValue | null {
+  return value.zone === null && !value.reuseWindow ? null : value;
+}
+
+/** Una miniatura de pantalla con la zona en el color de acento («No colocar»: vacía). */
 function ZoneThumb({
   sixths,
 }: {
@@ -26,8 +35,8 @@ function ZoneThumb({
 }) {
   const pct = (n: number) => `${(n / 6) * 100}%`;
   return (
-    <span className="relative block h-7 w-11 overflow-hidden rounded-[3px] border border-line bg-hover">
-      {sixths && (
+    <span className="relative flex h-7 w-11 items-center justify-center overflow-hidden rounded-[3px] border border-line bg-hover">
+      {sixths ? (
         <span
           className="absolute rounded-[1px] bg-accent"
           style={{
@@ -37,10 +46,14 @@ function ZoneThumb({
             height: pct(sixths[3]),
           }}
         />
+      ) : (
+        <Glyph name="dash" className="text-xs text-muted" />
       )}
     </span>
   );
 }
+
+const NO_PLACE_LABEL = "No colocar: donde la ponga Windows";
 
 export function PlacementEditor({
   value,
@@ -60,86 +73,73 @@ export function PlacementEditor({
     };
   }, []);
 
-  const current = value ?? null;
-  const options = monitorOptions(
-    monitors,
-    current?.monitor ?? { kind: "primary" },
-  );
+  const current: PlacementValue = value ?? {
+    zone: null,
+    monitor: { kind: "primary" },
+    reuseWindow: false,
+  };
+  const options = monitorOptions(monitors, current.monitor);
   const selectedMonitor =
-    options.find((o) => current && sameChoice(o.choice, current.monitor))
-      ?.value ?? "primary";
-
-  const pick = (zone: Zone | null) =>
-    onChange(
-      zone === null
-        ? null
-        : {
-            zone,
-            monitor: current?.monitor ?? { kind: "primary" },
-            reuseWindow: current?.reuseWindow ?? false,
-          },
-    );
+    options.find((o) => sameChoice(o.choice, current.monitor))?.value ??
+    "primary";
+  const set = (next: Partial<PlacementValue>) =>
+    onChange(normalizePlacement({ ...current, ...next }));
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <span className="block text-xs text-muted">Colocar su ventana</span>
-      {/* Por filas con sentido (completa y mitades · tercios · cuartos), no como caigan. */}
       <div
         role="radiogroup"
         aria-label="Dónde colocar su ventana"
-        className="flex items-start gap-3"
+        className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1"
       >
-        <button
-          type="button"
-          role="radio"
-          aria-checked={current === null}
-          aria-label="No colocar: donde la ponga Windows"
-          title="No colocar: donde la ponga Windows"
-          onClick={() => pick(null)}
-          className={`flex h-9 shrink-0 items-center rounded-item px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-accent-ink ${
-            current === null ? "bg-selected" : "hover:bg-hover"
-          }`}
-        >
-          No colocar
-        </button>
-        <div className="space-y-1">
-          {ZONE_ROWS.map((row) => (
-            <div key={row[0]} className="flex gap-1">
-              {row.map((id) => {
-                const z = ZONES.find((zone) => zone.id === id)!;
+        {ZONE_GROUPS.map((group) => (
+          <div key={group.label} className="contents">
+            <span aria-hidden className="text-xs text-muted">
+              {group.label}
+            </span>
+            <div className="flex flex-wrap gap-1">
+              {group.zones.map((id) => {
+                const zone = id ? ZONES.find((z) => z.id === id) : null;
+                const label = zone?.label ?? NO_PLACE_LABEL;
+                const checked = current.zone === id;
                 return (
                   <button
-                    key={z.id}
+                    key={id ?? "none"}
                     type="button"
                     role="radio"
-                    aria-checked={current?.zone === z.id}
-                    aria-label={z.label}
-                    title={z.label}
-                    onClick={() => pick(z.id)}
+                    aria-checked={checked}
+                    aria-label={label}
+                    title={label}
+                    onClick={() => set({ zone: id })}
                     className={`rounded-item p-1 outline-none focus-visible:ring-2 focus-visible:ring-accent-ink ${
-                      current?.zone === z.id ? "bg-selected" : "hover:bg-hover"
+                      checked ? "bg-selected" : "hover:bg-hover"
                     }`}
                   >
-                    <ZoneThumb sixths={z.sixths} />
+                    <ZoneThumb sixths={zone?.sixths ?? null} />
                   </button>
                 );
               })}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-      {current && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-          <span>{ZONES.find((z) => z.id === current.zone)?.label} de</span>
+      <p className="text-sm">
+        {current.zone
+          ? ZONES.find((z) => z.id === current.zone)?.label
+          : NO_PLACE_LABEL}
+      </p>
+      {current.zone && (
+        <Field label="Pantalla">
           <Select
-            aria-label="En qué pantalla"
             value={selectedMonitor}
             onChange={(e) => {
               const option = options.find(
                 (o) => o.value === e.currentTarget.value,
               );
-              if (option) onChange({ ...current, monitor: option.choice });
+              if (option) set({ monitor: option.choice });
             }}
+            className="w-full max-w-sm"
           >
             {options.map((o) => (
               <option key={o.value} value={o.value}>
@@ -147,19 +147,17 @@ export function PlacementEditor({
               </option>
             ))}
           </Select>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={current.reuseWindow}
-              onChange={(e) =>
-                onChange({ ...current, reuseWindow: e.currentTarget.checked })
-              }
-              className="size-4 accent-accent"
-            />
-            Si ya está abierta, moverla en vez de abrir otra
-          </label>
-        </div>
+        </Field>
       )}
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={current.reuseWindow}
+          onChange={(e) => set({ reuseWindow: e.currentTarget.checked })}
+          className="size-4 accent-accent"
+        />
+        Si ya está abierta, usar esa en vez de abrir otra
+      </label>
     </div>
   );
 }

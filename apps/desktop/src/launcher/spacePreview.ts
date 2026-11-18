@@ -34,8 +34,11 @@ function monitorText(m: MonitorChoice | undefined): string {
 
 function placementDetails(place: Placement_Deserialize | null | undefined) {
   if (!place) return [];
-  const zone = ZONES.find((z) => z.id === place.zone)?.label ?? place.zone;
-  const lines = [`Colocar en: ${zone}, ${monitorText(place.monitor)}`];
+  const lines: string[] = [];
+  if (place.zone) {
+    const zone = ZONES.find((z) => z.id === place.zone)?.label ?? place.zone;
+    lines.push(`Colocar en: ${zone}, ${monitorText(place.monitor)}`);
+  }
   if (place.reuseWindow)
     lines.push("Si ya está abierta, usa esa en vez de abrir otra");
   return lines;

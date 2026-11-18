@@ -196,7 +196,9 @@ export function ActionEditor({
       )}
 
       {action.kind === "runCommand" && (
-        <div className="grid grid-cols-2 gap-3">
+        // Un campo debajo de otro y a lo ancho: cada ayuda se lee bajo su campo en una o
+        // dos líneas, en vez de encajada en media columna.
+        <div className="space-y-3">
           <Field
             label="Programa"
             hint="Su nombre, si Windows ya sabe dónde está (como git), o su ruta completa. Si termina en .cmd o .bat, escríbelo también: code.cmd"
@@ -209,6 +211,24 @@ export function ActionEditor({
               }
             />
           </Field>
+          <Field
+            label="Argumentos, uno por línea"
+            hint="Cada línea llega al programa tal cual, como una sola pieza: no hacen falta comillas."
+          >
+            <textarea
+              spellCheck={false}
+              rows={Math.max(2, action.args.length + 1)}
+              placeholder={"compose\nup"}
+              value={argsToText(action.args)}
+              onChange={(e) =>
+                change({
+                  ...action,
+                  args: argsFromText(e.currentTarget.value),
+                })
+              }
+              className="sift-field w-full bg-hover px-3 py-1.5 font-mono text-sm"
+            />
+          </Field>
           <Field label="Carpeta de trabajo (opcional)">
             <PathField
               label="Carpeta de trabajo"
@@ -218,26 +238,6 @@ export function ActionEditor({
               onChange={(cwd) => change({ ...action, cwd: cwd || null })}
             />
           </Field>
-          <div className="col-span-2">
-            <Field
-              label="Argumentos, uno por línea"
-              hint="Cada línea llega al programa tal cual, como una sola pieza: no hacen falta comillas."
-            >
-              <textarea
-                spellCheck={false}
-                rows={Math.max(2, action.args.length + 1)}
-                placeholder={"compose\nup"}
-                value={argsToText(action.args)}
-                onChange={(e) =>
-                  change({
-                    ...action,
-                    args: argsFromText(e.currentTarget.value),
-                  })
-                }
-                className="sift-field w-full bg-hover px-3 py-1.5 font-mono text-sm"
-              />
-            </Field>
-          </div>
         </div>
       )}
 
