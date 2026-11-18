@@ -4,7 +4,14 @@
 // abrir y cancelar un Espacio. Rust se sustituye por un falso (`vi.mock("./bindings")`).
 
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -295,6 +302,53 @@ describe("barra", () => {
       await user.keyboard("s");
       expect(screen.queryByRole("region")).not.toBeInTheDocument();
       expect(await screen.findByRole("listbox")).toBeInTheDocument();
+    });
+
+    describe("ratón y después teclado", () => {
+      it("tras hacer clic en el texto de la vista previa, Esc vuelve a la lista", async () => {
+        const { user } = await openPreview();
+        await user.keyboard("{Tab}");
+        const r = await region("contrato.pdf");
+        await user.click(await screen.findByText("primaria"));
+        await user.keyboard("{Escape}");
+        expect(r).not.toBeInTheDocument();
+        expect(screen.getByRole("listbox")).toBeInTheDocument();
+        expect(commands.hideLauncher).not.toHaveBeenCalled();
+      });
+
+      it("con el foco fuera de la caja, Tab cierra la vista previa (y no la barra)", async () => {
+        const { user, box } = await openPreview();
+        await user.keyboard("{Tab}");
+        await region("contrato.pdf");
+        box.blur();
+        expect(box).not.toHaveFocus();
+        await user.keyboard("{Tab}");
+        expect(screen.queryByRole("region")).not.toBeInTheDocument();
+        expect(commands.hideLauncher).not.toHaveBeenCalled();
+        // El foco vuelve a la caja: se puede seguir escribiendo.
+        expect(box).toHaveFocus();
+      });
+
+      it("pasar el ratón por la lista y luego usar las flechas, Tab y Enter", async () => {
+        const { user } = await openPreview();
+        fireEvent.mouseMove(screen.getAllByRole("option")[1]);
+        expect(selectedText()).toContain("notas.md");
+        await user.keyboard("{ArrowUp}{Tab}");
+        await region("contrato.pdf");
+        await user.keyboard("{Enter}");
+        expect(commands.openFile).toHaveBeenCalledWith(
+          "C:\\Docs\\contrato.pdf",
+          37,
+        );
+      });
+
+      it("un clic en el fondo de la barra no le quita el foco a la caja", async () => {
+        const { user, box } = await openPreview();
+        await user.click(screen.getByRole("listbox"));
+        expect(box).toHaveFocus();
+        await user.keyboard("{Escape}");
+        expect(commands.hideLauncher).toHaveBeenCalled();
+      });
     });
 
     it("dice por qué sale: palabras, significado o nombre", async () => {

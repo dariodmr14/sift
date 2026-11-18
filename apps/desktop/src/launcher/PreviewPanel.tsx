@@ -86,6 +86,7 @@ export function PreviewPanel({
             </p>
           ) : (
             <p
+              data-selectable
               className={
                 preview.monospace
                   ? "font-mono text-xs leading-relaxed whitespace-pre-wrap"
