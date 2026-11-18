@@ -123,8 +123,8 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Resuelto** (`feat/estado-tarjetas`). De lista plana «nombre → texto» a tarjetas que digan de un vistazo si todo va bien, con icono de estado. Lo técnico, en «Avanzado» plegado.
 
 ### 6. Primeros pasos y bienvenida
-- [ ] ⏳ «Cambiar» (junto al atajo) parece texto: darle aspecto de botón.
-- [ ] ⏳ Introducción guiada y animada la primera vez (un paso por pantalla, progreso, Atrás / Siguiente / Saltar, que enseñe haciendo, repetible desde Ajustes). Antes, propuesta corta para que Darío la apruebe.
+- [x] ✅ **Resuelto** (`feat/boton-cambiar`: botón con fondo, como los demás). «Cambiar» (junto al atajo) parece texto: darle aspecto de botón.
+- [ ] ⏳ Propuesta en `docs/propuesta-introduccion.md`, esperando el visto bueno de Darío. Introducción guiada y animada la primera vez (un paso por pantalla, progreso, Atrás / Siguiente / Saltar, que enseñe haciendo, repetible desde Ajustes). Antes, propuesta corta para que Darío la apruebe.
 
 ### 7. Pendiente del resumen de anoche
 - [x] ✅ Lo decidido de noche: aprobado (con el cambio de Tab sobre un Espacio del punto 2).

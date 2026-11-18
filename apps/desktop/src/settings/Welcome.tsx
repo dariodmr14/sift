@@ -149,8 +149,9 @@ export function Welcome({
             <p className="flex flex-wrap items-center gap-2 text-sm">
               <span>Sift se abre con</span>
               <Shortcut keys={hotkey} />
+              {/* Botón normal (con fondo), como «Añadir Documentos»: el fantasma, sin fondo,
+                  se leía como texto. */}
               <Button
-                variant="ghost"
                 onClick={() =>
                   firstRun ? setHintOpen((o) => !o) : onGoTo?.("general")
                 }
