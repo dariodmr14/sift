@@ -29,3 +29,11 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 - **Contexto:** lo destapó la prueba de extremo a extremo. Si buscas mientras Sift lee tus carpetas por primera vez, los resultados no se actualizan hasta que cambias el texto.
 - **Opciones:** (a) dejarlo (es solo el primer indexado); (b) volver a buscar cuando el estado pasa a «Al día», si la barra está abierta.
 - **Recomendación:** (b), es barato. Lo he dejado en el backlog de `PLAN.md`.
+
+## Búsqueda
+
+### 6. Copias del mismo archivo — decidido de noche
+- **Contexto:** el mismo apunte copiado en varias carpetas salía varias veces seguido (`clarin.txt` ×3) y ocupaba puestos de otros archivos.
+- **Hecho:** si dos resultados tienen el mismo nombre (sin mayúsculas ni tildes) y el mismo fragmento, solo sale el mejor colocado. Lo que no tiene texto (fotos, vídeos) no se agrupa nunca, porque dos `IMG_0001.jpg` suelen ser fotos distintas. Medido con `eval/`: recall@10 y MRR iguales, y las copias repetidas en el top 10 de las 34 consultas bajan de 39 a 12.
+- **Pendiente de ti:** las otras copias ya no se ven. Opciones: (a) dejarlo así (cualquiera vale); (b) decir «y 2 copias más» en el subtítulo, con Ctrl+↵ abriendo la carpeta de la que sale. **Recomendación:** (b) si alguna vez te ha importado cuál de las copias abrías; si no, (a).
+- **Las 12 que quedan** tienen el mismo nombre con distinto texto: versiones distintas de un apunte o un fragmento mejor colocado distinto. Agruparlas solo por nombre escondería versiones distintas, así que no lo he hecho.

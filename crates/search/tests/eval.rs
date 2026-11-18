@@ -216,6 +216,8 @@ struct Score {
     recall: f64,
     mrr: f64,
     n: usize,
+    /// Resultados cuyo nombre ya salió antes en el mismo top 10 (copias en otras carpetas).
+    copies: usize,
 }
 
 impl Score {
@@ -303,6 +305,12 @@ fn run(
         let (recall, mrr) = grade(&found, globs);
         scores.entry(q.kind.clone()).or_default().add(recall, mrr);
         scores.entry("total".into()).or_default().add(recall, mrr);
+        let mut seen = std::collections::HashSet::new();
+        let repeated = hits
+            .iter()
+            .filter(|h| !seen.insert(h.name.to_lowercase()))
+            .count();
+        scores.entry("total".into()).or_default().copies += repeated;
         if misses && recall < 1.0 {
             let top: Vec<&str> = found
                 .iter()
@@ -355,6 +363,10 @@ fn recall_at_10_words_meaning_and_hybrid() {
     let lexical = Lexical(&text);
     let (words, _) = run("palabras", &text, &[&lexical], &m, &root, false);
     row("solo palabras", &words);
+    eprintln!(
+        "copias repetidas en el top 10 (solo palabras): {}",
+        words.get("total").map_or(0, |s| s.copies)
+    );
 
     let wanted = std::env::var("SIFT_EVAL_MODELS").unwrap_or_else(|_| "e5-small".into());
     let threads = std::env::var("SIFT_EVAL_THREADS")
@@ -422,6 +434,10 @@ fn recall_at_10_words_meaning_and_hybrid() {
         row(
             &format!("híbrida · {} (umbral {threshold})", card.id),
             &hybrid,
+        );
+        eprintln!(
+            "copias repetidas en el top 10: {}",
+            hybrid.get("total").map_or(0, |s| s.copies)
         );
 
         // Latencia de la híbrida: cada consulta 5 veces, con 2 hilos (como en la app).
