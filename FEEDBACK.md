@@ -120,7 +120,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ «Alias» → algo más claro («Palabras clave» u «Otras palabras para encontrarlo»), con su ayuda.
 
 ### 5. Estado (Ajustes)
-- [ ] ⏳ De lista plana «nombre → texto» a tarjetas que digan de un vistazo si todo va bien, con icono de estado. Lo técnico, en «Avanzado» plegado.
+- [x] ✅ **Resuelto** (`feat/estado-tarjetas`). De lista plana «nombre → texto» a tarjetas que digan de un vistazo si todo va bien, con icono de estado. Lo técnico, en «Avanzado» plegado.
 
 ### 6. Primeros pasos y bienvenida
 - [ ] ⏳ «Cambiar» (junto al atajo) parece texto: darle aspecto de botón.

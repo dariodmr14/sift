@@ -12,17 +12,11 @@ import { TYPE_FILTERS } from "../launcher/filters";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
+import { StatusSection } from "./StatusSection";
 import { Welcome } from "./Welcome";
 import { Button } from "./ui";
-import { Glyph } from "../components/Glyph";
 
 /** Cómo escucha Sift el atajo, explicado (solo en «Avanzado»). */
-const BACKEND_LABEL = {
-  registerHotKey:
-    "RegisterHotKey: el atajo está registrado en Windows, que avisa a Sift al pulsarlo (lo normal).",
-  keyboardHook:
-    "Hook de teclado: Windows no dejó registrar el atajo (quizá otro programa lo usa), así que Sift escucha el teclado para detectarlo.",
-} as const;
 
 type Page = "spaces" | "folders" | "general" | "welcome" | "status";
 
@@ -141,7 +135,7 @@ function Settings() {
           {page === "status" && (
             <div className="h-full overflow-y-auto p-6">
               <Section title="Estado">
-                {status ? <StatusList status={status} /> : <p>Cargando…</p>}
+                {status ? <StatusSection status={status} /> : <p>Cargando…</p>}
               </Section>
             </div>
           )}
@@ -398,66 +392,6 @@ function StartupToggle({ initial }: { initial: boolean }) {
         </p>
       )}
     </Section>
-  );
-}
-
-function StatusList({ status }: { status: Status }) {
-  const l = status.latency;
-  return (
-    <div className="space-y-6">
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 text-sm">
-        <dt className="text-muted">Atajo</dt>
-        <dd>
-          {status.hotkey ??
-            "Ninguno: no se pudo activar. Prueba con otro en General."}
-        </dd>
-        <dt className="text-muted">Vidrio</dt>
-        <dd>
-          {status.acrylic
-            ? "Activo en la barra"
-            : "No disponible en este equipo: la barra usa un fondo opaco"}
-        </dd>
-        <dt className="text-muted">Tus datos</dt>
-        <dd>
-          {status.storageError
-            ? `No se pueden guardar: ${status.storageError}`
-            : "Se guardan bien"}
-        </dd>
-        <dt className="text-muted">Rapidez al abrir</dt>
-        <dd>
-          {l
-            ? `${l.lastMs} ms la última vez (la meta es menos de 100 ms)`
-            : "Aún sin medir: abre la barra con el atajo"}
-        </dd>
-      </dl>
-      <details className="group space-y-3">
-        <summary className="flex cursor-pointer list-none items-center gap-2 rounded-item text-sm font-semibold outline-none select-none focus-visible:ring-2 focus-visible:ring-accent-ink">
-          <span
-            aria-hidden
-            className="inline-block transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none"
-          >
-            <Glyph name="chevronRight" className="text-xs" />
-          </span>
-          Avanzado
-        </summary>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 pt-3 text-sm">
-          <dt className="text-muted">Cómo se escucha el atajo</dt>
-          <dd>{status.backend ? BACKEND_LABEL[status.backend] : "—"}</dd>
-          <dt className="text-muted">Material de la barra</dt>
-          <dd>
-            {status.acrylic
-              ? "Acrylic: el desenfoque translúcido de Windows."
-              : "Opaco: Windows no ofrece Acrylic (el desenfoque translúcido) aquí."}
-          </dd>
-          <dt className="text-muted">Tiempo de apertura</dt>
-          <dd>
-            {l
-              ? `P50 ${l.p50Ms} ms y P95 ${l.p95Ms} ms en las últimas ${l.samples} veces: la mitad tardó menos de ${l.p50Ms} ms y 19 de cada 20, menos de ${l.p95Ms} ms. Se mide desde que pulsas el atajo hasta que la barra está en pantalla.`
-              : "—"}
-          </dd>
-        </dl>
-      </details>
-    </div>
   );
 }
 
