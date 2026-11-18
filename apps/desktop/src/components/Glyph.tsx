@@ -19,6 +19,7 @@ export const GLYPHS = {
   check: "", // CheckMark
   warning: "", // Warning
   dash: "", // Remove
+  sync: "", // Sync
   enter: "", // ReturnKey
 } as const;
 
