@@ -109,7 +109,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ Pistas del pie con mayúscula inicial («Moverse», «Abrir», «Vista previa», «Volver») y que se puedan pulsar con el ratón cuando tenga sentido.
 
 ### 3. Mayúsculas en toda la app
-- [ ] ⏳ Etiquetas, pistas, opciones de los desplegables y textos de ejemplo con mayúscula inicial, como en Windows. Los valores literales que se escriben tal cual (comandos, rutas, direcciones web) se quedan como son.
+- [x] ✅ **Resuelto** (`fix/mayusculas`; lo que faltaba: opciones de «Esperar a que…» y «Si no ocurre», textos de Estado y la lista de filtros; las pistas del pie, en el punto 2; «la pantalla principal», en el punto 4). Etiquetas, pistas, opciones de los desplegables y textos de ejemplo con mayúscula inicial, como en Windows. Los valores literales que se escriben tal cual (comandos, rutas, direcciones web) se quedan como son.
 
 ### 4. Editor de acciones
 - [ ] ⏳ «Ejecutar comando»: la ayuda de «Programa» queda encajada en una columna estrecha. Recolocar campos y ayudas.

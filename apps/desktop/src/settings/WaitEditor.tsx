@@ -146,8 +146,8 @@ export function WaitEditor({
               })
             }
           >
-            <option value="stop">no seguir y avisarme</option>
-            <option value="continue">seguir igualmente</option>
+            <option value="stop">No seguir y avisarme</option>
+            <option value="continue">Seguir igualmente</option>
           </Select>
         </div>
       )}

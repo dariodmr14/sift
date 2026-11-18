@@ -7,6 +7,7 @@ import {
   type Status,
 } from "../bindings";
 import { applyWindowMaterial } from "../appearance";
+import { capitalize } from "../format";
 import { TYPE_FILTERS } from "../launcher/filters";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
@@ -232,7 +233,7 @@ function QuickFilters() {
                 .map((k) => spoken[k] ?? k)
                 .join(" · ")}
             </span>
-            <span className="text-muted">{f.plural}</span>
+            <span className="text-muted">{capitalize(f.plural)}</span>
           </li>
         ))}
       </ul>
@@ -408,25 +409,25 @@ function StatusList({ status }: { status: Status }) {
         <dt className="text-muted">Atajo</dt>
         <dd>
           {status.hotkey ??
-            "ninguno: no se pudo activar. Prueba con otro en General."}
+            "Ninguno: no se pudo activar. Prueba con otro en General."}
         </dd>
         <dt className="text-muted">Vidrio</dt>
         <dd>
           {status.acrylic
-            ? "activo en la barra"
-            : "no disponible en este equipo: la barra usa un fondo opaco"}
+            ? "Activo en la barra"
+            : "No disponible en este equipo: la barra usa un fondo opaco"}
         </dd>
         <dt className="text-muted">Tus datos</dt>
         <dd>
           {status.storageError
-            ? `no se pueden guardar: ${status.storageError}`
-            : "se guardan bien"}
+            ? `No se pueden guardar: ${status.storageError}`
+            : "Se guardan bien"}
         </dd>
         <dt className="text-muted">Rapidez al abrir</dt>
         <dd>
           {l
             ? `${l.lastMs} ms la última vez (la meta es menos de 100 ms)`
-            : "aún sin medir: abre la barra con el atajo"}
+            : "Aún sin medir: abre la barra con el atajo"}
         </dd>
       </dl>
       <details className="group space-y-3">
@@ -451,7 +452,7 @@ function StatusList({ status }: { status: Status }) {
           <dt className="text-muted">Tiempo de apertura</dt>
           <dd>
             {l
-              ? `p50 ${l.p50Ms} ms y p95 ${l.p95Ms} ms en las últimas ${l.samples} veces: la mitad tardó menos de ${l.p50Ms} ms y 19 de cada 20, menos de ${l.p95Ms} ms. Se mide desde que pulsas el atajo hasta que la barra está en pantalla.`
+              ? `P50 ${l.p50Ms} ms y P95 ${l.p95Ms} ms en las últimas ${l.samples} veces: la mitad tardó menos de ${l.p50Ms} ms y 19 de cada 20, menos de ${l.p95Ms} ms. Se mide desde que pulsas el atajo hasta que la barra está en pantalla.`
               : "—"}
           </dd>
         </dl>
