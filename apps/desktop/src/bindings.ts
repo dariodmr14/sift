@@ -562,17 +562,25 @@ export type Placement = Placement_Serialize | Placement_Deserialize;
 
 /**  Dónde se coloca una ventana al abrir una acción. */
 export type Placement_Deserialize = {
-	zone: Zone,
+	/**
+	 *  La zona. `None` = no moverla (donde la ponga Windows): sirve para «si ya está
+	 *  abierta, usar esa» sin colocarla. Los Espacios guardados antes siempre la tienen.
+	 */
+	zone?: Zone | null,
 	monitor?: MonitorChoice,
-	/**  «Si ya está abierta, moverla en vez de abrir otra». */
+	/**  «Si ya está abierta, usar esa en vez de abrir otra» (y colocarla, si hay zona). */
 	reuseWindow?: boolean,
 };
 
 /**  Dónde se coloca una ventana al abrir una acción. */
 export type Placement_Serialize = {
-	zone: Zone,
+	/**
+	 *  La zona. `None` = no moverla (donde la ponga Windows): sirve para «si ya está
+	 *  abierta, usar esa» sin colocarla. Los Espacios guardados antes siempre la tienen.
+	 */
+	zone: Zone | null,
 	monitor: MonitorChoice,
-	/**  «Si ya está abierta, moverla en vez de abrir otra». */
+	/**  «Si ya está abierta, usar esa en vez de abrir otra» (y colocarla, si hay zona). */
 	reuseWindow: boolean,
 };
 

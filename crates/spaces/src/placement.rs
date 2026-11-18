@@ -9,10 +9,13 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct Placement {
-    pub zone: Zone,
+    /// La zona. `None` = no moverla (donde la ponga Windows): sirve para «si ya está
+    /// abierta, usar esa» sin colocarla. Los Espacios guardados antes siempre la tienen.
+    #[serde(default)]
+    pub zone: Option<Zone>,
     #[serde(default)]
     pub monitor: MonitorChoice,
-    /// «Si ya está abierta, moverla en vez de abrir otra».
+    /// «Si ya está abierta, usar esa en vez de abrir otra» (y colocarla, si hay zona).
     #[serde(default)]
     pub reuse_window: bool,
 }
@@ -251,6 +254,8 @@ pub trait WindowManager {
     fn target(&self, action: &crate::model::Action) -> WindowTarget;
     /// Mueve la ventana a la zona y la trae al frente.
     fn place(&self, window: isize, zone: Zone, monitor: &MonitorInfo) -> Result<(), String>;
+    /// Trae al frente una ventana sin moverla (y la restaura si estaba minimizada).
+    fn focus(&self, window: isize) -> Result<(), String>;
 }
 
 #[cfg(test)]

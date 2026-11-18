@@ -230,16 +230,29 @@ fn open_and_place(
     label: &str,
 ) -> Result<Option<String>, String> {
     let target = wm.target(action);
+    // Sin zona solo se reutiliza la ventana abierta: se trae al frente sin moverla y, si no
+    // hay ninguna, se abre como siempre, sin esperar a su ventana.
+    let Some(zone) = place.zone else {
+        if place.reuse_window
+            && let Some(existing) = pick_window(&wm.windows(), &[], &target)
+        {
+            return Ok(wm
+                .focus(existing.id)
+                .err()
+                .map(|e| format!("ya estaba abierta, pero no se pudo traer al frente: {e}")));
+        }
+        return run_action(action, opener).map(|()| None);
+    };
     let put = |window: isize| -> Option<String> {
         let monitors = wm.monitors();
         let Some(monitor) = pick_monitor(&place.monitor, &monitors, wm.mouse()) else {
             return Some("no encontré ninguna pantalla para colocarla".into());
         };
-        wm.place(window, place.zone, monitor)
+        wm.place(window, zone, monitor)
             .err()
             .map(|e| format!("se abrió, pero no se pudo colocar: {e}"))
     };
-    // «Si ya está abierta, moverla en vez de abrir otra».
+    // «Si ya está abierta, usar esa en vez de abrir otra».
     if place.reuse_window
         && let Some(existing) = pick_window(&wm.windows(), &[], &target)
     {
@@ -955,6 +968,7 @@ mod tests {
         new_window: Option<WindowInfo>,
         appear_after: Cell<u32>,
         placed: RefCell<Vec<(isize, Zone, String)>>,
+        focused: RefCell<Vec<isize>>,
     }
 
     impl FakeWindows {
@@ -968,6 +982,7 @@ mod tests {
                 new_window,
                 appear_after: Cell::new(appear_after),
                 placed: RefCell::new(Vec::new()),
+                focused: RefCell::new(Vec::new()),
             }
         }
     }
@@ -1010,9 +1025,17 @@ mod tests {
                 .push((window, zone, monitor.name.clone()));
             Ok(())
         }
+        fn focus(&self, window: isize) -> Result<(), String> {
+            self.focused.borrow_mut().push(window);
+            Ok(())
+        }
     }
 
     fn code(zone: Zone, reuse_window: bool) -> Action {
+        code_in(Some(zone), reuse_window)
+    }
+
+    fn code_in(zone: Option<Zone>, reuse_window: bool) -> Action {
         Action::OpenApp {
             app_id: "code".into(),
             name: "VS Code".into(),
@@ -1098,6 +1121,53 @@ mod tests {
             *wm.placed.borrow(),
             vec![(7, Zone::Maximized, "DELL".to_string())]
         );
+    }
+
+    #[test]
+    fn without_a_zone_an_open_window_is_brought_to_front_without_moving_it() {
+        let rec = Recorder::default();
+        let wm = FakeWindows::new(vec![code_window(7)], None, 0);
+        let out = run_actions(
+            &[code_in(None, true)],
+            &rec,
+            &FakeWaiter::ready_after(None),
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out[0].error.is_none() && out[0].note.is_none(), "{out:?}");
+        assert!(rec.calls.borrow().is_empty(), "no se abre otra");
+        assert_eq!(*wm.focused.borrow(), vec![7]);
+        assert!(wm.placed.borrow().is_empty(), "no se mueve");
+    }
+
+    #[test]
+    fn without_a_zone_and_nothing_open_it_opens_without_waiting_for_the_window() {
+        let rec = Recorder::default();
+        let wm = FakeWindows::new(vec![], None, 0);
+        let waiter = FakeWaiter::ready_after(None);
+        let out = run_actions(
+            &[code_in(None, true)],
+            &rec,
+            &waiter,
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out[0].error.is_none() && out[0].note.is_none(), "{out:?}");
+        assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
+        assert_eq!(waiter.now(), Duration::ZERO, "no espera a su ventana");
+        assert!(wm.focused.borrow().is_empty() && wm.placed.borrow().is_empty());
+    }
+
+    #[test]
+    fn saved_placements_without_zone_field_still_load() {
+        // Los Espacios guardados antes siempre tienen zona; uno sin zona es «no mover».
+        let old: Placement =
+            serde_json::from_str(r#"{"zone":"leftHalf","monitor":{"kind":"primary"}}"#).unwrap();
+        assert_eq!(old.zone, Some(Zone::LeftHalf));
+        assert!(!old.reuse_window);
+        let new: Placement = serde_json::from_str(r#"{"reuseWindow":true}"#).unwrap();
+        assert_eq!(new.zone, None);
+        assert!(new.reuse_window);
     }
 
     #[test]

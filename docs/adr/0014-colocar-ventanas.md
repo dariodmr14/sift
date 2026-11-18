@@ -37,6 +37,8 @@ Si no aparece a tiempo, **se sigue y se avisa**: la barra dice «Abierto, con av
 
 Un caso conocido: abrir una web con el navegador ya abierto añade una pestaña, no una ventana. Para eso está «moverla si ya está abierta».
 
+**Cambio (2026-11-18): reutilizar sin colocar.** Darío pidió poder evitar que se abra otra ventana sin moverla. La zona pasa a ser opcional (`Placement.zone: Option<Zone>`, `#[serde(default)]`, así que los Espacios guardados se leen igual). Sin zona y con «Si ya está abierta, usar esa en vez de abrir otra», se busca la ventana como siempre y se trae al frente sin moverla (`WindowManager::focus`). Si no hay ninguna, se abre la acción sin esperar a su ventana. Sin zona y sin reutilizar no se guarda colocación. Alternativa descartada: un campo `reuse_window` suelto en cada acción, que obligaba a migrar los Espacios guardados y a repetir el campo en cuatro variantes.
+
 ### 3. Colocarla
 
 1. Se restaura si estaba maximizada o minimizada.

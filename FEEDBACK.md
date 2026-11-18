@@ -112,12 +112,12 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Resuelto** (`fix/mayusculas`; lo que faltaba: opciones de «Esperar a que…» y «Si no ocurre», textos de Estado y la lista de filtros; las pistas del pie, en el punto 2; «la pantalla principal», en el punto 4). Etiquetas, pistas, opciones de los desplegables y textos de ejemplo con mayúscula inicial, como en Windows. Los valores literales que se escriben tal cual (comandos, rutas, direcciones web) se quedan como son.
 
 ### 4. Editor de acciones
-- [ ] ⏳ «Ejecutar comando»: la ayuda de «Programa» queda encajada en una columna estrecha. Recolocar campos y ayudas.
-- [ ] ⏳ Colocar ventana: «No colocar» queda solo a la izquierda y el resto a la derecha. Distribución más ordenada.
-- [ ] ⏳ El desplegable de pantalla dice «la pantalla principal»: mostrar el nombre real («Pantalla 1 · DELL U2720Q (principal)») y «Donde esté el ratón».
-- [ ] ⏳ «Si ya está abierta…» también con «No colocar», renombrado a «Si ya está abierta, usar esa en vez de abrir otra», en carpeta, archivo, web y aplicación.
-- [ ] ⏳ «Esperar a que…»: una línea que explique por qué hace falta una dirección y qué poner.
-- [ ] ⏳ «Alias» → algo más claro («Palabras clave» u «Otras palabras para encontrarlo»), con su ayuda.
+- [x] ✅ **Resuelto** (`feat/editor-acciones`; «Palabras clave» y filas con nombre, elegidos por Darío; ADR 0014 actualizado). «Ejecutar comando»: la ayuda de «Programa» queda encajada en una columna estrecha. Recolocar campos y ayudas.
+- [x] ✅ Colocar ventana: «No colocar» queda solo a la izquierda y el resto a la derecha. Distribución más ordenada.
+- [x] ✅ El desplegable de pantalla dice «la pantalla principal»: mostrar el nombre real («Pantalla 1 · DELL U2720Q (principal)») y «Donde esté el ratón».
+- [x] ✅ «Si ya está abierta…» también con «No colocar», renombrado a «Si ya está abierta, usar esa en vez de abrir otra», en carpeta, archivo, web y aplicación.
+- [x] ✅ «Esperar a que…»: una línea que explique por qué hace falta una dirección y qué poner.
+- [x] ✅ «Alias» → algo más claro («Palabras clave» u «Otras palabras para encontrarlo»), con su ayuda.
 
 ### 5. Estado (Ajustes)
 - [ ] ⏳ De lista plana «nombre → texto» a tarjetas que digan de un vistazo si todo va bien, con icono de estado. Lo técnico, en «Avanzado» plegado.
