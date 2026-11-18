@@ -1,6 +1,8 @@
 # Propuesta: introducción guiada (primera vez)
 
-> Propuesta para que Darío la apruebe antes de implementarla (FEEDBACK 2026-11-18, punto 6). No hay código todavía.
+> **Aprobada con cambios (2026-11-18) e implementada** (`settings/Intro.tsx`, `settings/introSteps.ts`). Cambios de Darío: **5 pasos como mucho**, la búsqueda de prueba **dentro** de la introducción y con un resultado real, y **«Saltar» sin confirmación**. Quedaron así: 1 Tu atajo (con la bienvenida), 2 Dónde buscar, 3 Prueba a buscar, 4 Búsqueda inteligente y 5 Tu primer Espacio, que termina con «Empezar». Las carpetas van antes que la búsqueda para que la prueba encuentre algo. Capturas del recorrido: `docs/capturas/introduccion/` (`node scripts/capturas-intro.mjs`).
+>
+> Debajo, la propuesta original, de 7 pasos.
 
 Sustituye a la lista de pasos de la bienvenida actual: **un paso por pantalla**, en la misma ventana de la primera vez (la de Ajustes, sin navegación). Arriba, el progreso; abajo, **Atrás · Siguiente** a la derecha y **Saltar la introducción** a la izquierda. Enter = Siguiente; Esc no hace nada (para no saltarla sin querer).
 

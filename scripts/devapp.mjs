@@ -75,10 +75,17 @@ const KEYS = {
   ArrowDown: { code: "ArrowDown", vk: 40 },
 };
 
-/** Conexión a una página: evaluar JavaScript, capturas y errores de la consola. */
+/**
+ * Conexión a una página: evaluar JavaScript, capturas y errores de la consola. `urlPart`
+ * es un trozo de su dirección; acabado en `$`, la dirección tiene que terminar así (la de
+ * la barra, `localhost:1420/`, también es el principio de la de Ajustes).
+ */
 export async function connect(urlPart) {
+  const matches = urlPart.endsWith("$")
+    ? (url) => url.endsWith(urlPart.slice(0, -1))
+    : (url) => url.includes(urlPart);
   const t = await waitFor(
-    async () => (await targets()).find((x) => x.type === "page" && x.url.includes(urlPart)),
+    async () => (await targets()).find((x) => x.type === "page" && matches(x.url)),
     180_000,
     `la página ${urlPart}`,
   );

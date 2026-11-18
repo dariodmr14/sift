@@ -72,6 +72,7 @@
   --dur-veil-in: 100ms; /* = VEIL_IN en materials.rs */
   --dur-veil-out: 260ms;
   --dur-enter: 120ms;
+  --dur-step: 200ms; /* cambio de paso en la introducción */
   --dur-state: 150ms; /* cambios de estado: coger, soltar, pasar el ratón, pulsar (el «fast» de Fluent) */
   --dur-exit: 80ms;
   --ease-enter: cubic-bezier(0, 0, 0, 1); /* "decelerate" de Fluent */
@@ -327,9 +328,59 @@ body,
     animation: sift-swap var(--dur-enter) var(--ease-enter) both;
   }
 
+  /* La introducción: cada paso entra deslizándose 16 px desde el lado hacia el que se va;
+     el segmento de progreso actual se llena; un logro (✓) aparece con algo de escala. */
+  .sift-step-next {
+    animation: sift-step-next var(--dur-step) var(--ease-enter) both;
+  }
+  .sift-step-back {
+    animation: sift-step-back var(--dur-step) var(--ease-enter) both;
+  }
+  .sift-fill {
+    animation: sift-fill var(--dur-step) var(--ease-enter) both;
+  }
+  .sift-pop {
+    animation: sift-pop var(--dur-state) var(--ease-enter) both;
+  }
+  /* El atajo pulsado: las teclas dibujadas «se hunden» 1 px y se oscurecen. */
+  .sift-pressed .sift-key {
+    transform: translateY(1px);
+    background: var(--selected);
+    transition:
+      transform var(--dur-state) ease-out,
+      background-color var(--dur-state) ease-out;
+  }
+
   /* Solo en Ajustes: el fondo cambia con una transición corta (en la barra, al instante). */
   .sift-option.sift-option-soft {
     transition: background-color var(--dur-state) ease-out;
+  }
+}
+
+@keyframes sift-step-next {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes sift-step-back {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes sift-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes sift-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
   }
 }
 
@@ -379,10 +430,15 @@ body,
   .sift-enter,
   .sift-exit,
   .sift-swap,
+  .sift-step-next,
+  .sift-step-back,
+  .sift-fill,
+  .sift-pop,
   .sift-progress {
     animation: none;
   }
-  .sift-option.sift-option-soft {
+  .sift-option.sift-option-soft,
+  .sift-pressed .sift-key {
     transition: none;
   }
 }

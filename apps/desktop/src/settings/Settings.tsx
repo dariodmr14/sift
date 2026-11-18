@@ -13,6 +13,7 @@ import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
 import { StatusSection } from "./StatusSection";
+import { Intro } from "./Intro";
 import { Welcome } from "./Welcome";
 import { Button } from "./ui";
 
@@ -44,9 +45,11 @@ function Settings() {
   const [page, setPage] = useState<Page>(startsWithNew ? "spaces" : "general");
   const [status, setStatus] = useState<Status | null>(null);
   const [settings, setSettings] = useState<SettingsView | null>(null);
-  // La bienvenida de la primera vez: mientras no se termine, no hay navegación.
-  const [inWelcome, setInWelcome] = useState(startsWelcome);
-  const [newSpace, setNewSpace] = useState(false);
+  // La introducción guiada: la primera vez (sin navegación hasta acabarla o saltarla) o
+  // repetida desde Primeros pasos.
+  const [intro, setIntro] = useState<"first-run" | "replay" | null>(
+    startsWelcome ? "first-run" : null,
+  );
 
   const refreshStatus = () => void commands.getStatus().then(setStatus);
 
@@ -70,17 +73,18 @@ function Settings() {
     </button>
   );
 
-  if (inWelcome) {
+  if (intro) {
     return (
       <div className="flex h-full flex-col bg-surface">
-        <TitleBar title="Sift" />
+        <TitleBar title={intro === "first-run" ? "Sift" : "Ajustes de Sift"} />
         <main className="min-h-0 flex-1 select-text">
-          <Welcome
-            mode="first-run"
-            onCreateSpace={() => {
-              setNewSpace(true);
-              setPage("spaces");
-              setInWelcome(false);
+          <Intro
+            mode={intro}
+            onClose={() => {
+              // La primera vez, al saltarla se queda en Ajustes; repetida, se vuelve
+              // a Primeros pasos.
+              if (intro === "first-run") setPage("general");
+              setIntro(null);
             }}
           />
         </main>
@@ -109,9 +113,12 @@ function Settings() {
         </nav>
 
         <main className="min-w-0 flex-1 select-text">
-          {page === "spaces" && <SpacesSection startNew={newSpace} />}
+          {page === "spaces" && <SpacesSection />}
           {page === "welcome" && (
-            <Welcome mode="settings" onGoTo={(p) => setPage(p)} />
+            <Welcome
+              onGoTo={(p) => setPage(p)}
+              onReplay={() => setIntro("replay")}
+            />
           )}
           {page === "folders" && <FoldersSection />}
           {page === "general" && (

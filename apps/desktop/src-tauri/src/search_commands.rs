@@ -329,6 +329,9 @@ pub struct WelcomeView {
 }
 
 fn suggested_path(app: &AppHandle, kind: SuggestedKind) -> Option<PathBuf> {
+    if let Some(dev) = crate::dev::suggested_folder(matches!(kind, SuggestedKind::Documents)) {
+        return dev;
+    }
     let dir = match kind {
         SuggestedKind::Documents => app.path().document_dir(),
         SuggestedKind::Desktop => app.path().desktop_dir(),

@@ -124,7 +124,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 
 ### 6. Primeros pasos y bienvenida
 - [x] ✅ **Resuelto** (`feat/boton-cambiar`: botón con fondo, como los demás). «Cambiar» (junto al atajo) parece texto: darle aspecto de botón.
-- [ ] ⏳ Propuesta en `docs/propuesta-introduccion.md`, esperando el visto bueno de Darío. Introducción guiada y animada la primera vez (un paso por pantalla, progreso, Atrás / Siguiente / Saltar, que enseñe haciendo, repetible desde Ajustes). Antes, propuesta corta para que Darío la apruebe.
+- [x] ✅ **Hecho** (`feat/introduccion-guiada`, con los cambios de Darío: 5 pasos, búsqueda de prueba dentro y «Saltar» sin confirmar; capturas en `docs/capturas/introduccion/`). Introducción guiada y animada la primera vez (un paso por pantalla, progreso, Atrás / Siguiente / Saltar, que enseñe haciendo, repetible desde Ajustes). Antes, propuesta corta para que Darío la apruebe.
 
 ### 7. Pendiente del resumen de anoche
 - [x] ✅ Lo decidido de noche: aprobado (con el cambio de Tab sobre un Espacio del punto 2).
