@@ -1,7 +1,7 @@
 // La barra: la caja de búsqueda, la lista (o un panel) y el pie con los atajos. Aquí solo
 // se junta todo y se maneja el teclado; cada parte vive en `launcher/`.
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { commands } from "./bindings";
 import { dismissLauncher, useLauncher } from "./useLauncher";
 import { detectFilter, type TypeFilter } from "./launcher/filters";
@@ -103,8 +103,16 @@ function App() {
 
   const isEmpty = spaces.length === 0 && recent.length === 0 && !query.trim();
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    const box = e.currentTarget;
+  // Las teclas se escuchan en toda la ventana, no solo en la caja: si un clic deja el
+  // foco en otro sitio (el texto de la vista previa, el fondo), los atajos siguen
+  // funcionando y el foco vuelve a la caja antes de hacer nada.
+  function onKeyDown(e: KeyboardEvent) {
+    const box = inputRef.current;
+    if (!box || e.defaultPrevented || e.isComposing) return;
+    // La barra no tiene más paradas de Tab que la caja: si Tab moviera el foco, saldría
+    // de la ventana y Windows la daría por perdida (y la barra se cerraría).
+    if (e.key === "Tab") e.preventDefault();
+    if (document.activeElement !== box) box.focus({ preventScroll: true });
     if (
       e.key === "Backspace" &&
       filter &&
@@ -151,7 +159,6 @@ function App() {
     if (mode.kind === "list") {
       const plain = !e.ctrlKey && !e.altKey && !e.metaKey;
       if (plain && e.key === "Tab") {
-        e.preventDefault(); // que el foco no se vaya de la caja
         if (showPreview) setPreviewOpen(false);
         else if (current?.hit && !e.shiftKey) setPreviewOpen(true);
         return;
@@ -194,6 +201,18 @@ function App() {
     }
   }
 
+  // Siempre la última versión de `onKeyDown` (lee el estado del render actual), con un
+  // solo listener en la ventana para toda la vida de la barra.
+  const keyHandler = useRef(onKeyDown);
+  useEffect(() => {
+    keyHandler.current = onKeyDown;
+  });
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => keyHandler.current(e);
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, []);
+
   // Se anuncia 400 ms después del último cambio, para no leer cada pulsación.
   const announcement = useDebounced(
     resultsAnnouncement({
@@ -219,7 +238,17 @@ function App() {
       : "";
 
   return (
-    <main ref={rootRef} className="sift-from flex h-full flex-col bg-surface">
+    <main
+      ref={rootRef}
+      // Un clic en cualquier parte de la barra no le quita el foco a la caja (salvo para
+      // seleccionar el texto de la vista previa, que se puede copiar).
+      onMouseDown={(e) => {
+        const target = e.target as HTMLElement;
+        if (target !== inputRef.current && !target.closest("[data-selectable]"))
+          e.preventDefault();
+      }}
+      className="sift-from flex h-full flex-col bg-surface"
+    >
       <div className="flex items-center gap-2 border-b border-line px-5">
         {filter && (
           <button
@@ -252,7 +281,6 @@ function App() {
             setPreviewOpen(false);
             setMode({ kind: "list" });
           }}
-          onKeyDown={onKeyDown}
           // Mientras se abre un Espacio, escribir no cambia nada (Esc sigue cancelando).
           readOnly={mode.kind === "running"}
           placeholder={filter ? `Buscar en tus ${filter.plural}` : "Buscar"}

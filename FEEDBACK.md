@@ -95,3 +95,40 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 
 ### Para la Fase 7 (pulido)
 - [ ] ⏳ **«Por qué sale este resultado»**: enseñar el fragmento que encaja (y, si llegó por significado, que se entienda la relación). En la barra actual no cabe: pensar el formato (panel lateral, vista previa, al pulsar una tecla como → o Espacio…) sin romper la apertura en < 100 ms.
+
+## 2026-11-18 — Tras probar la versión con vista previa (PR #24 a #31)
+
+### 1. Teclado después de usar el ratón (fallo importante)
+- [x] ✅ **Resuelto** (`fix/teclado-tras-raton`): las teclas se escuchan en toda la ventana y no solo en la caja, el foco vuelve a la caja antes de actuar, Tab nunca saca el foco de la ventana y un clic en la barra no le quita el foco a la caja (salvo para seleccionar el texto de la vista previa). Tras mover o usar el ratón en la barra, Esc deja de volver de la vista previa a la lista y Tab cierra Sift en vez de cerrar la vista previa. Los atajos tienen que funcionar siempre, tenga el foco donde lo tenga.
+- [ ] ⏳ Sift se tiene que poder usar entero con ratón: barra, vista previa y Ajustes. Ajustes ya se puede (todo atajo tiene su botón o su arrastre). En la barra faltan volver de la vista previa, cancelar un Espacio y cerrar el resumen: van con las pistas pulsables del punto 2.
+- [x] ✅ Tests del caso «ratón y después teclado» (`App.test.tsx`): fallan con el código de antes y pasan con el arreglo.
+
+### 2. Vista previa
+- [ ] ⏳ Botón «atrás» (←) visible para volver a la lista con el ratón.
+- [ ] ⏳ Tab sobre un Espacio abre una vista previa con sus acciones en orden (qué abrirá, las esperas y dónde colocará cada ventana). Enter lo lanza.
+- [ ] ⏳ Pistas del pie con mayúscula inicial («Moverse», «Abrir», «Vista previa», «Volver») y que se puedan pulsar con el ratón cuando tenga sentido.
+
+### 3. Mayúsculas en toda la app
+- [ ] ⏳ Etiquetas, pistas, opciones de los desplegables y textos de ejemplo con mayúscula inicial, como en Windows. Los valores literales que se escriben tal cual (comandos, rutas, direcciones web) se quedan como son.
+
+### 4. Editor de acciones
+- [ ] ⏳ «Ejecutar comando»: la ayuda de «Programa» queda encajada en una columna estrecha. Recolocar campos y ayudas.
+- [ ] ⏳ Colocar ventana: «No colocar» queda solo a la izquierda y el resto a la derecha. Distribución más ordenada.
+- [ ] ⏳ El desplegable de pantalla dice «la pantalla principal»: mostrar el nombre real («Pantalla 1 · DELL U2720Q (principal)») y «Donde esté el ratón».
+- [ ] ⏳ «Si ya está abierta…» también con «No colocar», renombrado a «Si ya está abierta, usar esa en vez de abrir otra», en carpeta, archivo, web y aplicación.
+- [ ] ⏳ «Esperar a que…»: una línea que explique por qué hace falta una dirección y qué poner.
+- [ ] ⏳ «Alias» → algo más claro («Palabras clave» u «Otras palabras para encontrarlo»), con su ayuda.
+
+### 5. Estado (Ajustes)
+- [ ] ⏳ De lista plana «nombre → texto» a tarjetas que digan de un vistazo si todo va bien, con icono de estado. Lo técnico, en «Avanzado» plegado.
+
+### 6. Primeros pasos y bienvenida
+- [ ] ⏳ «Cambiar» (junto al atajo) parece texto: darle aspecto de botón.
+- [ ] ⏳ Introducción guiada y animada la primera vez (un paso por pantalla, progreso, Atrás / Siguiente / Saltar, que enseñe haciendo, repetible desde Ajustes). Antes, propuesta corta para que Darío la apruebe.
+
+### 7. Pendiente del resumen de anoche
+- [x] ✅ Lo decidido de noche: aprobado (con el cambio de Tab sobre un Espacio del punto 2).
+- [x] ✅ Copias ocultas: se queda como está.
+- [ ] ⏳ Cobertura de Rust con cargo-llvm-cov: medir, apuntarlo en `docs/cobertura.md` y cubrir los huecos críticos.
+- [ ] ⏳ npm audit: actualizar ESLint y sus dependencias para quitar el aviso de minimatch, si no rompe nada.
+- La Fase 7 la cierra Darío cuando la pruebe con alguien que no conozca Sift.
