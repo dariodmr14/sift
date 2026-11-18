@@ -19,3 +19,9 @@ Thumbs.db
 # PDFium: se descarga con scripts/fetch-pdfium.ps1 (ver ADR 0008)
 apps/desktop/src-tauri/pdfium/*
 !apps/desktop/src-tauri/pdfium/README.md
+
+# Informes de cobertura (npm run coverage)
+coverage/
+
+# Worktrees de los subagentes de Claude Code
+.claude/worktrees/
