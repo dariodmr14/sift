@@ -1,0 +1,80 @@
+name: Release
+
+# Compila Sift en Windows y deja una Release en BORRADOR con el instalador NSIS y el
+# `latest.json` firmado que lee el actualizador. NO publica nada: la Release se queda en
+# borrador hasta que Darío la revisa y pulsa «Publish» en GitHub.
+#
+# DESACTIVADO hasta que Darío decida publicar (pasos en docs/lanzamiento.md):
+#   - Solo se lanza a mano (pestaña Actions → Release → «Run workflow»).
+#   - Necesita el secreto TAURI_SIGNING_PRIVATE_KEY (y su contraseña,
+#     TAURI_SIGNING_PRIVATE_KEY_PASSWORD) y la clave pública en
+#     apps/desktop/src-tauri/tauri.updater.conf.json. Sin ellos, falla al firmar.
+#
+# Para activarlo al crear una etiqueta `v1.2.3` (o `v1.0.0-rc.2`), cambia el bloque `on:` por:
+#
+#   on:
+#     push:
+#       tags: ["v*"]
+#     workflow_dispatch:
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # crear la Release en borrador y subir sus archivos
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  windows:
+    name: Instalador de Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Instalar toolchain fijada
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      # pdfium.dll (versión y SHA-256 fijados) va dentro del instalador.
+      - name: Descargar PDFium
+        shell: pwsh
+        run: ./scripts/fetch-pdfium.ps1
+      - name: Dependencias de la interfaz
+        working-directory: apps/desktop
+        run: npm ci
+      # Una versión con guion (`1.0.0-rc.1`) es una versión candidata: sale como
+      # «pre-release» y el actualizador de las versiones estables no la ve.
+      - name: ¿Versión candidata?
+        id: version
+        shell: pwsh
+        run: |
+          $v = (Get-Content apps/desktop/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          "prerelease=$($v.Contains('-').ToString().ToLower())" >> $env:GITHUB_OUTPUT
+      # tauri-action compila, firma el `latest.json` con la clave de los secretos y crea
+      # la Release en borrador con el instalador y el `latest.json`.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: apps/desktop
+          # La configuración del actualizador (clave pública, dirección del `latest.json`,
+          # artefactos firmados) solo se añade aquí: la compilación de todos los días no la
+          # lleva y no necesita la clave.
+          args: --config src-tauri/tauri.updater.conf.json
+          tagName: v__VERSION__
+          releaseName: Sift __VERSION__
+          releaseBody: Ver las notas de esta versión en el README.
+          releaseDraft: true
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          includeUpdaterJson: true

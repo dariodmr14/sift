@@ -133,6 +133,9 @@ function Settings() {
                   <IconsToggle initial={settings.iconsHidden} />
                   <GlassToggle initial={settings.disableGlass} />
                   <SmartSearchToggle />
+                  {settings.updatesAvailable && (
+                    <UpdatesToggle initial={settings.checkUpdates} />
+                  )}
                 </>
               ) : (
                 <p>Cargando…</p>
@@ -267,6 +270,39 @@ function GlassToggle({ initial }: { initial: boolean }) {
         </span>
       </span>
     </label>
+  );
+}
+
+/**
+ * «Buscar actualizaciones al arrancar» (ADR 0018). Solo en las compilaciones de las
+ * Releases, que llevan el actualizador. Apagado por defecto: es una conexión a internet.
+ */
+function UpdatesToggle({ initial }: { initial: boolean }) {
+  const [enabled, setEnabled] = useState(initial);
+  return (
+    <Section title="Actualizaciones">
+      <label className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => {
+            const next = e.currentTarget.checked;
+            void commands
+              .setCheckUpdates(next)
+              .then((r) => r.status === "ok" && setEnabled(r.data));
+          }}
+          className="mt-0.5 size-4 accent-accent"
+        />
+        <span>
+          Buscar actualizaciones al arrancar
+          <span className="block text-xs text-muted">
+            Sift mira en GitHub si hay una versión nueva y te pregunta antes de
+            instalarla. Solo se envía la petición de la versión: nada de tus
+            archivos ni de tus búsquedas.
+          </span>
+        </span>
+      </label>
+    </Section>
   );
 }
 

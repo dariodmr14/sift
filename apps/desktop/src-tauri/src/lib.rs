@@ -18,6 +18,7 @@ mod shell;
 mod smart;
 mod spaces_commands;
 mod tray;
+mod updates;
 mod waits;
 mod watcher;
 mod window_manager;
@@ -222,6 +223,7 @@ pub fn run() {
             app.manage(indexing::Indexing::start(handle, index, pdfium_dir));
             launcher::init_glass(handle);
             tray::create(handle)?;
+            updates::init(handle);
 
             let settings = load_settings(handle);
             match start_hotkey(handle, settings.hotkey) {

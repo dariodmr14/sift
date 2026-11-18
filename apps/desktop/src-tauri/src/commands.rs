@@ -44,6 +44,11 @@ pub struct SettingsView {
     pub icons_hidden: bool,
     /// «Desactivar vidrio»: toda la app opaca.
     pub disable_glass: bool,
+    /// Hay actualizaciones automáticas en esta compilación (la de las Releases). En las
+    /// demás, Ajustes no enseña la opción.
+    pub updates_available: bool,
+    /// «Buscar actualizaciones al arrancar» (apagado por defecto: ADR 0018).
+    pub check_updates: bool,
 }
 
 /// Rust avisa a la UI de que el lanzador acaba de mostrarse: hay que limpiar la búsqueda,
@@ -150,7 +155,18 @@ fn get_settings(app: AppHandle) -> SettingsView {
         launch_at_startup: app.autolaunch().is_enabled().unwrap_or(false),
         icons_hidden: crate::load_settings(&app).icons_hidden,
         disable_glass: crate::load_settings(&app).appearance.disable_glass,
+        updates_available: crate::updates::configured(&app),
+        check_updates: crate::load_settings(&app).updates.check_on_startup,
     }
+}
+
+/// «Buscar actualizaciones al arrancar». Se aplica en el siguiente arranque.
+#[tauri::command]
+#[specta::specta]
+fn set_check_updates(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
+    crate::update_settings(&app, |s| s.updates.check_on_startup = enabled)
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    Ok(enabled)
 }
 
 /// «Desactivar vidrio»: lo guarda y lo aplica ya en todas las ventanas abiertas (la
@@ -224,6 +240,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             set_launch_at_startup,
             set_icons_hidden,
             set_glass_disabled,
+            set_check_updates,
             settings_ready,
             spaces::list_spaces,
             spaces::create_space,
