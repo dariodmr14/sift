@@ -1,7 +1,7 @@
 // Piezas de UI compartidas de la ventana de ajustes. Cuando se elija la dirección visual
 // (punto 5), se cambian aquí y todo el editor la sigue.
 
-import { useRef } from "react";
+import { cloneElement, isValidElement, useId, useRef } from "react";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -69,12 +69,25 @@ export function Field({
   hint?: ReactNode;
   children: ReactNode;
 }) {
+  const hintId = useId();
+  // La ayuda va fuera de la etiqueta y unida al campo con `aria-describedby`: si estuviera
+  // dentro, un lector de pantalla la leería entera como nombre del campo.
+  const control =
+    hint && isValidElement<{ "aria-describedby"?: string }>(children)
+      ? cloneElement(children, { "aria-describedby": hintId })
+      : children;
   return (
-    <label className="block space-y-1">
-      <span className="text-xs text-muted">{label}</span>
-      {children}
-      {hint && <span className="block text-xs text-muted">{hint}</span>}
-    </label>
+    <div className="space-y-1">
+      <label className="block space-y-1">
+        <span className="text-xs text-muted">{label}</span>
+        {control}
+      </label>
+      {hint && (
+        <span id={hintId} className="block text-xs text-muted">
+          {hint}
+        </span>
+      )}
+    </div>
   );
 }
 
