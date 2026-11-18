@@ -54,3 +54,11 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 - **Contexto:** `npm audit` completo avisa de un fallo moderado en `minimatch`, que llega por eslint y typescript-eslint. **No afecta a la app:** la CI solo audita las dependencias de producción, y están limpias.
 - **Recomendación:** actualizar eslint y typescript-eslint cuando salga una versión con el arreglo, en un PR aparte. No es urgente.
 - **Hecho (2026-11-18):** eslint 10.15.0 y typescript-eslint 8.73.0 quitan el de `minimatch`. Ha salido otro, alto, en `picomatch` (ReDoS), que llega por vite, vitest y typescript-eslint: todas sus versiones están afectadas y aún no hay arreglo (lo que propone `npm audit fix --force` es bajar vitest a la 3, que no arregla nada útil). Solo afecta a herramientas de desarrollo con patrones que escribimos nosotros; la app tiene 0 avisos. Se revisa cuando salga la versión arreglada.
+
+## Pendiente de revisar
+
+### 10. Aviso de `picomatch` en `npm audit` — esperando el arreglo
+- **Qué es:** un fallo alto de `picomatch` (ReDoS, GHSA-fc5q-39xc-vjpf) que llega por vite, vitest y typescript-eslint.
+- **Por qué no se arregla ya:** todas sus versiones están afectadas y no hay ninguna corregida. `npm audit fix --force` propone bajar vitest a la 3, y eso no lo soluciona.
+- **A quién afecta:** solo a herramientas de desarrollo, con patrones que escribimos nosotros. La app tiene 0 avisos (`npm audit --omit=dev`, lo que comprueba la CI).
+- **Qué hacer:** cuando salga una versión de `picomatch` arreglada, `npm update` en `apps/desktop/` y comprobar `npm audit`. Decidido con Darío el 2026-11-18: se deja apuntado hasta entonces.
