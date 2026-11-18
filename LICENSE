@@ -1,21 +1,32 @@
-MIT License
+Copyright (c) 2026 Darío. Todos los derechos reservados.
 
-Copyright (c) 2026 Darío
+Este repositorio es público para que se pueda ver y estudiar, pero no es software
+libre ni de código abierto. Sin permiso escrito del autor no se concede ningún
+derecho a copiar, modificar, distribuir, sublicenciar ni vender este software ni
+partes de él, ni a crear obras derivadas.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Lo que sí se puede hacer:
+- Ver el código y la documentación en GitHub.
+- Descargar e instalar las versiones publicadas en las Releases del repositorio
+  para usarlas personalmente.
+- Lo que permiten las Condiciones de servicio de GitHub para los repositorios
+  públicos (verlo y hacer un fork dentro de GitHub), sin más derechos que esos.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Los componentes de terceros que Sift incluye o descarga (dependencias, PDFium, el
+modelo de embeddings y otros) conservan sus propias licencias.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+---
+
+Copyright (c) 2026 Darío. All rights reserved.
+
+This repository is public so that it can be read and studied, but it is not free or
+open-source software. No right is granted to copy, modify, distribute, sublicense or
+sell this software or any part of it, or to create derivative works, without the
+author's written permission.
+
+You may view the code and documentation on GitHub, download and install the
+published Releases for personal use, and do what GitHub's Terms of Service allow for
+public repositories (view and fork within GitHub), with no further rights.
+
+Third-party components that Sift includes or downloads (dependencies, PDFium, the
+embedding model and others) keep their own licenses.

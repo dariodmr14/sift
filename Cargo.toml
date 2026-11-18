@@ -7,7 +7,9 @@ members = ["apps/desktop/src-tauri", "crates/*"]
 version = "1.0.0-rc.1"
 edition = "2024"
 rust-version = "1.99"
-license = "MIT"
+# Todos los derechos reservados (ver LICENSE). `LicenseRef-` es la forma SPDX de
+# nombrar una licencia que no está en su lista.
+license = "LicenseRef-AllRightsReserved"
 repository = "https://github.com/dariodmr14/Sift"
 authors = ["Darío"]
 

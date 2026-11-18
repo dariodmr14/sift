@@ -120,7 +120,7 @@ sift/
 ## 3. Fases
 
 ### Fase 0 — Cimientos
-- [x] Repo en GitHub, licencia (MIT) y README mínimo.
+- [x] Repo en GitHub, licencia (MIT; desde la 1.0.0-rc.1, todos los derechos reservados) y README mínimo.
 - [x] Workspace de Rust con los crates vacíos + app Tauri 2 con React/TS/Vite.
 - [x] Formato y lint: `rustfmt`, `clippy`, ESLint, Prettier.
 - [x] CI en GitHub Actions (Windows): lint + tests + build.
