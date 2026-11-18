@@ -11,11 +11,11 @@ npm run coverage        # resumen en la terminal; informe navegable en apps/desk
 
 Cuenta todo `src/` salvo los tests y `bindings.ts` (generado).
 
-| | Antes (2026-11-18) | Después de este PR |
-|---|---|---|
-| Líneas | 47,75 % (584 de 1.223) | **62,87 %** (769 de 1.223) |
-| Ramas | 45,26 % | **57,52 %** |
-| Funciones | 38,81 % | **54,68 %** |
+| | Antes (2026-11-18) | PR #29 | PR de la segunda tanda |
+|---|---|---|---|
+| Líneas | 47,75 % (584 de 1.223) | 62,87 % | **75,02 %** (919 de 1.225) |
+| Ramas | 45,26 % | 57,52 % | **71,75 %** |
+| Funciones | 38,81 % | 54,68 % | **69,78 %** |
 
 **Bien cubierto (90–100 %):** toda la lógica de la barra (`launcher/`: mezcla de resultados, filtros, anuncios, vista previa, resumen de un Espacio), `format.ts`, `draft.ts`, `folders.ts`, `iconLibrary.ts`, `pathSuggest.ts`; la barra en sí (`App.tsx`, ~73 %) con sus tests de teclado.
 
@@ -24,11 +24,13 @@ Cuenta todo `src/` salvo los tests y `bindings.ts` (generado).
 | Archivo | Antes | Por qué importa | Estado |
 |---|---|---|---|
 | `settings/SpaceEditor.tsx` | 0 % | Guardar y borrar Espacios: un fallo pierde datos | **67 %** en este PR: guardar (botón y Ctrl+S), descartar, crear, error de Rust a la vista, borrar con confirmación |
-| `settings/ActionEditor.tsx` | 0 % | Los comandos van con programa y argumentos por separado (seguridad) | **36 %**: el comando (programa, argumentos y carpeta por separado, nunca juntos) y la web; faltan esperas, apps y «Probar» |
+| `settings/ActionEditor.tsx` | 0 % | Los comandos van con programa y argumentos por separado (seguridad) | **82 %**: el comando (programa, argumentos y carpeta por separado, nunca juntos), la web, la app y «Probar» (con su resultado, su error y las esperas) |
 | `settings/PathField.tsx` | 0 % | Teclado de las sugerencias de rutas | **98 %**: sugerencias con dos letras, rutas completas sin sugerir, ↓/Enter/clic/Esc, «Elegir…» |
 | `settings/FoldersSection.tsx` | 0 % | Añadir y quitar carpetas | **68 %**: lista, vacía, carpeta que no existe, quitar con confirmación, añadir |
-| `settings/SpacesSection.tsx`, `Settings.tsx` | 0 % | Navegación de Ajustes: la cubre la prueba de extremo a extremo (`scripts/e2e.mjs`, `scripts/capturas-final.mjs`) | pendiente |
-| `settings/IconPicker.tsx`, `AppPicker.tsx`, `PlacementEditor.tsx`, `WaitEditor.tsx` | 0 % | Editores secundarios; su lógica pura (`zones.ts`, `iconLibrary.ts`) sí está probada | pendiente |
+| `settings/SpacesSection.tsx` | 0 % | Lista de Espacios, reordenar, importar y exportar | **77 %**: lista, nuevo, vacío, Alt+↑/↓ (guarda el orden), exportar e importar (también cancelado y con error); falta el arrastre con ratón |
+| `settings/Settings.tsx` | 0 % | Navegación de Ajustes: la cubre la prueba de extremo a extremo (`scripts/e2e.mjs`, `scripts/capturas-final.mjs`) | pendiente |
+| `settings/IconPicker.tsx`, `AppPicker.tsx`, `WaitEditor.tsx` | 0 % | Editores secundarios | **100 %, 90 % y 100 %**: los cinco tipos de icono (la librería, cargada de verdad), elegir app y cada tipo de espera |
+| `settings/PlacementEditor.tsx` | 0 % | Elegir zona; su lógica (`zones.ts`) sí está probada | pendiente |
 | `settings/TitleBar.tsx`, `main.tsx`, `appearance.ts` | 0 % | Arranque y ventana: solo se pueden probar con la app de verdad (e2e) | no merece la pena en unitarios |
 
 ## Núcleo en Rust

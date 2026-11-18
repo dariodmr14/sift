@@ -126,6 +126,7 @@ Números y tiempos se escriben como los diría una persona, siempre con `src/for
 ## Accesibilidad
 
 - **Campos (`.sift-field`)**: TextInput, Select y el resto de cajas de Ajustes usan `.sift-field`: borde suave (`--line`) y trazo inferior de 3:1 (`--line-strong`), como los TextBox de Fluent. Con el foco, el mismo anillo de 2 px del acento legible que los botones (F10, F11).
+- **Ayuda de los campos (`Field`)**: la etiqueta lleva solo el nombre del campo. La ayuda va debajo, fuera de la etiqueta, y unida al control con `aria-describedby`: el lector de pantalla dice «Programa» y después la ayuda, no un nombre de dos líneas.
 - **Diálogos (`Modal`)**: atrapan el foco (Tab y Mayús+Tab no salen del diálogo), Esc y el clic fuera lo cierran y, al cerrarse, el foco vuelve al control que lo abrió (`components/useFocusTrap.ts`, F12).
 - **Anuncios de la barra**: una región `role="status"` oculta lee el número de resultados y el filtro («12 resultados en tus PDF») 400 ms después de dejar de escribir (`launcher/announce.ts`, F13).
 - **Objetivos táctiles**: todo botón de solo icono mide al menos 24 × 24 px; el asa de arrastre, también (F14).
