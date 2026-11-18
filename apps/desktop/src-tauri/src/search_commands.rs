@@ -190,6 +190,12 @@ pub fn preview_file(
             "Sift ya no tiene este archivo: puede que se haya movido o borrado.".into(),
         )
     })?;
+    Ok(build_preview(&chunk, &query))
+}
+
+/// Lo que enseña la vista previa de un fragmento: el texto con lo que encaja marcado, si va
+/// en fuente fija (código) y la página (solo en los PDF). Aparte del comando para probarlo.
+fn build_preview(chunk: &sift_storage::PreviewChunk, query: &str) -> FilePreview {
     let ext = chunk.ext.to_lowercase();
     let monospace =
         sift_extract::type_filter("code").is_some_and(|code| code.contains(&ext.as_str()));
@@ -201,7 +207,7 @@ pub fn preview_file(
     } else {
         sift_search::snippet::preview(
             &chunk.text,
-            &sift_search::ParsedQuery::parse(&query),
+            &sift_search::ParsedQuery::parse(query),
             PREVIEW_CHARS,
             PREVIEW_LINES,
             keep_lines,
@@ -212,11 +218,11 @@ pub fn preview_file(
     } else {
         None
     };
-    Ok(FilePreview {
+    FilePreview {
         text,
         monospace,
         page,
-    })
+    }
 }
 
 #[tauri::command]
@@ -588,6 +594,51 @@ pub fn reveal_file(app: AppHandle, path: String) -> Result<(), AppError> {
         ));
     }
     crate::shell::reveal_in_explorer(&path).map_err(AppError::System)
+}
+
+#[cfg(test)]
+mod preview_tests {
+    use super::*;
+
+    fn chunk(ext: &str, text: &str, page: Option<i64>) -> sift_storage::PreviewChunk {
+        sift_storage::PreviewChunk {
+            ext: ext.into(),
+            text: text.into(),
+            page,
+        }
+    }
+
+    fn plain(p: &FilePreview) -> String {
+        p.text.iter().map(|s| s.text.as_str()).collect()
+    }
+
+    #[test]
+    fn a_pdf_keeps_its_page_and_joins_the_lines_cut_by_the_layout() {
+        let p = build_preview(&chunk("PDF", "la clave\nprimaria", Some(37)), "primaria");
+        assert_eq!(p.page, Some(37));
+        assert!(!p.monospace);
+        assert!(!plain(&p).contains('\n'), "{:?}", plain(&p));
+        assert!(p.text.iter().any(|s| s.hit && s.text.contains("primaria")));
+    }
+
+    #[test]
+    fn other_files_keep_line_breaks_and_have_no_page() {
+        let p = build_preview(&chunk("md", "- uno\n- dos", Some(3)), "dos");
+        assert_eq!(p.page, None, "la página solo tiene sentido en un PDF");
+        assert!(plain(&p).contains('\n'));
+    }
+
+    #[test]
+    fn code_goes_in_a_fixed_width_font() {
+        assert!(build_preview(&chunk("rs", "fn main() {}", None), "main").monospace);
+        assert!(!build_preview(&chunk("txt", "hola", None), "hola").monospace);
+    }
+
+    #[test]
+    fn a_file_without_text_has_an_empty_preview() {
+        let p = build_preview(&chunk("jpg", "", None), "foto");
+        assert!(p.text.is_empty());
+    }
 }
 
 #[cfg(test)]

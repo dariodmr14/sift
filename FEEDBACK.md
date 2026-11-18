@@ -129,6 +129,6 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 ### 7. Pendiente del resumen de anoche
 - [x] ✅ Lo decidido de noche: aprobado (con el cambio de Tab sobre un Espacio del punto 2).
 - [x] ✅ Copias ocultas: se queda como está.
-- [ ] ⏳ Cobertura de Rust con cargo-llvm-cov: medir, apuntarlo en `docs/cobertura.md` y cubrir los huecos críticos.
+- [x] ✅ **Hecho** (`test/cobertura-rust`: 70,8 % total; núcleo 85–100 %; vista previa cubierta). Cobertura de Rust con cargo-llvm-cov: medir, apuntarlo en `docs/cobertura.md` y cubrir los huecos críticos.
 - [ ] ⏳ npm audit: actualizar ESLint y sus dependencias para quitar el aviso de minimatch, si no rompe nada.
 - La Fase 7 la cierra Darío cuando la pruebe con alguien que no conozca Sift.

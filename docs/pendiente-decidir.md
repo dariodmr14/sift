@@ -43,6 +43,7 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 
 ### 7. Cobertura de Rust — necesita tu permiso
 - **Contexto:** medir la cobertura de Rust exige instalar `llvm-tools-preview` (con rustup) y `cargo-llvm-cov` (con cargo install). Las dos cosas van fuera del proyecto y, según tus reglas, no las instalo yo solo.
+- **Aprobado y hecho (2026-11-18):** medido en `docs/cobertura.md`.
 - **Si te parece bien:** `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov --locked` y `cargo llvm-cov --workspace --summary-only`. Mientras tanto, `docs/cobertura.md` recoge, revisados a mano, los módulos que no tienen tests. El más crítico, `index.rs`, ya los tiene.
 
 ### 8. La ayuda iba dentro de la etiqueta de los campos — hecho de noche
