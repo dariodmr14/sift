@@ -26,7 +26,7 @@ const space = {
     name: "Trabajo",
     aliases: ["curro"],
     icon: { kind: "none" },
-    actions: [],
+    actions: [] as object[],
   },
   autoIcon: null,
   boost: 1,
@@ -46,6 +46,12 @@ const hit = (name: string, page: number | null = null) => ({
   byMeaning: false,
 });
 
+const defaultSearch = (_q: string, seq: number) =>
+  ok({
+    seq,
+    results: { hits: [hit("contrato.pdf", 37), hit("notas.md")], tookMs: 1 },
+  });
+
 // Lo que la barra le pide a Rust. Cada test cambia lo que necesite.
 const commands = {
   listSpaces: vi.fn(() => ok([space])),
@@ -60,12 +66,7 @@ const commands = {
       },
     ]),
   ),
-  searchFiles: vi.fn((_q: string, seq: number) =>
-    ok({
-      seq,
-      results: { hits: [hit("contrato.pdf", 37), hit("notas.md")], tookMs: 1 },
-    }),
-  ),
+  searchFiles: vi.fn(defaultSearch),
   getIcons: vi.fn((paths: string[]) => ok(paths.map(() => null))),
   previewFile: vi.fn((_fileId: number, _chunkId: number, _query: string) =>
     ok({
@@ -104,6 +105,8 @@ const { default: App } = await import("./App");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Algún test cambia lo que contesta la búsqueda: cada test empieza con lo de siempre.
+  commands.searchFiles.mockImplementation(defaultSearch);
 });
 afterEach(cleanup);
 
@@ -384,12 +387,57 @@ describe("barra", () => {
       }
     });
 
-    it("Tab con un Espacio seleccionado no abre nada", async () => {
+    it("Tab con un Espacio seleccionado enseña sus acciones y Enter lo abre", async () => {
+      commands.listSpaces.mockReturnValueOnce(
+        ok([
+          {
+            ...space,
+            space: {
+              ...space.space,
+              actions: [
+                { kind: "openUrl", url: "https://example.com" },
+                { kind: "wait", until: { kind: "seconds", secs: 3 } },
+              ],
+            },
+          },
+        ]),
+      );
+      commands.runSpace.mockReturnValue(ok({ status: "declined" }));
       const { user } = await renderBar();
       await screen.findByText("Espacios");
       await user.keyboard("{Tab}");
-      expect(screen.queryByRole("region")).not.toBeInTheDocument();
+      const r = await region("Trabajo");
+      expect(r).toHaveTextContent("Espacio · 2 acciones");
+      const steps = screen.getByRole("list", { name: "Acciones, en orden" });
+      expect(steps).toHaveTextContent("Abrir https://example.com");
+      expect(steps).toHaveTextContent("Esperar 3 s");
+      await user.keyboard("{Enter}");
+      await waitFor(() => expect(commands.runSpace).toHaveBeenCalledWith(1));
+    });
+
+    it("con el ratón: la pista «Vista previa» la abre y ← vuelve a la lista", async () => {
+      const { user } = await openPreview();
+      await user.click(screen.getByRole("button", { name: /Vista previa/ }));
+      await region("contrato.pdf");
+      await user.click(
+        screen.getByRole("button", { name: "Volver a la lista" }),
+      );
       expect(screen.getByRole("listbox")).toBeInTheDocument();
+      expect(commands.hideLauncher).not.toHaveBeenCalled();
+    });
+
+    it("con el ratón: las pistas «Abrir» y «Carpeta» hacen lo mismo que sus teclas", async () => {
+      const { user, box } = await openPreview();
+      await user.click(screen.getByRole("button", { name: /Carpeta/ }));
+      expect(commands.revealFile).toHaveBeenCalledWith(
+        "C:\\Docs\\contrato.pdf",
+      );
+      expect(box).toHaveFocus();
+      await user.click(screen.getByRole("button", { name: "Abrir" }));
+      expect(commands.openFile).toHaveBeenCalledWith(
+        "C:\\Docs\\contrato.pdf",
+        37,
+      );
     });
   });
 });
