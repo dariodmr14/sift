@@ -166,7 +166,7 @@ describe("barra", () => {
     const { user, box } = await renderBar();
     await user.type(box, "contrato");
     expect(
-      await screen.findByText("pág. 37 ·", { exact: false }),
+      await screen.findByText("Pág. 37 ·", { exact: false }),
     ).toBeInTheDocument();
     await waitFor(() => expect(selectedText()).toContain("contrato.pdf"));
     await user.keyboard("{ArrowDown}");

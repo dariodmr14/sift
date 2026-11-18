@@ -105,7 +105,10 @@ export function buildItems(s: ItemSources): Item[] {
           </span>
         )}
         {hit.page != null && (
-          <span title="Se abre en esta página">pág. {hit.page} · </span>
+          <span title="Se abre en esta página">
+            {/* Mayúscula si abre la línea; detrás de «Por significado ·», minúscula. */}
+            {hit.byMeaning ? "pág." : "Pág."} {hit.page} ·{" "}
+          </span>
         )}
         {hit.snippet.length ? (
           <Highlighted
