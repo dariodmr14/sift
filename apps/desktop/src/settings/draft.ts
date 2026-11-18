@@ -26,11 +26,11 @@ export const ACTION_LABELS: Record<ActionKind, string> = {
 
 /** «Esperar a que…» + esto, en lenguaje normal (el desplegable del editor). */
 export const WAIT_LABELS: Record<WaitKind, string> = {
-  webResponds: "responda una web de tu equipo",
+  webResponds: "Responda una web de tu equipo",
   serviceAccepts:
-    "un servicio de tu equipo acepte conexiones (como una base de datos)",
-  commandFinished: "termine el comando anterior",
-  seconds: "pasen unos segundos",
+    "Un servicio de tu equipo acepte conexiones (como una base de datos)",
+  commandFinished: "Termine el comando anterior",
+  seconds: "Pasen unos segundos",
 };
 
 /** Tiempo límite por defecto: un comando (instalar, arrancar contenedores) tarda más. */

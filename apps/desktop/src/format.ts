@@ -1,6 +1,11 @@
 // Números y tiempos como los diría una persona. Todo lo que la app enseña pasa por aquí:
 // nada de «335 s» ni «1240 archivos».
 
+/** «documentos de Word» → «Documentos de Word», para cuando el texto va solo. */
+export function capitalize(text: string): string {
+  return text.charAt(0).toLocaleUpperCase("es") + text.slice(1);
+}
+
 /** 1240 → «1.240». (`toLocaleString("es")` no pone el punto con 4 cifras: aquí sí.) */
 export function count(n: number): string {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
