@@ -6,7 +6,7 @@ import globals from "globals";
 import prettier from "eslint-config-prettier";
 
 export default tseslint.config(
-  { ignores: ["dist", "src-tauri", "src/bindings.ts"] },
+  { ignores: ["dist", "coverage", "src-tauri", "src/bindings.ts"] },
   js.configs.recommended,
   // Reglas que usan la información de tipos de TypeScript (detectan p. ej. promesas sin await).
   ...tseslint.configs.recommendedTypeChecked,
