@@ -534,3 +534,151 @@ fn candidates(
     });
     Ok(out)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn file(id: i64, path: &str, name: &str, chunks: &[(i64, &str)]) -> IndexedFile {
+        IndexedFile {
+            file_id: id,
+            path: path.to_string(),
+            name: name.to_string(),
+            ext: name.rsplit('.').next().unwrap_or("").to_ascii_lowercase(),
+            chunks: chunks.iter().map(|(c, t)| (*c, t.to_string())).collect(),
+        }
+    }
+
+    fn found(idx: &TextIndex, q: &str) -> Vec<(i64, i64)> {
+        idx.search_chunks(&ParsedQuery::parse(q), 10)
+            .unwrap()
+            .into_iter()
+            .map(|c| (c.file_id, c.chunk_id))
+            .collect()
+    }
+
+    fn ballena() -> IndexedFile {
+        file(
+            1,
+            r"C:\Docs\informe.txt",
+            "informe.txt",
+            &[(10, "la ballena azul nada despacio")],
+        )
+    }
+
+    #[test]
+    fn indexed_file_is_found_by_content_and_by_name() {
+        // Un archivo se encuentra por una palabra de su texto y por su nombre.
+        let mut idx = TextIndex::in_memory().unwrap();
+        idx.upsert(&ballena()).unwrap();
+        idx.commit().unwrap();
+        assert_eq!(found(&idx, "ballena "), vec![(1, 10)]);
+        assert_eq!(found(&idx, "informe "), vec![(1, 10)]);
+    }
+
+    #[test]
+    fn removed_file_is_no_longer_found() {
+        // Tras borrar y confirmar, el archivo no sale y el recuento baja.
+        let mut idx = TextIndex::in_memory().unwrap();
+        idx.upsert(&ballena()).unwrap();
+        idx.commit().unwrap();
+        assert_eq!(idx.num_docs(), 1);
+        idx.remove_files(&[1]);
+        idx.commit_and_reload().unwrap();
+        assert!(found(&idx, "ballena ").is_empty());
+        assert_eq!(idx.num_docs(), 0);
+    }
+
+    #[test]
+    fn upsert_replaces_previous_chunks() {
+        // Rehacer el mismo file_id con otro texto no deja fragmentos viejos.
+        let mut idx = TextIndex::in_memory().unwrap();
+        idx.upsert(&ballena()).unwrap();
+        idx.commit().unwrap();
+        idx.upsert(&file(
+            1,
+            r"C:\Docs\informe.txt",
+            "informe.txt",
+            &[(11, "el delfin salta alto")],
+        ))
+        .unwrap();
+        idx.commit().unwrap();
+        assert!(found(&idx, "ballena ").is_empty());
+        assert_eq!(found(&idx, "delfin "), vec![(1, 11)]);
+        assert_eq!(idx.num_docs(), 1);
+    }
+
+    #[test]
+    fn moved_file_is_found_by_new_name_only() {
+        // Mover/renombrar: mismo id, otra ruta y nombre.
+        let mut idx = TextIndex::in_memory().unwrap();
+        idx.upsert(&file(1, r"C:\A\viejo.txt", "viejo.txt", &[]))
+            .unwrap();
+        idx.commit().unwrap();
+        assert_eq!(found(&idx, "viejo "), vec![(1, 0)]);
+        idx.upsert(&file(1, r"C:\B\nuevo.txt", "nuevo.txt", &[]))
+            .unwrap();
+        idx.commit().unwrap();
+        assert!(found(&idx, "viejo ").is_empty());
+        assert_eq!(found(&idx, "nuevo "), vec![(1, 0)]);
+        let hit = idx.fetch(&[(1, 0)]).unwrap();
+        assert_eq!(hit[0].path, r"C:\B\nuevo.txt");
+    }
+
+    #[test]
+    fn fetch_returns_chunk_data_and_nothing_for_unknown_keys() {
+        // `fetch` devuelve los datos del fragmento pedido; una clave inexistente, nada.
+        let mut idx = TextIndex::in_memory().unwrap();
+        idx.upsert(&ballena()).unwrap();
+        idx.commit().unwrap();
+        let hits = idx.fetch(&[(1, 10)]).unwrap();
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].path, r"C:\Docs\informe.txt");
+        assert_eq!(hits[0].name, "informe.txt");
+        assert_eq!(hits[0].ext, "txt");
+        assert_eq!(hits[0].body, "la ballena azul nada despacio");
+        assert!(idx.fetch(&[(1, 99), (2, 10)]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn name_only_file_is_found_and_fetched_with_empty_text() {
+        // Sin fragmentos: un documento con chunk_id 0 y texto vacío.
+        let mut idx = TextIndex::in_memory().unwrap();
+        idx.upsert(&file(5, r"C:\Fotos\paisaje.jpg", "paisaje.jpg", &[]))
+            .unwrap();
+        idx.commit().unwrap();
+        assert_eq!(found(&idx, "paisaje "), vec![(5, 0)]);
+        let hits = idx.fetch(&[(5, 0)]).unwrap();
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].body, "");
+    }
+
+    #[test]
+    fn open_keeps_committed_documents_after_reopening() {
+        // Lo confirmado sigue ahí al volver a abrir la carpeta.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("idx");
+        {
+            let mut idx = TextIndex::open(&path).unwrap();
+            assert!(idx.needs_rebuild);
+            idx.upsert(&ballena()).unwrap();
+            idx.commit().unwrap();
+        }
+        let idx = TextIndex::open(&path).unwrap();
+        assert!(!idx.needs_rebuild);
+        assert_eq!(idx.num_docs(), 1);
+        assert_eq!(found(&idx, "ballena "), vec![(1, 10)]);
+    }
+
+    #[test]
+    fn clear_empties_the_index() {
+        // `clear` borra todo (tras confirmar).
+        let mut idx = TextIndex::in_memory().unwrap();
+        idx.upsert(&ballena()).unwrap();
+        idx.commit().unwrap();
+        idx.clear().unwrap();
+        idx.commit().unwrap();
+        assert_eq!(idx.num_docs(), 0);
+        assert!(found(&idx, "ballena ").is_empty());
+    }
+}
