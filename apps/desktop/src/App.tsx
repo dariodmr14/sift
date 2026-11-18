@@ -14,6 +14,7 @@ import {
   RunningPanel,
 } from "./launcher/panels";
 import {
+  canPreview,
   PreviewPanel,
   NO_PREVIEW_TEXT,
   previewName,
@@ -29,6 +30,8 @@ import { usePreview } from "./launcher/usePreview";
 import { useSpaceRun } from "./launcher/useSpaceRun";
 import { Glyph } from "./components/Glyph";
 import { Shortcut } from "./components/Keycap";
+
+const actionsCount = (n: number) => (n === 1 ? "1 acción" : `${n} acciones`);
 
 function App() {
   const [query, setQuery] = useState("");
@@ -101,7 +104,19 @@ function App() {
   const showPreview = previewOpen && mode.kind === "list" && !!current;
   const previewState = usePreview(current?.hit, query, showPreview);
 
+  const currentPath = current?.path;
   const isEmpty = spaces.length === 0 && recent.length === 0 && !query.trim();
+
+  // Lo que hacen los atajos, para usarlo igual con el teclado que con el ratón (las pistas
+  // del pie se pueden pulsar).
+  const reveal = (path: string) =>
+    void commands.revealFile(path).then(() => dismiss());
+  const copyPath = (path: string) =>
+    void navigator.clipboard.writeText(path).then(() => dismiss());
+  const enter = () => {
+    if (isEmpty) openSettings(true);
+    else if (current) activate(current);
+  };
 
   // Las teclas se escuchan en toda la ventana, no solo en la caja: si un clic deja el
   // foco en otro sitio (el texto de la vista previa, el fondo), los atajos siguen
@@ -133,12 +148,12 @@ function App() {
     if (mode.kind === "list" && current?.path) {
       if (e.ctrlKey && e.key === "Enter") {
         e.preventDefault(); // Ctrl+↵: abrir la carpeta con el archivo seleccionado
-        void commands.revealFile(current.path).then(() => dismiss());
+        reveal(current.path);
         return;
       }
       if (e.ctrlKey && e.shiftKey && e.code === "KeyC") {
         e.preventDefault(); // Ctrl+Shift+C: copiar la ruta
-        void navigator.clipboard.writeText(current.path).then(() => dismiss());
+        copyPath(current.path);
         return;
       }
     }
@@ -160,7 +175,7 @@ function App() {
       const plain = !e.ctrlKey && !e.altKey && !e.metaKey;
       if (plain && e.key === "Tab") {
         if (showPreview) setPreviewOpen(false);
-        else if (current?.hit && !e.shiftKey) setPreviewOpen(true);
+        else if (canPreview(current) && !e.shiftKey) setPreviewOpen(true);
         return;
       }
       if (
@@ -168,7 +183,7 @@ function App() {
         !e.shiftKey &&
         e.key === "ArrowRight" &&
         !showPreview &&
-        current?.hit &&
+        canPreview(current) &&
         caretAtEnd(box.value, box.selectionStart, box.selectionEnd)
       ) {
         e.preventDefault();
@@ -191,8 +206,7 @@ function App() {
         break;
       case "Enter":
         e.preventDefault();
-        if (isEmpty) openSettings(true);
-        else if (items[selected]) activate(items[selected]);
+        enter();
         break;
       case "Escape":
         e.preventDefault();
@@ -233,7 +247,9 @@ function App() {
       ? `Vista previa de ${previewName(current, current.hit)}. ${
           current.hit
             ? `${reasonLabel(previewReason(current.hit))}.`
-            : NO_PREVIEW_TEXT
+            : current.action.kind === "space"
+              ? `${actionsCount(current.action.view.space.actions.length)}. Enter para abrir el Espacio.`
+              : NO_PREVIEW_TEXT
         }`
       : "";
 
@@ -324,6 +340,7 @@ function App() {
             hit={current.hit}
             state={previewState}
             icon={iconsHidden ? undefined : current.icon}
+            onBack={() => setPreviewOpen(false)}
           />
         ) : isEmpty ? (
           <EmptyState />
@@ -357,28 +374,54 @@ function App() {
 
       <footer className="flex items-center gap-4 border-t border-line px-5 py-2 text-xs text-muted">
         {mode.kind === "running" ? (
-          <Hint keys="Esc">cancelar (lo ya abierto sigue abierto)</Hint>
+          <Hint keys="Esc" onClick={cancel}>
+            Cancelar (lo ya abierto sigue abierto)
+          </Hint>
         ) : mode.kind === "result" ? (
-          <Hint keys="Esc">cerrar</Hint>
+          <Hint keys="Esc" onClick={dismiss}>
+            Cerrar
+          </Hint>
         ) : showPreview ? (
           <>
-            <Hint keys="↑+↓">cambiar</Hint>
-            <Hint keys="enter">abrir</Hint>
-            <Hint keys="Esc">volver</Hint>
-            {current?.path && <Hint keys="Ctrl+enter">carpeta</Hint>}
+            <Hint keys="↑+↓">Cambiar</Hint>
+            <Hint keys="enter" onClick={enter}>
+              {current?.action.kind === "space" ? "Abrir el Espacio" : "Abrir"}
+            </Hint>
+            <Hint keys="Esc" onClick={() => setPreviewOpen(false)}>
+              Volver
+            </Hint>
+            {currentPath && (
+              <Hint keys="Ctrl+enter" onClick={() => reveal(currentPath)}>
+                Carpeta
+              </Hint>
+            )}
           </>
         ) : (
           <>
-            <Hint keys="↑+↓">moverse</Hint>
-            <Hint keys="enter">abrir</Hint>
-            {current?.hit && <Hint keys="Tab">vista previa</Hint>}
-            {current?.path ? (
+            <Hint keys="↑+↓">Moverse</Hint>
+            {(isEmpty || current) && (
+              <Hint keys="enter" onClick={enter}>
+                Abrir
+              </Hint>
+            )}
+            {canPreview(current) && (
+              <Hint keys="Tab" onClick={() => setPreviewOpen(true)}>
+                Vista previa
+              </Hint>
+            )}
+            {currentPath ? (
               <>
-                <Hint keys="Ctrl+enter">carpeta</Hint>
-                <Hint keys="Ctrl+Shift+C">copiar ruta</Hint>
+                <Hint keys="Ctrl+enter" onClick={() => reveal(currentPath)}>
+                  Carpeta
+                </Hint>
+                <Hint keys="Ctrl+Shift+C" onClick={() => copyPath(currentPath)}>
+                  Copiar ruta
+                </Hint>
               </>
             ) : (
-              <Hint keys="Ctrl+N">nuevo Espacio</Hint>
+              <Hint keys="Ctrl+N" onClick={() => openSettings(true)}>
+                Nuevo Espacio
+              </Hint>
             )}
           </>
         )}
@@ -399,13 +442,40 @@ function App() {
   );
 }
 
-/** Un atajo del pie: sus teclas y qué hace. */
-function Hint({ keys, children }: { keys: string; children: string }) {
+/**
+ * Un atajo del pie: sus teclas y qué hace. Con `onClick` también se puede pulsar con el
+ * ratón (sin quitarle el foco a la caja); sin él, solo informa («↑↓ Moverse»).
+ */
+function Hint({
+  keys,
+  onClick,
+  children,
+}: {
+  keys: string;
+  onClick?: () => void;
+  children: string;
+}) {
+  if (!onClick)
+    return (
+      <span className="flex items-center gap-1.5">
+        <Shortcut keys={keys} />
+        {children}
+      </span>
+    );
   return (
-    <span className="flex items-center gap-1.5">
+    <button
+      type="button"
+      tabIndex={-1}
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onClick}
+      // El nombre es lo que hace; las teclas van en la descripción emergente.
+      aria-label={children}
+      title={`${children} (${keys.replace("enter", "Intro")})`}
+      className="-mx-1 flex min-h-6 items-center gap-1.5 rounded-item px-1 hover:bg-hover hover:text-fg"
+    >
       <Shortcut keys={keys} />
       {children}
-    </span>
+    </button>
   );
 }
 

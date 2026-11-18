@@ -9,6 +9,7 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 - **Opciones:** (a) Tab no hace nada con ellos; (b) para un Espacio, enseñar su lista de acciones; (c) para un reciente, enseñar el principio del archivo.
 - **Hecho:** (a). Si con la vista previa abierta bajas con ↓ hasta un Espacio, el panel dice «Este resultado no tiene vista previa.» en vez de cerrarse.
 - **Recomendación para más adelante:** (b) es bonito y barato; al backlog.
+- **Aprobado por Darío (2026-11-18), con cambio:** Tab sobre un Espacio enseña sus acciones en orden y Enter lo abre (hecho en `feat/vista-previa-espacios`).
 
 ### 2. Tamaño del código en la vista previa — decidido de noche
 - **Contexto:** el texto normal va a 14 px; el código, en fuente fija, a 14 px no cabe en el ancho de la barra sin romper líneas.

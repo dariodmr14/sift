@@ -100,13 +100,13 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 
 ### 1. Teclado después de usar el ratón (fallo importante)
 - [x] ✅ **Resuelto** (`fix/teclado-tras-raton`): las teclas se escuchan en toda la ventana y no solo en la caja, el foco vuelve a la caja antes de actuar, Tab nunca saca el foco de la ventana y un clic en la barra no le quita el foco a la caja (salvo para seleccionar el texto de la vista previa). Tras mover o usar el ratón en la barra, Esc deja de volver de la vista previa a la lista y Tab cierra Sift en vez de cerrar la vista previa. Los atajos tienen que funcionar siempre, tenga el foco donde lo tenga.
-- [ ] ⏳ Sift se tiene que poder usar entero con ratón: barra, vista previa y Ajustes. Ajustes ya se puede (todo atajo tiene su botón o su arrastre). En la barra faltan volver de la vista previa, cancelar un Espacio y cerrar el resumen: van con las pistas pulsables del punto 2.
+- [x] ✅ **Resuelto** (`feat/vista-previa-espacios`: botón ← y pistas del pie pulsables para abrir, vista previa, volver, carpeta, copiar ruta, nuevo Espacio, cancelar y cerrar). Sift se tiene que poder usar entero con ratón: barra, vista previa y Ajustes. Ajustes ya se puede (todo atajo tiene su botón o su arrastre). En la barra faltan volver de la vista previa, cancelar un Espacio y cerrar el resumen: van con las pistas pulsables del punto 2.
 - [x] ✅ Tests del caso «ratón y después teclado» (`App.test.tsx`): fallan con el código de antes y pasan con el arreglo.
 
 ### 2. Vista previa
-- [ ] ⏳ Botón «atrás» (←) visible para volver a la lista con el ratón.
-- [ ] ⏳ Tab sobre un Espacio abre una vista previa con sus acciones en orden (qué abrirá, las esperas y dónde colocará cada ventana). Enter lo lanza.
-- [ ] ⏳ Pistas del pie con mayúscula inicial («Moverse», «Abrir», «Vista previa», «Volver») y que se puedan pulsar con el ratón cuando tenga sentido.
+- [x] ✅ Botón «atrás» (←) visible para volver a la lista con el ratón.
+- [x] ✅ Tab sobre un Espacio abre una vista previa con sus acciones en orden (qué abrirá, las esperas y dónde colocará cada ventana). Enter lo lanza.
+- [x] ✅ Pistas del pie con mayúscula inicial («Moverse», «Abrir», «Vista previa», «Volver») y que se puedan pulsar con el ratón cuando tenga sentido.
 
 ### 3. Mayúsculas en toda la app
 - [ ] ⏳ Etiquetas, pistas, opciones de los desplegables y textos de ejemplo con mayúscula inicial, como en Windows. Los valores literales que se escriben tal cual (comandos, rutas, direcciones web) se quedan como son.

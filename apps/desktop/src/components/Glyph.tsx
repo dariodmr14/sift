@@ -14,6 +14,7 @@ export const GLYPHS = {
   // Fluent tiene un asa de puntos (GripperDotsVertical), pero MDL2 no: se usa el asa de
   // barras, que es la que usa Windows 10 en sus listas.
   gripper: "", // GripperBarHorizontal
+  back: "", // Back
   chevronRight: "", // ChevronRight
   check: "", // CheckMark
   warning: "", // Warning
