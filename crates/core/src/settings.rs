@@ -21,6 +21,8 @@ pub struct Settings {
     pub appearance: AppearanceSettings,
     /// Qué se indexa además de textos, código y documentos.
     pub indexing: IndexingSettings,
+    /// Actualizaciones automáticas (ADR 0018).
+    pub updates: UpdateSettings,
     /// La bienvenida ya se vio. Sin fichero de ajustes (primera vez) es `false`; un
     /// fichero de antes que no tiene el campo cuenta como ya visto.
     #[serde(default = "yes")]
@@ -43,6 +45,15 @@ pub struct IndexingSettings {
     /// El usuario ha dicho que sí a descargar el modelo (unos 120 MB). Sin esto nunca se
     /// descarga; si ya está en disco, se usa igual.
     pub model_download_allowed: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default, rename_all = "camelCase")]
+pub struct UpdateSettings {
+    /// Mirar al arrancar si hay una versión nueva en GitHub. Es una conexión a internet,
+    /// así que va apagado hasta que el usuario lo activa (ADR 0018). Instalarla siempre se
+    /// pregunta aparte.
+    pub check_on_startup: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -111,11 +122,22 @@ mod tests {
                 disable_smart_search: true,
                 model_download_allowed: true,
             },
+            updates: UpdateSettings {
+                check_on_startup: true,
+            },
             welcome_done: true,
         };
         s.save(&path).unwrap();
         assert_eq!(Settings::load(&path).unwrap(), s);
         assert!(!path.with_extension("json.tmp").exists());
+    }
+
+    #[test]
+    fn update_checks_are_off_unless_asked_for() {
+        // Un fichero de antes (sin el bloque) y uno nuevo: no se conecta a nada sin permiso.
+        let old: Settings = serde_json::from_str(r#"{"hotkey":"Alt+Space"}"#).unwrap();
+        assert!(!old.updates.check_on_startup);
+        assert!(!Settings::default().updates.check_on_startup);
     }
 
     #[test]

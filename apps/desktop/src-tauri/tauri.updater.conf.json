@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "PEGA_AQUI_LA_CLAVE_PUBLICA (ver docs/lanzamiento.md)",
+      "endpoints": [
+        "https://github.com/dariodmr14/Sift/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

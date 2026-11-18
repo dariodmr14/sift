@@ -34,6 +34,8 @@ export const commands = {
 	 *  barra y los ajustes). Devuelve si ha quedado desactivado.
 	 */
 	setGlassDisabled: (disabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_glass_disabled", { disabled })),
+	/**  «Buscar actualizaciones al arrancar». Se aplica en el siguiente arranque. */
+	setCheckUpdates: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_check_updates", { enabled })),
 	/**  La UI de ajustes ya ha pintado: se puede mostrar su ventana (se crea oculta). */
 	settingsReady: () => __TAURI_INVOKE<void>("settings_ready"),
 	listSpaces: () => typedError<SpaceView_Serialize[], AppError>(__TAURI_INVOKE("list_spaces")),
@@ -687,6 +689,13 @@ export type SettingsView = {
 	iconsHidden: boolean,
 	/**  «Desactivar vidrio»: toda la app opaca. */
 	disableGlass: boolean,
+	/**
+	 *  Hay actualizaciones automáticas en esta compilación (la de las Releases). En las
+	 *  demás, Ajustes no enseña la opción.
+	 */
+	updatesAvailable: boolean,
+	/**  «Buscar actualizaciones al arrancar» (apagado por defecto: ADR 0018). */
+	checkUpdates: boolean,
 };
 
 export type SmartStatus = SmartStatus_Serialize | SmartStatus_Deserialize;
