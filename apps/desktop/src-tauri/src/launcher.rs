@@ -119,6 +119,7 @@ pub fn show(app: &AppHandle) {
                 foreground::force(hwnd.0);
             }
             tracing::debug!("lanzador mostrado");
+            crate::tray::refresh_icon(app);
             if let Err(e) = LauncherShown.emit(app) {
                 tracing::warn!(error = %e, "no se pudo avisar a la UI");
             }

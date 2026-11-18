@@ -1,6 +1,7 @@
 //! Icono en la bandeja del sistema: clic izquierdo abre el lanzador; clic derecho, el menú.
 
 use tauri::AppHandle;
+use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
@@ -34,9 +35,26 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
                 launcher::show(tray.app_handle());
             }
         });
-    if let Some(icon) = app.default_window_icon() {
-        tray = tray.icon(icon.clone());
-    }
+    tray = tray.icon(icon_for(crate::appearance::taskbar_theme()));
     tray.build(app)?;
     Ok(())
+}
+
+/// El icono de la bandeja es de un solo color, como los de Windows: blanco sobre la barra de
+/// tareas oscura y casi negro sobre la clara (`icons/source/tray-*.svg`).
+fn icon_for(taskbar: crate::appearance::Theme) -> Image<'static> {
+    match taskbar {
+        crate::appearance::Theme::Dark => tauri::include_image!("icons/tray/tray-white.png"),
+        crate::appearance::Theme::Light => tauri::include_image!("icons/tray/tray-black.png"),
+    }
+}
+
+/// Vuelve a elegir el icono por si ha cambiado el tema de la barra de tareas. Es barato (una
+/// lectura del registro): se llama al mostrar la barra.
+pub fn refresh_icon(app: &AppHandle) {
+    if let Some(tray) = app.tray_by_id("main")
+        && let Err(e) = tray.set_icon(Some(icon_for(crate::appearance::taskbar_theme())))
+    {
+        tracing::debug!(error = %e, "no se pudo cambiar el icono de la bandeja");
+    }
 }

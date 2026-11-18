@@ -258,7 +258,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - Sistema de extensiones.
 - macOS y Linux.
 - Firma de código del instalador (evita el aviso de SmartScreen; tiene coste).
-- Icono propio de la app y de la bandeja (ahora es el de Tauri por defecto).
+- ~~Icono propio de la app y de la bandeja~~ ✅ Hecho (2026-11-18): «el tamiz», ADR 0017.
 - Grabar el atajo pulsándolo en Ajustes, en vez de escribirlo como texto.
 - Zonas propias para colocar ventanas (dibujarlas por pantalla, como FancyZones). El modelo ya lo admite (ADR 0014).
 - Colocar también la ventana de un comando (`code .`): habría que saber qué programa abre.
