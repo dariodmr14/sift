@@ -37,3 +37,17 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 - **Hecho:** si dos resultados tienen el mismo nombre (sin mayúsculas ni tildes) y el mismo fragmento, solo sale el mejor colocado. Lo que no tiene texto (fotos, vídeos) no se agrupa nunca, porque dos `IMG_0001.jpg` suelen ser fotos distintas. Medido con `eval/`: recall@10 y MRR iguales, y las copias repetidas en el top 10 de las 34 consultas bajan de 39 a 12.
 - **Pendiente de ti:** las otras copias ya no se ven. Opciones: (a) dejarlo así (cualquiera vale); (b) decir «y 2 copias más» en el subtítulo, con Ctrl+↵ abriendo la carpeta de la que sale. **Recomendación:** (b) si alguna vez te ha importado cuál de las copias abrías; si no, (a).
 - **Las 12 que quedan** tienen el mismo nombre con distinto texto: versiones distintas de un apunte o un fragmento mejor colocado distinto. Agruparlas solo por nombre escondería versiones distintas, así que no lo he hecho.
+
+## Tests y cobertura
+
+### 7. Cobertura de Rust — necesita tu permiso
+- **Contexto:** medir la cobertura de Rust exige instalar `llvm-tools-preview` (con rustup) y `cargo-llvm-cov` (con cargo install). Las dos cosas van fuera del proyecto y, según tus reglas, no las instalo yo solo.
+- **Si te parece bien:** `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov --locked` y `cargo llvm-cov --workspace --summary-only`. Mientras tanto, `docs/cobertura.md` recoge, revisados a mano, los módulos que no tienen tests. El más crítico, `index.rs`, ya los tiene.
+
+### 8. La ayuda va dentro de la etiqueta de los campos — decidido de noche
+- **Contexto:** lo destaparon los tests. `Field` (`settings/ui.tsx`) mete el texto de ayuda dentro de la `<label>`, y un lector de pantalla lee la ayuda entera como si fuera el nombre del campo.
+- **Recomendación:** dejar en la etiqueta solo el nombre y pasar la ayuda con `aria-describedby`. En pantalla no cambia nada. Lo hago si queda tiempo; si no, queda aquí.
+
+### 9. Avisos de `npm audit` en las herramientas de desarrollo
+- **Contexto:** `npm audit` completo avisa de un fallo moderado en `minimatch`, que llega por eslint y typescript-eslint. **No afecta a la app:** la CI solo audita las dependencias de producción, y están limpias.
+- **Recomendación:** actualizar eslint y typescript-eslint cuando salga una versión con el arreglo, en un PR aparte. No es urgente.

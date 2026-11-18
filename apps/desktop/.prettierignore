@@ -2,3 +2,6 @@ dist
 src-tauri
 package-lock.json
 src/bindings.ts
+
+# Informes de cobertura (npm run coverage)
+coverage/
