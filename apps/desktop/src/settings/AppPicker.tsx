@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { commands, type InstalledApp } from "../bindings";
 import { normalize } from "../launcher/text";
 import { ErrorText, Modal, TextInput } from "./ui";
+import { SiftLoading } from "../components/SiftLoader";
 
 /** Cuántas apps se pintan a la vez; con la búsqueda se llega al resto. */
 const VISIBLE = 60;
@@ -90,7 +91,9 @@ export function AppPicker({
         className="min-h-40 overflow-y-auto px-2 pb-2"
       >
         {apps === null && !error && (
-          <li className="p-3 text-sm text-muted">Cargando aplicaciones…</li>
+          <li className="p-3">
+            <SiftLoading label="Cargando aplicaciones…" delay={300} />
+          </li>
         )}
         {apps !== null && visible.length === 0 && (
           <li className="p-3 text-sm text-muted">

@@ -161,7 +161,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Resuelto** (`feat/intro-animaciones`, propuesta aprobada: una ilustración por paso, una vez, < 1,6 s; último fotograma con «reducir movimiento»). Más vida: una animación ilustrativa por paso, una sola vez, rápida, coherente con Vidrio y nada con «reducir movimiento». Propuesta antes de implementarla.
 
 ### 7. Indicador de carga propio
-- [ ] ⏳ Con la identidad de Sift (el tamiz con sus barras abriéndose y cerrándose) para el primer indexado, la descarga de la búsqueda inteligente y la vista previa si tarda. Versión estática o con pulso suave con «reducir movimiento». Un componente, documentado en Vidrio.
+- [x] ✅ **Resuelto** (`feat/indicador-tamiz`: `SiftLoader`/`SiftLoading`, documentado en Vidrio; en el indexado, la descarga, la vista previa lenta y las listas que cargan). Con la identidad de Sift (el tamiz con sus barras abriéndose y cerrándose) para el primer indexado, la descarga de la búsqueda inteligente y la vista previa si tarda. Versión estática o con pulso suave con «reducir movimiento». Un componente, documentado en Vidrio.
 
 ### 8. Instalador personalizado
 - [ ] ⏳ Icono de Sift, imágenes lateral y de cabecera con el estilo de Vidrio, textos en español y «Abrir Sift» al final. Decir qué se puede personalizar y enseñar las imágenes antes.

@@ -22,6 +22,7 @@ import {
 } from "./introSteps";
 import { Button, ErrorText, Field, TextInput } from "./ui";
 import { useWelcome } from "./useWelcome";
+import { SiftLoader } from "../components/SiftLoader";
 
 /** Tiempo que se ve «Pulsa… para empezar» antes de abrir la barra. */
 const FINISH_DELAY_MS = 1500;
@@ -281,7 +282,8 @@ function FoldersStep({ w }: { w: ReturnType<typeof useWelcome> }) {
           ))}
         </ul>
       )}
-      <p role="status" className="text-xs text-muted">
+      <p role="status" className="flex items-center gap-2 text-xs text-muted">
+        {w.status?.running && <SiftLoader />}
         {line.text}
       </p>
       {w.error && <ErrorText>{w.error}</ErrorText>}
@@ -372,11 +374,16 @@ function SmartStep({ w }: { w: ReturnType<typeof useWelcome> }) {
         smart.enabled &&
         !smart.awaitingPermission &&
         smart.downloadMb > 0 ? (
-        <p role="status" className="text-sm tabular-nums">
+        <p
+          role="status"
+          className="flex items-center gap-2 text-sm tabular-nums"
+        >
+          <SiftLoader />
           Descargando {smart.downloadedMb} de {smart.downloadMb} MB
         </p>
       ) : w.requested ? (
-        <p role="status" className="text-sm">
+        <p role="status" className="flex items-center gap-2 text-sm">
+          <SiftLoader />
           Preparando la descarga…
         </p>
       ) : w.skipped ? (

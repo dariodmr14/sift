@@ -7,6 +7,7 @@ import { Shortcut } from "../components/Keycap";
 import { hotkeyText } from "./introSteps";
 import { Button, ErrorText } from "./ui";
 import { useWelcome } from "./useWelcome";
+import { SiftLoader } from "../components/SiftLoader";
 
 function Step({
   n,
@@ -55,13 +56,15 @@ export function Welcome({
     smart.downloadMb > 0
   ) {
     smartBody = (
-      <p role="status" className="text-sm tabular-nums">
+      <p role="status" className="flex items-center gap-2 text-sm tabular-nums">
+        <SiftLoader />
         Descargando {smart.downloadedMb} de {smart.downloadMb} MB
       </p>
     );
   } else if (w.requested) {
     smartBody = (
-      <p role="status" className="text-sm">
+      <p role="status" className="flex items-center gap-2 text-sm">
+        <SiftLoader />
         Preparando la descarga…
       </p>
     );
