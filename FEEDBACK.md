@@ -132,3 +132,38 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Hecho** (`test/cobertura-rust`: 70,8 % total; núcleo 85–100 %; vista previa cubierta). Cobertura de Rust con cargo-llvm-cov: medir, apuntarlo en `docs/cobertura.md` y cubrir los huecos críticos.
 - [x] ✅ **Hecho** (`chore/eslint-minimatch`: eslint 10.15.0 y typescript-eslint 8.73.0; minimatch ya no sale. Queda un aviso alto de `picomatch` en herramientas de desarrollo (vite, vitest, typescript-eslint) sin versión arreglada todavía; la app no lo lleva). npm audit: actualizar ESLint y sus dependencias para quitar el aviso de minimatch, si no rompe nada.
 - La Fase 7 la cierra Darío cuando la pruebe con alguien que no conozca Sift.
+
+## 2026-11-19 — Usando la 1.0.0-rc.1 instalada, con datos reales
+
+### 1. Fallos
+- [x] ✅ **Resuelto** (`fix/fallos-bloque1`: las opciones llevan fondo y texto sólidos del tema; comprobado en pantalla en oscuro y claro). **Desplegables ilegibles:** las opciones del desplegable de pantalla salen en blanco sobre blanco. Revisar todos los desplegables, en tema oscuro y claro.
+- [x] ✅ **Resuelto** (`fix/fallos-bloque1`: cada ventana se reconoce por su id de app, por su programa o el de un proceso padre, o por su carpeta de instalación; nunca «la primera que haya»; tests con el caso de Claude y Opera). **Ventana equivocada:** Espacio con Claude (mitad derecha) y Opera (mitad izquierda) en la Pantalla 2, los dos con «usar la ya abierta». Opera no se abrió y Claude acabó en la mitad de Opera: la acción de Opera se quedó con la ventana de Claude. Encontrar cómo se identifica el programa de cada ventana (apps Electron y de la Tienda, ventanas ya abiertas) y añadir un test.
+- [ ] ⏳ **Identificación resuelta** (sus ventanas son de `javaw.exe`, nieto de `eclipse.exe`, y ahora cuentan; las pequeñas, como la de carga, no). **Falta** esperar a la principal tras el selector: va con el bloque 2 (colocar en segundo plano). **Eclipse, «no encontré su ventana»:** abre primero el selector de workspace y luego la principal. Las ventanas intermedias (selector, carga, diálogos) no cuentan: hay que esperar a la principal.
+
+### 2. Las acciones no se esperan unas a otras
+- [ ] ⏳ Cada acción se lanza en cuanto se lanza la anterior; colocar cada ventana va en segundo plano cuando aparece. Solo se espera de verdad con un paso «Esperar a que…». Tiempo para encontrar la ventana más largo (p. ej. 60 s). El panel «en marcha» lo dice («Eclipse abierto · colocando…» y luego ✓). Actualizar el ADR.
+
+### 3. Editor de acciones
+- [ ] ⏳ Pantallas con el número y el nombre de Configuración → Pantalla («Pantalla 1 — DELL U2720Q (principal)»); manda el número de Windows. Botón «Identificar» que enseña un número grande en cada monitor unos segundos.
+- [ ] ⏳ «Colocar su ventana» plegable: plegada, un resumen («Posición: Mitad derecha · Pantalla 2» o «No colocar») con «Cambiar»; por defecto plegada si ya hay posición.
+- [ ] ⏳ Título claro de la posición elegida («Posición seleccionada: Mitad derecha»).
+- [ ] ⏳ Icono de Claude con esquinas azules raras: icono real en buena resolución, también para apps de la Tienda (MSIX). Revisar Claude, Opera, VS Code y Eclipse.
+
+### 4. Primeros pasos
+- [ ] ⏳ No salió al instalar porque ya había datos (correcto). Explicar cómo verla como la primera vez sin perder datos y si conviene en Windows Sandbox.
+
+### 5. Vídeo
+- [x] ✅ Se deja para la versión final, para no usar pantallas antiguas (apuntado en `PLAN.md`).
+
+### 6. Introducción
+- [x] ✅ Las barritas de progreso se quedan.
+- [ ] ⏳ Jerarquía: en el paso 1 el ojo salta del título a «Se abre desde cualquier sitio…» y se salta la explicación. Orden natural en todos los pasos (título, explicación, acción), con el texto escalonado tras el título.
+- [ ] ⏳ Más vida: una animación ilustrativa por paso, una sola vez, rápida, coherente con Vidrio y nada con «reducir movimiento». Propuesta antes de implementarla.
+
+### 7. Indicador de carga propio
+- [ ] ⏳ Con la identidad de Sift (el tamiz con sus barras abriéndose y cerrándose) para el primer indexado, la descarga de la búsqueda inteligente y la vista previa si tarda. Versión estática o con pulso suave con «reducir movimiento». Un componente, documentado en Vidrio.
+
+### 8. Instalador personalizado
+- [ ] ⏳ Icono de Sift, imágenes lateral y de cabecera con el estilo de Vidrio, textos en español y «Abrir Sift» al final. Decir qué se puede personalizar y enseñar las imágenes antes.
+
+Al terminar: instalador 1.0.0-rc.2 y cómo actualizar el instalado.

@@ -23,6 +23,15 @@ describe("tokens de diseño", () => {
     expect(files.length).toBeGreaterThan(5);
   });
 
+  // Las opciones de los desplegables nativos no heredan el fondo del tema: sin esta regla
+  // salían en blanco sobre blanco con el tema oscuro (FEEDBACK 2026-11-19).
+  it("las opciones de los desplegables tienen fondo y texto del tema", () => {
+    const css = readFileSync(join(import.meta.dirname, "index.css"), "utf8");
+    expect(css).toMatch(
+      /option,\s*optgroup\s*\{\s*background-color:\s*var\(--surface-solid\);\s*color:\s*var\(--fg\);/,
+    );
+  });
+
   it.each(files.map((f) => [relative(import.meta.dirname, f), f]))(
     "%s usa solo tokens",
     (_name, path) => {

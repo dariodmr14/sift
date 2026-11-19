@@ -34,7 +34,7 @@ impl WindowManager for Win32Windows {
     }
 
     fn target(&self, action: &Action) -> WindowTarget {
-        target_for(action, platform::default_exe)
+        target_for(action, platform::default_exe, platform::app_path)
     }
 
     fn place(&self, window: isize, zone: Zone, monitor: &MonitorInfo) -> Result<(), String> {
@@ -46,9 +46,34 @@ impl WindowManager for Win32Windows {
     }
 }
 
+/// La carpeta de instalación de un programa (en minúsculas y acabada en `\`), para reconocer
+/// las ventanas de otros programas de la misma carpeta (Opera abre `launcher.exe` y sus
+/// ventanas son de `opera.exe`). Nada para rutas relativas, la raíz de un disco o la
+/// carpeta de Windows: ahí hay programas de todo tipo.
+fn install_folder(exe_path: &str) -> Option<String> {
+    let lower = exe_path.to_lowercase().replace('/', "\\");
+    let bytes = lower.as_bytes();
+    let absolute = bytes.len() > 3 && bytes[1] == b':' && bytes[2] == b'\\';
+    if !absolute {
+        return None;
+    }
+    let parent = &lower[..lower.rfind('\\')?];
+    let drive = &lower[..2];
+    if parent.len() <= 3 || parent.starts_with(&format!("{drive}\\windows")) {
+        return None;
+    }
+    Some(format!("{parent}\\"))
+}
+
 /// Qué ventana buscar tras abrir una acción. `default_exe` dice qué programa abre un tipo
-/// de archivo o protocolo (`.pdf`, `http`). Separado para probarlo sin Windows.
-pub fn target_for(action: &Action, default_exe: impl Fn(&str) -> Option<String>) -> WindowTarget {
+/// de archivo o protocolo (`.pdf`, `http`); `app_path`, la ruta del programa de una app
+/// registrada con un id (AUMID) en vez de con su ruta (Opera, VS Code). Separado para
+/// probarlo sin Windows.
+pub fn target_for(
+    action: &Action,
+    default_exe: impl Fn(&str) -> Option<String>,
+    app_path: impl Fn(&str) -> Option<String>,
+) -> WindowTarget {
     let stem = |p: &Path| {
         p.file_stem()
             .or(p.file_name())
@@ -59,6 +84,7 @@ pub fn target_for(action: &Action, default_exe: impl Fn(&str) -> Option<String>)
         Action::OpenFolder { path, .. } => WindowTarget {
             exe: Some("explorer.exe".into()),
             title_hint: path.file_name().map(|n| n.to_string_lossy().into_owned()),
+            ..WindowTarget::default()
         },
         // El programa que abre ese tipo; casi todos ponen el nombre del archivo en el título.
         Action::OpenFile { path, .. } => WindowTarget {
@@ -66,22 +92,40 @@ pub fn target_for(action: &Action, default_exe: impl Fn(&str) -> Option<String>)
                 .extension()
                 .and_then(|e| default_exe(&format!(".{}", e.to_string_lossy()))),
             title_hint: stem(path),
+            ..WindowTarget::default()
         },
         // El navegador predeterminado.
         Action::OpenUrl { .. } => WindowTarget {
             exe: default_exe("http"),
-            title_hint: None,
+            ..WindowTarget::default()
         },
-        // Una app: si su id es la ruta de un .exe, ese; si es de la Tienda (un AUMID), no
-        // se sabe el programa y se busca por su nombre en el título.
-        Action::OpenApp { app_id, name, .. } => WindowTarget {
-            exe: app_id
-                .rsplit(['\\', '/'])
-                .next()
-                .filter(|last| last.to_ascii_lowercase().ends_with(".exe"))
-                .map(str::to_ascii_lowercase),
-            title_hint: Some(name.clone()),
-        },
+        // Una app: si su id es la ruta de un .exe, ese y su carpeta. Si es un id de app
+        // (AUMID), el id (las de la Tienda lo llevan en su proceso) y, si Windows sabe a qué
+        // programa apunta su acceso directo, ese programa y su carpeta.
+        Action::OpenApp { app_id, name, .. } => {
+            let file = |path: &str| {
+                path.rsplit(['\\', '/'])
+                    .next()
+                    .filter(|last| last.to_ascii_lowercase().ends_with(".exe"))
+                    .map(str::to_ascii_lowercase)
+            };
+            if file(app_id).is_some() {
+                WindowTarget {
+                    exe: file(app_id),
+                    folder: install_folder(app_id),
+                    title_hint: Some(name.clone()),
+                    ..WindowTarget::default()
+                }
+            } else {
+                let path = app_path(app_id);
+                WindowTarget {
+                    exe: path.as_deref().and_then(file),
+                    folder: path.as_deref().and_then(install_folder),
+                    app_id: Some(app_id.clone()),
+                    title_hint: Some(name.clone()),
+                }
+            }
+        }
         _ => WindowTarget::default(),
     }
 }
@@ -94,6 +138,7 @@ mod platform {
     use sift_spaces::placement::{
         MonitorInfo, Rect, WindowInfo, Zone, with_invisible_borders, zone_rect,
     };
+    use std::collections::HashMap;
     use windows::Win32::Foundation::{CloseHandle, HWND, LPARAM, POINT, RECT};
     use windows::Win32::Graphics::Dwm::{
         DWMWA_CLOAKED, DWMWA_EXTENDED_FRAME_BOUNDS, DwmGetWindowAttribute,
@@ -102,13 +147,30 @@ mod platform {
         DISPLAY_DEVICEW, EnumDisplayDevicesW, EnumDisplayMonitors, GetMonitorInfoW, HDC, HMONITOR,
         MONITORINFO, MONITORINFOEXW,
     };
+
+    use windows::Win32::Storage::EnhancedStorage::{
+        PKEY_AppUserModel_ID, PKEY_Link_TargetParsingPath,
+    };
+    use windows::Win32::Storage::Packaging::Appx::GetApplicationUserModelId;
+    use windows::Win32::System::Com::StructuredStorage::PropVariantToStringAlloc;
+    use windows::Win32::System::Com::{
+        COINIT_MULTITHREADED, CoInitializeEx, CoTaskMemFree, CoUninitialize,
+    };
+    use windows::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
+        TH32CS_SNAPPROCESS,
+    };
     use windows::Win32::System::Threading::{
         GetCurrentProcessId, OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
         QueryFullProcessImageNameW,
     };
+    use windows::Win32::UI::Shell::PropertiesSystem::{
+        IPropertyStore, SHGetPropertyStoreForWindow,
+    };
     use windows::Win32::UI::Shell::{
         ASSOCF_IS_PROTOCOL, ASSOCF_NONE, ASSOCSTR_EXECUTABLE, AssocQueryStringW,
     };
+    use windows::Win32::UI::Shell::{IShellItem2, SHCreateItemFromParsingName};
     use windows::Win32::UI::WindowsAndMessaging::{
         EnumWindows, GW_OWNER, GWL_EXSTYLE, GetCursorPos, GetWindow, GetWindowLongPtrW,
         GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsIconic,
@@ -130,8 +192,8 @@ mod platform {
         }
     }
 
-    /// El .exe de un proceso, solo el nombre y en minúsculas.
-    fn exe_of(pid: u32) -> Option<String> {
+    /// La ruta completa del programa de un proceso, en minúsculas.
+    fn path_of(pid: u32) -> Option<String> {
         // SAFETY: abrir con el permiso mínimo de consulta; el handle se cierra siempre y el
         // búfer vive durante la llamada, con su tamaño en `len`.
         unsafe {
@@ -146,11 +208,138 @@ mod platform {
             );
             let _ = CloseHandle(process);
             ok.ok()?;
-            let path = String::from_utf16_lossy(&buf[..len as usize]);
-            Path::new(&path)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_ascii_lowercase())
+            Some(String::from_utf16_lossy(&buf[..len as usize]).to_lowercase())
         }
+    }
+
+    fn file_name(path: &str) -> String {
+        Path::new(path)
+            .file_name()
+            .map(|n| n.to_string_lossy().to_ascii_lowercase())
+            .unwrap_or_default()
+    }
+
+    /// Todos los procesos: su padre y su programa (solo el nombre, en minúsculas).
+    fn processes() -> HashMap<u32, (u32, String)> {
+        let mut map = HashMap::new();
+        // SAFETY: instantánea de solo lectura; la estructura lleva su tamaño en `dwSize`,
+        // vive durante las llamadas y el handle se cierra al final.
+        unsafe {
+            let Ok(snap) = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) else {
+                return map;
+            };
+            let mut entry = PROCESSENTRY32W {
+                dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+                ..Default::default()
+            };
+            let mut ok = Process32FirstW(snap, &mut entry).is_ok();
+            while ok {
+                let end = entry
+                    .szExeFile
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.szExeFile.len());
+                let exe = String::from_utf16_lossy(&entry.szExeFile[..end]).to_ascii_lowercase();
+                map.insert(entry.th32ProcessID, (entry.th32ParentProcessID, exe));
+                ok = Process32NextW(snap, &mut entry).is_ok();
+            }
+            let _ = CloseHandle(snap);
+        }
+        map
+    }
+
+    /// Los programas de los procesos padre de `pid`, del más cercano al más lejano (cinco
+    /// como mucho; Windows reutiliza los números, así que se para si da la vuelta).
+    fn ancestors(pid: u32, all: &HashMap<u32, (u32, String)>) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut seen = vec![pid];
+        let mut current = pid;
+        while out.len() < 5 {
+            let Some(&(parent, _)) = all.get(&current) else {
+                break;
+            };
+            if parent == 0 || seen.contains(&parent) {
+                break;
+            }
+            let Some((_, exe)) = all.get(&parent) else {
+                break;
+            };
+            out.push(exe.clone());
+            seen.push(parent);
+            current = parent;
+        }
+        out
+    }
+
+    /// El id de app (AUMID) de una ventana: el que la propia ventana declara (muchas apps
+    /// Electron) o, si no, el de su paquete (las apps de la Tienda, como Claude).
+    fn app_id_of(hwnd: HWND, pid: u32) -> Option<String> {
+        // SAFETY: interfaz COM obtenida de Windows para esta ventana (se libera sola); la
+        // cadena que devuelve se libera con CoTaskMemFree. Si la ventana ya no existe,
+        // falla sin más.
+        let declared = unsafe {
+            SHGetPropertyStoreForWindow::<IPropertyStore>(hwnd)
+                .and_then(|store| store.GetValue(&PKEY_AppUserModel_ID))
+                .and_then(|value| PropVariantToStringAlloc(&value))
+                .ok()
+                .and_then(|text| {
+                    let s = text.to_string().ok();
+                    CoTaskMemFree(Some(text.0 as *const _));
+                    s
+                })
+        };
+        if let Some(id) = declared.filter(|s| !s.is_empty()) {
+            return Some(id);
+        }
+        // SAFETY: abrir con el permiso mínimo de consulta; el búfer vive durante la llamada
+        // con su tamaño en `len`, y el handle se cierra siempre.
+        unsafe {
+            let process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+            let mut buf = [0u16; 512];
+            let mut len = buf.len() as u32;
+            let result =
+                GetApplicationUserModelId(process, &mut len, Some(PWSTR(buf.as_mut_ptr())));
+            let _ = CloseHandle(process);
+            if result.is_err() {
+                return None;
+            }
+            let end = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
+            Some(String::from_utf16_lossy(&buf[..end])).filter(|s| !s.is_empty())
+        }
+    }
+
+    /// COM en este hilo mientras dura `f` (lo necesitan las propiedades del Shell).
+    fn with_com<T>(f: impl FnOnce() -> T) -> T {
+        // SAFETY: inicializar y cerrar COM en el mismo hilo, emparejados. Si el hilo ya
+        // tenía COM con otro modelo, falla, se usa el que había y no se cierra.
+        let init = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
+        let out = f();
+        if init.is_ok() {
+            // SAFETY: emparejado con el CoInitializeEx de arriba, que salió bien.
+            unsafe { CoUninitialize() };
+        }
+        out
+    }
+
+    /// La ruta del programa al que apunta una app registrada con un id (AUMID), si Windows
+    /// la sabe: las de escritorio con acceso directo (Opera, VS Code) sí; las de la Tienda,
+    /// no. En minúsculas.
+    pub fn app_path(app_id: &str) -> Option<String> {
+        with_com(|| {
+            // SAFETY: interfaz COM del Shell (se libera sola); la cadena que devuelve se
+            // libera con CoTaskMemFree.
+            unsafe {
+                let item: IShellItem2 = SHCreateItemFromParsingName(
+                    &HSTRING::from(format!("shell:AppsFolder\\{app_id}")),
+                    None,
+                )
+                .ok()?;
+                let text = item.GetString(&PKEY_Link_TargetParsingPath).ok()?;
+                let path = text.to_string().ok();
+                CoTaskMemFree(Some(text.0 as *const _));
+                path.filter(|p| !p.is_empty()).map(|p| p.to_lowercase())
+            }
+        })
     }
 
     unsafe extern "system" fn collect_window(hwnd: HWND, lparam: LPARAM) -> BOOL {
@@ -162,6 +351,11 @@ mod platform {
     }
 
     pub fn windows() -> Vec<WindowInfo> {
+        with_com(windows_inner)
+    }
+
+    fn windows_inner() -> Vec<WindowInfo> {
+        let all = processes();
         let mut handles: Vec<HWND> = Vec::new();
         // SAFETY: ver `collect_window`.
         unsafe {
@@ -212,10 +406,21 @@ mod platform {
                     if pid == own {
                         return None;
                     }
+                    let path = path_of(pid).unwrap_or_default();
+                    let mut rect = RECT::default();
+                    let _ = GetWindowRect(hwnd, &mut rect);
                     Some(WindowInfo {
                         id: hwnd.0 as isize,
-                        exe: exe_of(pid).unwrap_or_default(),
+                        exe: if path.is_empty() {
+                            all.get(&pid).map(|(_, e)| e.clone()).unwrap_or_default()
+                        } else {
+                            file_name(&path)
+                        },
                         title,
+                        ancestors: ancestors(pid, &all),
+                        app_id: app_id_of(hwnd, pid),
+                        size: (rect.right - rect.left, rect.bottom - rect.top),
+                        path,
                     })
                 }
             })
@@ -419,6 +624,9 @@ mod platform {
     pub fn default_exe(_: &str) -> Option<String> {
         None
     }
+    pub fn app_path(_: &str) -> Option<String> {
+        None
+    }
     pub fn focus(_: isize) -> Result<(), String> {
         Err("solo en Windows".into())
     }
@@ -441,6 +649,21 @@ mod tests {
         }
     }
 
+    fn no_app_path(_: &str) -> Option<String> {
+        None
+    }
+
+    /// Como Windows: los accesos directos de escritorio sí dicen su programa; los de la
+    /// Tienda, no.
+    fn app_path(app_id: &str) -> Option<String> {
+        match app_id {
+            "OperaSoftware.OperaGXWebBrowser.1759849920" => {
+                Some(r"c:\users\ana\appdata\local\programs\opera gx\launcher.exe".into())
+            }
+            _ => None,
+        }
+    }
+
     #[test]
     fn what_window_each_action_opens() {
         let folder = target_for(
@@ -449,6 +672,7 @@ mod tests {
                 place: None,
             },
             exe,
+            no_app_path,
         );
         assert_eq!(folder.exe.as_deref(), Some("explorer.exe"));
         assert_eq!(folder.title_hint.as_deref(), Some("Apuntes"));
@@ -459,6 +683,7 @@ mod tests {
                 place: None,
             },
             exe,
+            no_app_path,
         );
         assert_eq!(
             (pdf.exe.as_deref(), pdf.title_hint.as_deref()),
@@ -471,6 +696,7 @@ mod tests {
                 place: None,
             },
             exe,
+            no_app_path,
         );
         assert_eq!(web.exe.as_deref(), Some("firefox.exe"));
     }
@@ -485,13 +711,42 @@ mod tests {
                     place: None,
                 },
                 exe,
+                app_path,
             )
         };
         let desktop = app(r"{6D809377-6AF0-444B-8957-A3773F02200E}\Microsoft VS Code\Code.exe");
         assert_eq!(desktop.exe.as_deref(), Some("code.exe"));
-        let store = app("Microsoft.WindowsCalculator_8wekyb3d8bbwe!App");
+        // Con una ruta que empieza por una carpeta conocida no se sabe la carpeta real.
+        assert_eq!(desktop.folder, None);
+        let eclipse = app(r"C:\Users\Ana\eclipse\java-2025-09\eclipse\eclipse.exe");
+        assert_eq!(
+            eclipse.folder.as_deref(),
+            Some(r"c:\users\ana\eclipse\java-2025-09\eclipse\")
+        );
+        // De la Tienda: su id, sin programa.
+        let store = app("Claude_pzs8sxrjxfjjc!Claude");
         assert_eq!(store.exe, None);
+        assert_eq!(store.app_id.as_deref(), Some("Claude_pzs8sxrjxfjjc!Claude"));
         assert_eq!(store.title_hint.as_deref(), Some("Visual Studio Code"));
+        // Con id de app y acceso directo (Opera): el id, el programa y su carpeta.
+        let opera = app("OperaSoftware.OperaGXWebBrowser.1759849920");
+        assert_eq!(opera.exe.as_deref(), Some("launcher.exe"));
+        assert_eq!(
+            opera.folder.as_deref(),
+            Some(r"c:\users\ana\appdata\local\programs\opera gx\")
+        );
+        assert!(opera.app_id.is_some());
+    }
+
+    #[test]
+    fn the_windows_folder_is_never_an_install_folder() {
+        assert_eq!(install_folder(r"C:\Windows\System32\notepad.exe"), None);
+        assert_eq!(install_folder(r"C:\notepad.exe"), None);
+        assert_eq!(install_folder("notepad.exe"), None);
+        assert_eq!(
+            install_folder(r"D:\Apps\Tool\tool.exe").as_deref(),
+            Some(r"d:\apps\tool\")
+        );
     }
 
     /// Qué ve Sift en este PC (solo lectura; depende del equipo).
@@ -503,7 +758,17 @@ mod tests {
             eprintln!("pantalla: {m:?}");
         }
         for w in Win32Windows.windows() {
-            eprintln!("ventana: {} · {}", w.exe, w.title);
+            eprintln!(
+                "ventana: {} · {} · app={:?} · padres={:?} · {:?}",
+                w.exe, w.title, w.app_id, w.ancestors, w.size
+            );
+        }
+        for id in [
+            "Claude_pzs8sxrjxfjjc!Claude",
+            "OperaSoftware.OperaGXWebBrowser.1759849920",
+            "Microsoft.VisualStudioCode",
+        ] {
+            eprintln!("programa de {id}: {:?}", platform::app_path(id));
         }
         eprintln!(
             ".pdf → {:?} · http → {:?}",
@@ -586,7 +851,7 @@ mod tests {
             &before,
             &WindowTarget {
                 exe: Some("notepad.exe".into()),
-                title_hint: None,
+                ..WindowTarget::default()
             },
         );
         wm.place(id, Zone::RightHalf, &primary).unwrap();

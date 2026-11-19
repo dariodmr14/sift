@@ -1016,7 +1016,7 @@ mod tests {
         fn target(&self, _: &Action) -> WindowTarget {
             WindowTarget {
                 exe: Some("code.exe".into()),
-                title_hint: None,
+                ..WindowTarget::default()
             }
         }
         fn place(&self, window: isize, zone: Zone, monitor: &MonitorInfo) -> Result<(), String> {
@@ -1052,6 +1052,8 @@ mod tests {
             id,
             exe: "code.exe".into(),
             title: "Visual Studio Code".into(),
+            size: (1200, 800),
+            ..WindowInfo::default()
         }
     }
 

@@ -204,44 +204,110 @@ pub fn pick_monitor<'a>(
 }
 
 /// Una ventana abierta, como la ve Sift.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WindowInfo {
     /// El identificador de Windows (`HWND`).
     pub id: isize,
     /// El programa, solo el nombre y en minúsculas («code.exe»).
     pub exe: String,
     pub title: String,
+    /// La ruta completa del programa, en minúsculas (vacía si Windows no la da).
+    pub path: String,
+    /// Los programas de los procesos padre, del más cercano al más lejano, en minúsculas.
+    /// Eclipse, por ejemplo: sus ventanas son de `javaw.exe`, nieto de `eclipse.exe`.
+    pub ancestors: Vec<String>,
+    /// El id de app de Windows (AUMID) de la ventana o de su paquete, si lo tiene: las apps
+    /// de la Tienda (Claude) lo llevan en su proceso.
+    pub app_id: Option<String>,
+    /// Ancho y alto en píxeles (0 si no se sabe).
+    pub size: (i32, i32),
 }
 
-/// Qué ventana se busca tras abrir algo: de qué programa (si se sabe) y, para desempatar,
-/// algo que suela salir en su título (el nombre de la carpeta, del archivo…).
+/// Qué ventana se busca tras abrir algo: de qué programa y, para desempatar, algo que suela
+/// salir en su título (el nombre de la carpeta, del archivo…). Cuanto más se sepa del
+/// programa, menos se depende del título.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct WindowTarget {
+    /// El programa, solo el nombre y en minúsculas («code.exe»).
     pub exe: Option<String>,
+    /// La carpeta de instalación, en minúsculas y acabada en `\`: vale cualquier programa de
+    /// dentro. Opera abre `launcher.exe`, pero sus ventanas son de `opera.exe`.
+    pub folder: Option<String>,
+    /// El id de app (AUMID), para las apps de la Tienda.
+    pub app_id: Option<String>,
     pub title_hint: Option<String>,
+}
+
+impl WindowTarget {
+    /// ¿Se sabe algo del programa, aparte del título?
+    pub fn knows_program(&self) -> bool {
+        self.exe.is_some() || self.folder.is_some() || self.app_id.is_some()
+    }
+}
+
+/// Lo más pequeño que puede ser la ventana principal de un programa: lo que no llega son
+/// pantallas de carga, avisos o selectores.
+pub const MIN_WINDOW: (i32, i32) = (320, 200);
+
+/// ¿Es `w` del programa que se busca? Por su id de app, por el programa (o el de un proceso
+/// padre) o por estar instalado en su carpeta. Sin nada de eso, nunca.
+pub fn belongs(w: &WindowInfo, target: &WindowTarget) -> bool {
+    let same_app = target.app_id.as_deref().is_some_and(|id| {
+        w.app_id
+            .as_deref()
+            .is_some_and(|own| own.eq_ignore_ascii_case(id))
+    });
+    let same_exe = target
+        .exe
+        .as_deref()
+        .is_some_and(|exe| w.exe == exe || w.ancestors.iter().any(|a| a == exe));
+    let same_folder = target
+        .folder
+        .as_deref()
+        .is_some_and(|folder| !w.path.is_empty() && w.path.starts_with(folder));
+    same_app || same_exe || same_folder
+}
+
+fn big_enough(w: &WindowInfo) -> bool {
+    let (width, height) = w.size;
+    // 0: tamaño desconocido; no se descarta por eso.
+    width == 0 || (width >= MIN_WINDOW.0 && height >= MIN_WINDOW.1)
 }
 
 /// La ventana buscada entre `windows`, sin contar las de `before` (las que ya estaban
 /// abiertas antes de lanzarla; vacío para buscar entre las existentes). Del programa
-/// esperado, si se sabe, y entre varias, la que tiene la pista en el título.
+/// esperado ([`belongs`]) y de tamaño de ventana principal; entre varias, la que tiene la
+/// pista en el título.
+///
+/// Si no se sabe nada del programa, solo vale una ventana cuyo título lo nombre. Nunca «la
+/// primera que haya»: así una acción se quedaba con la ventana de otra (FEEDBACK
+/// 2026-11-19: la de Opera movió la de Claude).
 pub fn pick_window<'a>(
     windows: &'a [WindowInfo],
     before: &[isize],
     target: &WindowTarget,
 ) -> Option<&'a WindowInfo> {
-    let fresh: Vec<&WindowInfo> = windows
-        .iter()
-        .filter(|w| !before.contains(&w.id))
-        .filter(|w| target.exe.as_deref().is_none_or(|exe| w.exe == exe))
-        .collect();
     let hint = target.title_hint.as_deref().map(str::to_lowercase);
-    hint.and_then(|h| {
-        fresh
-            .iter()
-            .find(|w| w.title.to_lowercase().contains(&h))
-            .copied()
-    })
-    .or_else(|| fresh.first().copied())
+    let titled = |w: &WindowInfo| {
+        hint.as_deref()
+            .is_some_and(|h| w.title.to_lowercase().contains(h))
+    };
+    let candidates: Vec<&WindowInfo> = windows
+        .iter()
+        .filter(|w| !before.contains(&w.id) && big_enough(w))
+        .filter(|w| {
+            if target.knows_program() {
+                belongs(w, target)
+            } else {
+                titled(w)
+            }
+        })
+        .collect();
+    candidates
+        .iter()
+        .find(|w| titled(w))
+        .or_else(|| candidates.first())
+        .copied()
 }
 
 /// Lo que hace falta de Windows para colocar ventanas.
@@ -386,6 +452,8 @@ mod tests {
             id,
             exe: exe.into(),
             title: title.into(),
+            size: (1200, 800),
+            ..WindowInfo::default()
         }
     }
 
@@ -398,7 +466,7 @@ mod tests {
         ];
         let code = WindowTarget {
             exe: Some("code.exe".into()),
-            title_hint: None,
+            ..WindowTarget::default()
         };
         // VS Code reutiliza su proceso: la nueva es la que no estaba antes.
         assert_eq!(pick_window(&windows, &[1, 2], &code).unwrap().id, 3);
@@ -408,14 +476,79 @@ mod tests {
         let apuntes = WindowTarget {
             exe: Some("code.exe".into()),
             title_hint: Some("apuntes".into()),
+            ..WindowTarget::default()
         };
         assert_eq!(pick_window(&windows, &[], &apuntes).unwrap().id, 3);
-        // Sin saber el programa: la primera ventana nueva.
+        // Sin saber nada del programa, ni la pista en ningún título: ninguna.
+        assert!(pick_window(&windows, &[1], &WindowTarget::default()).is_none());
+    }
+
+    /// El caso de Darío (FEEDBACK 2026-11-19): Claude (de la Tienda) y Opera (que abre
+    /// `launcher.exe` y cuyas ventanas son de `opera.exe`), con «usar la ya abierta». Una
+    /// pestaña de Opera se llama «Claude - Opera».
+    #[test]
+    fn each_app_keeps_its_own_window_even_with_misleading_titles() {
+        let claude = WindowInfo {
+            app_id: Some("Claude_pzs8sxrjxfjjc!Claude".into()),
+            path: r"c:\program files\windowsapps\claude_1.0_x64__pzs8sxrjxfjjc\app\claude.exe"
+                .into(),
+            ..win(10, "claude.exe", "Claude")
+        };
+        let opera_tab = WindowInfo {
+            path: r"c:\users\ana\appdata\local\programs\opera gx\124.0\opera.exe".into(),
+            ..win(20, "opera.exe", "Claude - Opera")
+        };
+        let windows = [opera_tab, claude.clone()];
+        let claude_target = WindowTarget {
+            app_id: Some("claude_pzs8sxrjxfjjc!claude".into()),
+            title_hint: Some("Claude".into()),
+            ..WindowTarget::default()
+        };
+        let opera_target = WindowTarget {
+            exe: Some("launcher.exe".into()),
+            folder: Some(r"c:\users\ana\appdata\local\programs\opera gx\".into()),
+            app_id: Some("OperaSoftware.OperaGXWebBrowser.1759849920".into()),
+            title_hint: Some("Navegador Opera GX".into()),
+        };
+        // Claude, por su id de app, aunque la pestaña de Opera tenga «Claude» en el título.
+        assert_eq!(pick_window(&windows, &[], &claude_target).unwrap().id, 10);
+        // Opera, por su carpeta, aunque el título no diga «Navegador Opera GX».
+        assert_eq!(pick_window(&windows, &[], &opera_target).unwrap().id, 20);
+        // Sin ventanas de Opera abiertas, la acción de Opera no se queda con la de Claude.
+        assert!(pick_window(&[claude], &[], &opera_target).is_none());
+    }
+
+    /// Eclipse: sus ventanas son de `javaw.exe`, nieto de `eclipse.exe`. Las pequeñas (la
+    /// pantalla de carga) no cuentan.
+    #[test]
+    fn a_window_of_a_child_process_counts_and_small_ones_do_not() {
+        let eclipse = WindowTarget {
+            exe: Some("eclipse.exe".into()),
+            title_hint: Some("Eclipse IDE".into()),
+            ..WindowTarget::default()
+        };
+        let family = vec!["javaw.exe".to_string(), "eclipse.exe".to_string()];
+        let tiny = WindowInfo {
+            ancestors: family.clone(),
+            size: (200, 120),
+            ..win(1, "javaw.exe", "")
+        };
+        let launcher = WindowInfo {
+            ancestors: family.clone(),
+            size: (700, 450),
+            ..win(3, "javaw.exe", "Eclipse IDE Launcher")
+        };
+        let main = WindowInfo {
+            ancestors: family,
+            ..win(2, "javaw.exe", "ws - Main.java - Eclipse IDE")
+        };
         assert_eq!(
-            pick_window(&windows, &[1], &WindowTarget::default())
-                .unwrap()
-                .id,
-            2
+            pick_window(std::slice::from_ref(&tiny), &[], &eclipse),
+            None
         );
+        assert_eq!(pick_window(&[tiny, main], &[], &eclipse).unwrap().id, 2);
+        // El selector de workspace cuenta como ventana de Eclipse: de esperar a la principal
+        // cuando se cierra se encarga quien coloca (ver `run.rs`).
+        assert_eq!(pick_window(&[launcher], &[], &eclipse).unwrap().id, 3);
     }
 }

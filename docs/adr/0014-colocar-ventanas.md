@@ -74,3 +74,10 @@ Desde el editor de la versión de desarrollo, «Probar» con «Mitad derecha de 
 - **Seguir el proceso lanzado.** No sirve con las apps que reutilizan su proceso, que son justo las que más se usan.
 - **Esperar un tiempo fijo y coger la ventana que esté delante.** Se equivoca si te cambias de ventana mientras tanto.
 - **Zonas propias ya.** Se dejó para después, a propuesta de Darío. El modelo admite añadirlas sin romper nada, como otro tipo de zona.
+
+**Cambio (2026-11-19): de quién es cada ventana.** Antes, una app registrada con un id de app (AUMID) en vez de con la ruta de su `.exe` (Claude, de la Tienda; Opera GX; VS Code) no tenía programa conocido. Se buscaba su nombre en el título de las ventanas y, si no salía, valía **la primera que hubiera**. Así, con «usar la ya abierta», la acción de Opera se quedó con la ventana de Claude. Ahora una ventana es de la acción si coincide (`placement::belongs`):
+- **su id de app**, el que declara la ventana o el de su paquete de la Tienda (Claude);
+- **su programa o el de un proceso padre**: las ventanas de Eclipse son de `javaw.exe`, nieto de `eclipse.exe`;
+- **su carpeta de instalación**: el acceso directo de Opera apunta a `launcher.exe` y sus ventanas son de `opera.exe`, en la misma carpeta. La carpeta de Windows nunca cuenta.
+
+Si no se sabe nada del programa, solo vale una ventana cuyo título lo nombre; nunca la primera que haya. Tampoco cuentan las ventanas de menos de 320 × 200 (pantallas de carga). Comprobado con las ventanas reales de Claude, Opera GX y Eclipse.
