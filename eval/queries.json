@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Consultas reales sobre la carpeta de la carrera (Ingeniería Informática del Software, Uniovi). Ver eval/README.md.",
+  "description": "Consultas reales sobre la carpeta de la carrera (un grado de Ingeniería Informática). Ver eval/README.md.",
   "queries": [
     { "id": "bd-redundancia", "type": "concept", "query": "cómo evitar redundancia en tablas",
       "expect": ["**/BD/**/apuntes_bd_completos.pdf", "**/BD/**/Apuntes_TEST_B_Bases_de_Datos.docx"] },

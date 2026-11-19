@@ -134,7 +134,7 @@ node scripts/e2e.mjs
 
 ## Créditos
 
-- El pulido visual de la Fase 7 se hizo con [unslop](https://github.com/heydamir/unslop), una guía para quitarle a una interfaz el aspecto de hecha con IA. unslop was created by Damir Sokolovsky ([@heydamir](https://x.com/heydamir)), who started the Unslopping series on X. It is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), so keep this credit in any copy or adaptation. La auditoría y la dirección que salieron de ella están en [docs/unslop-direccion.md](docs/unslop-direccion.md).
+- El pulido visual de la Fase 7 se hizo con [unslop](https://github.com/heydamir/unslop), una guía para quitarle a una interfaz el aspecto de hecha con IA. unslop was created by Damir Sokolovsky ([@heydamir](https://x.com/heydamir)), who started the Unslopping series on X. It is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), so keep this credit in any copy or adaptation. La auditoría y la dirección que salieron de ella están en [docs/proceso/unslop-direccion.md](docs/proceso/unslop-direccion.md).
 
 ## Licencia
 **Todos los derechos reservados.** El código es público para que se pueda ver y estudiar, pero no es de código abierto: sin permiso no se puede copiar, modificar ni redistribuir. Sí puedes instalar las versiones publicadas y usarlas. Los componentes de terceros (dependencias, PDFium, el modelo de embeddings) conservan sus propias licencias. Detalles en [LICENSE](LICENSE).

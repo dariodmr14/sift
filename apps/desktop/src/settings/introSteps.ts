@@ -1,5 +1,5 @@
 // La introducción guiada de la primera vez (FEEDBACK 2026-11-18, punto 6, y
-// `docs/propuesta-introduccion.md`): cinco pasos, uno por pantalla. Lógica pura, para
+// `docs/proceso/propuesta-introduccion.md`): cinco pasos, uno por pantalla. Lógica pura, para
 // probarla sin React.
 
 import type { Draft } from "./draft";

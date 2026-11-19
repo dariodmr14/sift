@@ -337,7 +337,7 @@ mod tests {
             })
             .is_ok()
         };
-        assert!(ok(" https://campusvirtual.uniovi.es "));
+        assert!(ok(" https://campus.example.edu "));
         assert!(ok("http://localhost:8080"));
         assert!(!ok("file:///C:/Windows/System32/calc.exe"));
         assert!(!ok("javascript:alert(1)"));
@@ -471,7 +471,7 @@ mod tests {
             assert!(is_local_web(ok), "{ok}");
         }
         for bad in [
-            "http://campus.uniovi.es",
+            "http://campus.example.edu",
             "http://localhost.ejemplo.com",
             "http://localhost@ejemplo.com",
             "http://user@localhost",

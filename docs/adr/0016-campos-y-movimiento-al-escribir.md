@@ -5,7 +5,7 @@
 
 ## Contexto
 
-La auditoría de la Fase 7 ([auditoria-fase-7.md](../auditoria-fase-7.md)) marca dos problemas:
+La auditoría de la Fase 7 ([auditoria-fase-7.md](../proceso/auditoria-fase-7.md)) marca dos problemas:
 
 - **F10:** los bordes de los controles quedaban por debajo de 3:1 frente al fondo. WCAG 1.4.11 pide 3:1 para los bordes que hacen falta para reconocer un control, y un campo sin borde visible se confunde con el texto de alrededor.
 - **F16:** los resultados aparecían de golpe.

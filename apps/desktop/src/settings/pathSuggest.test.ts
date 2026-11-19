@@ -9,7 +9,7 @@ describe("shouldSuggest", () => {
   });
 
   it("no sugiere con una ruta completa", () => {
-    expect(shouldSuggest(String.raw`C:\Users\Darío\tema4.pdf`)).toBe(false);
+    expect(shouldSuggest(String.raw`C:\Users\Núria\tema4.pdf`)).toBe(false);
     expect(shouldSuggest("d:/apuntes")).toBe(false);
     expect(shouldSuggest(String.raw`\\servidor\compartido`)).toBe(false);
   });

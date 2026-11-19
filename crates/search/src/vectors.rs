@@ -64,7 +64,7 @@ impl VectorIndex {
     /// devuelve `None`: hay que reconstruirlo desde SQLite.
     ///
     /// El archivo lo lee Rust y usearch solo recibe los bytes: usearch (C++) abre las rutas
-    /// con la codificación ANSI de Windows y falla con carpetas como `C:\Users\Darío`.
+    /// con la codificación ANSI de Windows y falla con carpetas como `C:\Users\Núria`.
     pub fn load(path: &Path, dims: usize) -> Option<VectorIndex> {
         let bytes = std::fs::read(path).ok()?;
         let index = Index::new(&options(dims)).ok()?;
@@ -194,9 +194,9 @@ mod tests {
         assert_eq!(keys, [-7, 8]); // los hashes negativos también valen
         assert!(near[0].1 > 0.99 && near[0].1 <= 1.001);
 
-        // Una carpeta con tildes y eñes, como `C:\Users\Darío`: usearch sola no sabe abrirla.
+        // Una carpeta con tildes y eñes, como `C:\Users\Núria`: usearch sola no sabe abrirla.
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("índice de Darío").join("v.usearch");
+        let path = dir.path().join("índice de Núria").join("v.usearch");
         idx.save(&path).unwrap();
         let back = VectorIndex::load(&path, 3).unwrap();
         assert_eq!(back.len(), 3);
