@@ -158,7 +158,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 ### 6. Introducción
 - [x] ✅ Las barritas de progreso se quedan.
 - [x] ✅ **Resuelto** (`feat/intro-jerarquia`: la explicación va en texto normal y la acción en su propio bloque; lo de debajo del título entra escalonado, 70 ms entre uno y otro, nada con «reducir movimiento»). Jerarquía: en el paso 1 el ojo salta del título a «Se abre desde cualquier sitio…» y se salta la explicación. Orden natural en todos los pasos (título, explicación, acción), con el texto escalonado tras el título.
-- [ ] ⏳ Más vida: una animación ilustrativa por paso, una sola vez, rápida, coherente con Vidrio y nada con «reducir movimiento». Propuesta antes de implementarla.
+- [x] ✅ **Resuelto** (`feat/intro-animaciones`, propuesta aprobada: una ilustración por paso, una vez, < 1,6 s; último fotograma con «reducir movimiento»). Más vida: una animación ilustrativa por paso, una sola vez, rápida, coherente con Vidrio y nada con «reducir movimiento». Propuesta antes de implementarla.
 
 ### 7. Indicador de carga propio
 - [ ] ⏳ Con la identidad de Sift (el tamiz con sus barras abriéndose y cerrándose) para el primer indexado, la descarga de la búsqueda inteligente y la vista previa si tarda. Versión estática o con pulso suave con «reducir movimiento». Un componente, documentado en Vidrio.

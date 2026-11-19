@@ -21,6 +21,10 @@ export const GLYPHS = {
   dash: "", // Remove
   sync: "", // Sync
   enter: "", // ReturnKey
+  folder: "", // Folder (E8B7 en MDL2 es otra cosa)
+  document: "", // Page
+  search: "", // Search
+  apps: "", // Tiles
 } as const;
 
 export type GlyphName = keyof typeof GLYPHS;

@@ -28,7 +28,11 @@ const check = (name, ok, detail = "") => {
 };
 
 /** Captura la ventana tal como se ve en pantalla (el vidrio lo pinta Windows). */
+/** Lo que tardan en acabar las ilustraciones de cada paso (IntroArt.tsx), con margen. */
+const ART_MS = 1700;
+
 async function grab(page, name) {
+  await sleep(ART_MS);
   const r = await page.evaluate(`({
     x: Math.round(window.screenX * devicePixelRatio),
     y: Math.round(window.screenY * devicePixelRatio),
