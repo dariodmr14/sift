@@ -7,7 +7,8 @@
 //
 // Igual que la bienvenida de scripts/capturas-final.mjs: aparta la carpeta de datos de
 // desarrollo (%APPDATA%\dev.sift.app-dev), arranca sin datos de prueba
-// (SIFT_DEV_NO_SEED=1, así la carpeta sugerida es docs/ del repo y no tus Documentos),
+// (SIFT_DEV_NO_SEED=1) y con los datos de demostración (SIFT_DEV_DEMO=1: la carpeta
+// sugerida es la copia de demo/ en Documentos públicos, no tus Documentos),
 // recorre los cinco pasos, cierra, borra la carpeta nueva y devuelve la de antes. No
 // descarga el modelo («Ahora no»). Sale con 1 si alguna comprobación falla.
 
@@ -120,7 +121,7 @@ async function walk(page) {
   // 3. Prueba a buscar: resultados de verdad del índice.
   await click(page, "Siguiente");
   await sleep(500);
-  await type(page, "Buscar", "vidrio");
+  await type(page, "Buscar", "pago");
   const found = await waitFor(
     () => page.evaluate("document.querySelectorAll('[aria-label=Resultados] button').length"),
     15_000,
@@ -140,8 +141,8 @@ async function walk(page) {
   // 5. Tu primer Espacio.
   await click(page, "Siguiente");
   await sleep(500);
-  await type(page, "Nombre", "Proyecto Sift");
-  await type(page, "Una web que abre (opcional)", "github.com");
+  await type(page, "Nombre", "Tienda de Lucía");
+  await type(page, "Una web que abre (opcional)", "example.com");
   await sleep(300);
   await grab(page, "5-espacio.jpg");
   await click(page, "Crear el Espacio");
@@ -162,7 +163,7 @@ async function main() {
   if (fs.existsSync(backup)) throw new Error(`ya existe ${backup}: revísalo a mano antes de seguir`);
   const had = fs.existsSync(devData);
   if (had) fs.renameSync(devData, backup);
-  const app = startDevApp({ SIFT_DEV_NO_SEED: "1" });
+  const app = startDevApp({ SIFT_DEV_NO_SEED: "1", SIFT_DEV_DEMO: "1" });
   try {
     console.log("Arrancando la versión de desarrollo sin datos…");
     const page = await connect("settings.html");

@@ -1,0 +1,69 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Length 298 >>
+stream
+BT 72 760 Td 18 TL
+/F1 18 Tf (Tema 5. Transacciones) Tj T*
+/F1 12 Tf (Una transacción agrupa varias operaciones que se hacen todas o ninguna.) Tj T*
+/F1 12 Tf (Si algo falla a mitad, se deshace lo hecho \(rollback\) y la base de datos) Tj T*
+/F1 12 Tf (queda como estaba antes de empezar.) Tj T*
+ET
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 3 0 R >>
+endobj
+5 0 obj
+<< /Length 336 >>
+stream
+BT 72 760 Td 18 TL
+/F1 18 Tf (Propiedades ACID) Tj T*
+/F1 12 Tf (Atomicidad: todo o nada.) Tj T*
+/F1 12 Tf (Consistencia: de un estado válido a otro estado válido.) Tj T*
+/F1 12 Tf (Aislamiento: dos transacciones a la vez no se pisan.) Tj T*
+/F1 12 Tf (Durabilidad: lo confirmado \(commit\) no se pierde aunque se vaya la luz.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 250 >>
+stream
+BT 72 760 Td 18 TL
+/F1 18 Tf (Niveles de aislamiento) Tj T*
+/F1 12 Tf (Lectura no confirmada, lectura confirmada, lectura repetible y serializable.) Tj T*
+/F1 12 Tf (Cuanto más aislamiento, menos sorpresas y más esperas entre transacciones.) Tj T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000106 00000 n 
+0000000175 00000 n 
+0000000524 00000 n 
+0000000650 00000 n 
+0000001037 00000 n 
+0000001163 00000 n 
+0000001464 00000 n 
+0000001590 00000 n 
+trailer
+<< /Size 10 /Root 9 0 R >>
+startxref
+1639
+%%EOF

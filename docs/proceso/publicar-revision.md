@@ -2,7 +2,7 @@
 
 > Revisión del 2026-11-19, hecha sobre los 269 commits del historial y los archivos actuales.
 >
-> **Aprobada por Darío el 2026-11-19 y aplicada** (`chore/limpieza-publico`): rutas y webs del campus cambiadas en los tests, «Uniovi» fuera de `eval/`, documentos de trabajo en `docs/proceso/` y las 6 capturas antiguas de `ajustes-espacio` quitadas del árbol. Las capturas `final/` se rehacen con datos de demostración en el PR siguiente. **No se ha instalado gitleaks ni se ha reescrito el historial**: las dos cosas siguen esperando un sí expreso de Darío.
+> **Aprobada por Darío el 2026-11-19 y aplicada** (`chore/limpieza-publico`): rutas y webs del campus cambiadas en los tests, «Uniovi» fuera de `eval/`, documentos de trabajo en `docs/proceso/` y las 6 capturas antiguas de `ajustes-espacio` quitadas del árbol. Las capturas `final/` y las de la introducción ya están rehechas con los datos de demostración (`demo/`, `SIFT_DEV_DEMO=1`): no sale ninguna ruta personal. **No se ha instalado gitleaks ni se ha reescrito el historial**: las dos cosas siguen esperando un sí expreso de Darío.
 
 ## Resumen
 

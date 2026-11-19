@@ -32,8 +32,11 @@ export function WaitEditor({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span>Esperar a que</span>
+        {/* `min-w-0 max-w-full`: con la opción más larga, el desplegable se ensanchaba más
+            que la tarjeta y salía una barra de desplazamiento horizontal en el editor. */}
         <Select
           aria-label="A qué esperar"
+          className="min-w-0 max-w-full"
           value={until.kind}
           onChange={(e) =>
             onChange(withWaitKind(action, e.currentTarget.value as WaitKind))
