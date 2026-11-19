@@ -150,7 +150,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Resuelto** (`feat/editor-acciones`: las apps de la Tienda usan el logo «sin placa» de su paquete; el resto, el icono a 64 px; revisados Claude, Opera, VS Code y Eclipse en tema oscuro y claro). Icono de Claude con esquinas azules raras: icono real en buena resolución, también para apps de la Tienda (MSIX). Revisar Claude, Opera, VS Code y Eclipse.
 
 ### 4. Primeros pasos
-- [ ] ⏳ No salió al instalar porque ya había datos (correcto). Explicar cómo verla como la primera vez sin perder datos y si conviene en Windows Sandbox.
+- [x] ✅ **Respondido** (Ajustes → Primeros pasos → «Ver la introducción otra vez» sin perder nada; tal cual la primera vez, en Windows Sandbox con `scripts/sandbox.ps1`, que es lo recomendado). No salió al instalar porque ya había datos (correcto). Explicar cómo verla como la primera vez sin perder datos y si conviene en Windows Sandbox.
 
 ### 5. Vídeo
 - [x] ✅ Se deja para la versión final, para no usar pantallas antiguas (apuntado en `PLAN.md`).
@@ -164,6 +164,6 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Resuelto** (`feat/indicador-tamiz`: `SiftLoader`/`SiftLoading`, documentado en Vidrio; en el indexado, la descarga, la vista previa lenta y las listas que cargan). Con la identidad de Sift (el tamiz con sus barras abriéndose y cerrándose) para el primer indexado, la descarga de la búsqueda inteligente y la vista previa si tarda. Versión estática o con pulso suave con «reducir movimiento». Un componente, documentado en Vidrio.
 
 ### 8. Instalador personalizado
-- [ ] ⏳ Icono de Sift, imágenes lateral y de cabecera con el estilo de Vidrio, textos en español y «Abrir Sift» al final. Decir qué se puede personalizar y enseñar las imágenes antes.
+- [x] ✅ **Resuelto** (`feat/instalador`, imágenes aprobadas; ADR 0019: icono, imagen lateral y cabecera, solo en español, textos propios y «Abrir Sift»). Icono de Sift, imágenes lateral y de cabecera con el estilo de Vidrio, textos en español y «Abrir Sift» al final. Decir qué se puede personalizar y enseñar las imágenes antes.
 
 Al terminar: instalador 1.0.0-rc.2 y cómo actualizar el instalado.

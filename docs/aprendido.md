@@ -68,3 +68,12 @@ Lo más útil de cada fase de Sift, contado al terminarla. El resumen está en e
 - Verla en pantalla cambió decisiones: el Markdown en un solo párrafo era ilegible, y se pasó a conservar los saltos de línea (salvo en PDF). Los tests no lo habrían visto.
 - Las pruebas de extremo a extremo destapan supuestos: la barra solo busca al cambiar el texto, así que en el primer indexado la prueba fallaba. Ahora repite la búsqueda hasta que hay resultados.
 - Con Enter por el protocolo de DevTools hay que mandar el carácter `\r`: sin él, el botón no se activa.
+
+**1.0.0-rc.2 (feedback con datos reales)**
+- Con datos reales salen cosas que la demostración no enseña. De quién es una ventana no se sabe por su `.exe`: Eclipse pinta con `javaw.exe` (nieto de `eclipse.exe`), Opera con `opera.exe` aunque el acceso directo apunte a `launcher.exe`, y Claude es una app de la Tienda. Hace falta el id de app, los procesos padre y la carpeta de instalación.
+- Una ventana de carga no tiene barra de título (`WS_CAPTION`) y un selector se reconoce por su título: mirarlo en pantalla, con una sonda que apunta cada ventana nueva, valió más que suponer.
+- Esperar a cada ventana antes de seguir sumaba los retrasos. Un solo bucle que coloca en segundo plano, con el mismo reloj que las esperas, es igual de fácil de probar con un reloj de mentira.
+- Las apps de la Tienda: el icono que da el Shell lleva una placa del color de acento; el logo «sin placa» está en su paquete.
+- El número de cada pantalla es el de Windows (`\.\DISPLAYn`), no el orden de izquierda a derecha; el modelo sale del EDID (`DisplayConfigGetDeviceInfo`).
+- Un script de capturas con límite de tiempo puede cortarse antes de devolver la carpeta de datos a su sitio: sin límites en los scripts que apartan datos.
+- NSIS lee los `.nsh` como UTF-8 solo si llevan BOM; los textos en español con tildes lo necesitan.
