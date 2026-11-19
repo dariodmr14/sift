@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { MonitorInfo } from "../bindings";
-import { monitorOptions, ZONE_GROUPS, ZONES } from "./zones";
+import { monitorOptions, placementSummary, ZONE_GROUPS, ZONES } from "./zones";
 
 const screen = (name: string, left: number, primary: boolean): MonitorInfo => {
   const bounds = { left, top: 0, right: left + 1920, bottom: 1080 };
-  return { name, bounds, work: bounds, primary };
+  return { name, number: 0, bounds, work: bounds, primary };
 };
 
 describe("ZONES", () => {
@@ -40,7 +40,7 @@ describe("monitorOptions", () => {
       kind: "primary",
     });
     expect(options.map((o) => [o.value, o.label])).toEqual([
-      ["primary", "Pantalla 1 · DELL U2720Q (principal)"],
+      ["primary", "Pantalla 1 — DELL U2720Q (principal)"],
       ["underMouse", "Donde esté el ratón"],
     ]);
   });
@@ -58,8 +58,8 @@ describe("monitorOptions", () => {
       { kind: "primary" },
     );
     expect(options.map((o) => o.label)).toEqual([
-      "Pantalla 1 · DELL (principal)",
-      "Pantalla 2 · LG",
+      "Pantalla 1 — DELL (principal)",
+      "Pantalla 2 — LG",
       "Donde esté el ratón",
     ]);
     expect(options[0].choice).toEqual({ kind: "primary" });
@@ -75,7 +75,7 @@ describe("monitorOptions", () => {
     const saved = { kind: "specific" as const, name: "DELL", left: 0, top: 0 };
     const options = monitorOptions([screen("DELL", 0, true)], saved);
     expect(options[0]).toMatchObject({
-      label: "Pantalla 1 · DELL (principal)",
+      label: "Pantalla 1 — DELL (principal)",
       choice: saved,
     });
     expect(options.some((o) => o.label.includes("no conectada"))).toBe(false);
@@ -87,5 +87,30 @@ describe("monitorOptions", () => {
     expect(options[options.length - 1].label).toBe(
       "LG (no conectada: se usará la principal)",
     );
+  });
+});
+
+describe("número de Windows", () => {
+  it("manda el número de Windows aunque no vaya de izquierda a derecha", () => {
+    const lg = { ...screen("22EN33", 1920, false), number: 1 };
+    const zowie = { ...screen("ZOWIE XL LCD", 0, true), number: 2 };
+    const options = monitorOptions([zowie, lg], { kind: "primary" });
+    expect(options.map((o) => o.label)).toEqual([
+      "Pantalla 1 — 22EN33",
+      "Pantalla 2 — ZOWIE XL LCD (principal)",
+      "Donde esté el ratón",
+    ]);
+    expect(
+      placementSummary(
+        { zone: "rightHalf", monitor: { kind: "primary" }, reuseWindow: true },
+        options,
+      ),
+    ).toBe("Mitad derecha · Pantalla 2 · usar la ya abierta");
+    expect(
+      placementSummary(
+        { zone: null, monitor: { kind: "primary" }, reuseWindow: false },
+        options,
+      ),
+    ).toBe("No colocar");
   });
 });

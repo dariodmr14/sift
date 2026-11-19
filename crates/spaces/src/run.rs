@@ -997,6 +997,7 @@ mod tests {
             };
             vec![MonitorInfo {
                 name: "DELL".into(),
+                number: 1,
                 bounds,
                 work: bounds,
                 primary: true,

@@ -13,8 +13,11 @@ const ok = <T,>(data: T) => Promise.resolve({ status: "ok" as const, data });
 const bounds = { left: 0, top: 0, right: 1920, bottom: 1080 };
 const commands = {
   listMonitors: vi.fn(() =>
-    ok([{ name: "DELL U2720Q", bounds, work: bounds, primary: true }]),
+    ok([
+      { name: "DELL U2720Q", number: 1, bounds, work: bounds, primary: true },
+    ]),
   ),
+  identifyMonitors: vi.fn(() => ok(null)),
 };
 vi.mock("../bindings", () => ({ commands }));
 
@@ -62,19 +65,39 @@ describe("PlacementEditor", () => {
     expect(onChange).toHaveBeenCalledWith(null);
   });
 
+  it("con una posición elegida sale plegado: una línea con lo elegido y «Cambiar»", async () => {
+    const { user } = setup({
+      zone: "rightHalf",
+      monitor: { kind: "primary" },
+      reuseWindow: false,
+    });
+    expect(
+      await screen.findByText("Posición: Mitad derecha · Pantalla 1"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Cambiar/ }));
+    expect(screen.getByRole("radiogroup")).toBeInTheDocument();
+    expect(
+      screen.getByText("Posición seleccionada: Mitad derecha"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Identificar" }));
+    expect(commands.identifyMonitors).toHaveBeenCalled();
+  });
+
   it("con una zona, la pantalla dice su número y su modelo", async () => {
     const { onChange, user } = setup({
       zone: "leftHalf",
       monitor: { kind: "primary" },
       reuseWindow: true,
     });
+    await user.click(screen.getByRole("button", { name: /^Cambiar/ }));
     const select = screen.getByRole("combobox", { name: "Pantalla" });
     expect(
       await screen.findByRole("option", {
-        name: "Pantalla 1 · DELL U2720Q (principal)",
+        name: "Pantalla 1 — DELL U2720Q (principal)",
       }),
     ).toBeInTheDocument();
-    expect(select).toHaveDisplayValue("Pantalla 1 · DELL U2720Q (principal)");
+    expect(select).toHaveDisplayValue("Pantalla 1 — DELL U2720Q (principal)");
     // Pasar a «No colocar» conserva «usar la ya abierta».
     await user.click(
       screen.getByRole("radio", { name: "No colocar: donde la ponga Windows" }),

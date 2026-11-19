@@ -11,13 +11,15 @@ export default defineConfig(() => ({
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
-  // Dos páginas: el lanzador (index.html) y los ajustes (settings.html). Cada una carga
-  // solo su código, así el lanzador no paga por los ajustes.
+  // Tres páginas: el lanzador (index.html), los ajustes (settings.html) y el número de
+  // «Identificar» pantallas (identify.html). Cada una carga solo su código, así el lanzador
+  // no paga por los ajustes.
   build: {
     rolldownOptions: {
       input: {
         main: fileURLToPath(new URL("index.html", import.meta.url)),
         settings: fileURLToPath(new URL("settings.html", import.meta.url)),
+        identify: fileURLToPath(new URL("identify.html", import.meta.url)),
       },
     },
   },

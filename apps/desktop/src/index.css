@@ -203,6 +203,22 @@ body,
   cursor: default;
 }
 
+/* «Identificar» (identify.html): el número de Windows de cada pantalla, grande, con su
+   borde de acento, como el de Configuración → Pantalla. */
+.sift-identify {
+  display: flex;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 4px solid var(--accent);
+  background: var(--surface-solid);
+  color: var(--fg);
+  font-size: 128px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 @layer components {
   /* Campo de texto o desplegable (F10, F11): borde suave y trazo inferior de 3:1, como los
      TextBox de Fluent; con el foco, el mismo anillo de 2 px que los botones. */

@@ -144,10 +144,10 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Resuelto** (`feat/acciones-sin-esperas`: se lanzan seguidas, en menos de 0,5 s, y las ventanas se colocan en segundo plano según aparecen, también durante las esperas; 60 s por ventana; evento `SpacePlacement` para el panel; ADR 0014 y 0012 actualizados; probado con Eclipse y Opera reales). Cada acción se lanza en cuanto se lanza la anterior; colocar cada ventana va en segundo plano cuando aparece. Solo se espera de verdad con un paso «Esperar a que…». Tiempo para encontrar la ventana más largo (p. ej. 60 s). El panel «en marcha» lo dice («Eclipse abierto · colocando…» y luego ✓). Actualizar el ADR.
 
 ### 3. Editor de acciones
-- [ ] ⏳ Pantallas con el número y el nombre de Configuración → Pantalla («Pantalla 1 — DELL U2720Q (principal)»); manda el número de Windows. Botón «Identificar» que enseña un número grande en cada monitor unos segundos.
-- [ ] ⏳ «Colocar su ventana» plegable: plegada, un resumen («Posición: Mitad derecha · Pantalla 2» o «No colocar») con «Cambiar»; por defecto plegada si ya hay posición.
-- [ ] ⏳ Título claro de la posición elegida («Posición seleccionada: Mitad derecha»).
-- [ ] ⏳ Icono de Claude con esquinas azules raras: icono real en buena resolución, también para apps de la Tienda (MSIX). Revisar Claude, Opera, VS Code y Eclipse.
+- [x] ✅ **Resuelto** (`feat/editor-acciones`: número de `DISPLAYn` y modelo por EDID; «Identificar» probado en las dos pantallas). Pantallas con el número y el nombre de Configuración → Pantalla («Pantalla 1 — DELL U2720Q (principal)»); manda el número de Windows. Botón «Identificar» que enseña un número grande en cada monitor unos segundos.
+- [x] ✅ **Resuelto** (`feat/editor-acciones`). «Colocar su ventana» plegable: plegada, un resumen («Posición: Mitad derecha · Pantalla 2» o «No colocar») con «Cambiar»; por defecto plegada si ya hay posición.
+- [x] ✅ **Resuelto** (`feat/editor-acciones`). Título claro de la posición elegida («Posición seleccionada: Mitad derecha»).
+- [x] ✅ **Resuelto** (`feat/editor-acciones`: las apps de la Tienda usan el logo «sin placa» de su paquete; el resto, el icono a 64 px; revisados Claude, Opera, VS Code y Eclipse en tema oscuro y claro). Icono de Claude con esquinas azules raras: icono real en buena resolución, también para apps de la Tienda (MSIX). Revisar Claude, Opera, VS Code y Eclipse.
 
 ### 4. Primeros pasos
 - [ ] ⏳ No salió al instalar porque ya había datos (correcto). Explicar cómo verla como la primera vez sin perder datos y si conviene en Windows Sandbox.
