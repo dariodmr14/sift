@@ -16,8 +16,9 @@ use std::time::Duration;
 
 use serde::Serialize;
 
+use crate::arrange::{PlacementState, Placer, WINDOW_POLL};
 use crate::model::{Action, CommandSpec, OnTimeout, WaitSpec, WaitUntil};
-use crate::placement::{Placement, WindowManager, pick_monitor, pick_window};
+use crate::placement::{Placement, WindowManager};
 use crate::validate::validate_action;
 
 /// Lo que sabe hacer el sistema operativo. Cada método lanza una sola cosa.
@@ -55,6 +56,9 @@ pub trait Progress {
     /// Empieza el paso `index` (desde 1). `waited` = segundos esperando, si es una espera.
     fn step(&self, index: u32, label: &str, waited: Option<u32>);
     fn cancelled(&self) -> bool;
+    /// En qué va la colocación de la ventana del paso `index` (va en segundo plano: llega
+    /// cuando sea, también después de otros pasos).
+    fn placement(&self, _index: u32, _state: PlacementState) {}
 }
 
 /// Sin UI ni cancelación.
@@ -87,10 +91,7 @@ pub struct ActionOutcome {
     pub note: Option<String>,
 }
 
-/// Cuánto se espera a que aparezca la ventana de lo que se abrió, para colocarla.
-pub const WINDOW_TIMEOUT: Duration = Duration::from_secs(15);
-/// Cada cuánto se mira si ya ha aparecido.
-const WINDOW_POLL: Duration = Duration::from_millis(250);
+pub use crate::arrange::WINDOW_TIMEOUT;
 
 /// Dónde colocar lo que abre una acción, si se ha pedido.
 pub fn placement_of(action: &Action) -> Option<&Placement> {
@@ -130,6 +131,11 @@ enum WaitFailed {
 /// para o no, según diga el paso. Cancelar para. Devuelve qué pasó con cada acción,
 /// también con las que no llegaron a ejecutarse.
 ///
+/// **Las acciones no se esperan unas a otras.** Cada una se lanza en cuanto se ha lanzado
+/// la anterior; colocar su ventana va en segundo plano ([`Placer`]) y se hace cuando
+/// aparece. Solo se espera de verdad en un paso «Esperar a que…», y mientras tanto se
+/// siguen colocando ventanas. Al final se espera a lo que quede por colocar.
+///
 /// Antes de llamar a esto, la app comprueba con [`pending_approvals`] que no quede
 /// ningún comando sin confirmar.
 pub fn run_actions(
@@ -143,6 +149,7 @@ pub fn run_actions(
     // El último comando lanzado para esperarlo (solo si el paso siguiente lo espera).
     let mut child: Option<Box<dyn Child>> = None;
     let mut stop_at: Option<usize> = None;
+    let mut placer = windows.map(Placer::new);
     for (i, action) in actions.iter().enumerate() {
         let index = i as u32 + 1;
         let label = label(action);
@@ -153,7 +160,19 @@ pub fn run_actions(
         progress.step(index, &label, None);
         let mut note = None;
         let (error, ran, stop) = match action {
-            Action::Wait(spec) => match wait(spec, child.take(), waiter, progress, index, &label) {
+            Action::Wait(spec) => match wait(
+                spec,
+                child.take(),
+                waiter,
+                progress,
+                index,
+                &label,
+                &mut || {
+                    if let Some(p) = placer.as_mut() {
+                        p.poll(waiter.now(), progress);
+                    }
+                },
+            ) {
                 Ok(()) => (None, true, false),
                 Err(WaitFailed::Cancelled) => {
                     (Some("cancelado mientras esperaba".to_owned()), false, true)
@@ -172,22 +191,37 @@ pub fn run_actions(
                     Err(e) => (Some(e), true, false),
                 }
             }
-            _ => match (placement_of(action), windows) {
-                (Some(place), Some(wm)) => {
-                    let placed =
-                        open_and_place(action, place, opener, wm, waiter, progress, index, &label);
-                    match placed {
-                        Ok(n) => {
+            _ => match (placement_of(action), placer.as_mut()) {
+                (Some(place), Some(p)) => {
+                    // «Si ya está abierta, usar esa»: no se abre otra.
+                    let reused = if place.reuse_window {
+                        p.reuse(index, action, place, progress)
+                    } else {
+                        None
+                    };
+                    match reused {
+                        Some(n) => {
                             note = n;
                             (None, true, false)
                         }
-                        Err(e) => (Some(e), true, false),
+                        None => {
+                            let before = p.snapshot();
+                            match run_action(action, opener) {
+                                Ok(()) => {
+                                    p.track(index, action, place, before, waiter.now(), progress);
+                                    (None, true, false)
+                                }
+                                Err(e) => (Some(e), true, false),
+                            }
+                        }
                     }
                 }
                 _ => (run_action(action, opener).err(), true, false),
             },
         };
-        // Cancelar mientras se buscaba la ventana: lo abierto sigue, lo demás no se hace.
+        if let Some(p) = placer.as_mut() {
+            p.poll(waiter.now(), progress);
+        }
         let stop = stop || progress.cancelled();
         out.push(ActionOutcome {
             index,
@@ -199,6 +233,18 @@ pub fn run_actions(
         if stop {
             stop_at = Some(i + 1);
             break;
+        }
+    }
+    // Lo que quede por colocar: las acciones ya están lanzadas; se espera a sus ventanas.
+    if let Some(mut p) = placer {
+        while p.busy() && !progress.cancelled() {
+            waiter.sleep(WINDOW_POLL);
+            p.poll(waiter.now(), progress);
+        }
+        for (index, note) in p.finish(progress.cancelled()) {
+            if let Some(o) = out.iter_mut().find(|o| o.index == index) {
+                o.note = note;
+            }
         }
     }
     // Lo que no llegó a ejecutarse, para que la UI diga qué se hizo y qué no.
@@ -214,74 +260,6 @@ pub fn run_actions(
         }
     }
     out
-}
-
-/// Abre `action` y coloca su ventana. `Ok(aviso)` si se abrió (el aviso, si no se pudo
-/// colocar); `Err` si no se pudo abrir.
-#[allow(clippy::too_many_arguments)]
-fn open_and_place(
-    action: &Action,
-    place: &Placement,
-    opener: &dyn Opener,
-    wm: &dyn WindowManager,
-    waiter: &dyn Waiter,
-    progress: &dyn Progress,
-    index: u32,
-    label: &str,
-) -> Result<Option<String>, String> {
-    let target = wm.target(action);
-    // Sin zona solo se reutiliza la ventana abierta: se trae al frente sin moverla y, si no
-    // hay ninguna, se abre como siempre, sin esperar a su ventana.
-    let Some(zone) = place.zone else {
-        if place.reuse_window
-            && let Some(existing) = pick_window(&wm.windows(), &[], &target)
-        {
-            return Ok(wm
-                .focus(existing.id)
-                .err()
-                .map(|e| format!("ya estaba abierta, pero no se pudo traer al frente: {e}")));
-        }
-        return run_action(action, opener).map(|()| None);
-    };
-    let put = |window: isize| -> Option<String> {
-        let monitors = wm.monitors();
-        let Some(monitor) = pick_monitor(&place.monitor, &monitors, wm.mouse()) else {
-            return Some("no encontré ninguna pantalla para colocarla".into());
-        };
-        wm.place(window, zone, monitor)
-            .err()
-            .map(|e| format!("se abrió, pero no se pudo colocar: {e}"))
-    };
-    // «Si ya está abierta, usar esa en vez de abrir otra».
-    if place.reuse_window
-        && let Some(existing) = pick_window(&wm.windows(), &[], &target)
-    {
-        return Ok(put(existing.id));
-    }
-    let before: Vec<isize> = wm.windows().iter().map(|w| w.id).collect();
-    run_action(action, opener)?;
-    let started = waiter.now();
-    let mut reported = None;
-    loop {
-        if let Some(window) = pick_window(&wm.windows(), &before, &target) {
-            return Ok(put(window.id));
-        }
-        let waited = waiter.now().saturating_sub(started);
-        if waited >= WINDOW_TIMEOUT {
-            return Ok(Some(
-                "se abrió, pero no encontré su ventana para colocarla".into(),
-            ));
-        }
-        if progress.cancelled() {
-            return Ok(Some("cancelado antes de colocar su ventana".into()));
-        }
-        let secs = waited.as_secs() as u32;
-        if reported != Some(secs) {
-            progress.step(index, label, Some(secs));
-            reported = Some(secs);
-        }
-        waiter.sleep(WINDOW_POLL);
-    }
 }
 
 fn next_waits_for_command(actions: &[Action], i: usize) -> bool {
@@ -311,6 +289,8 @@ fn check_command(cmd: &CommandSpec) -> Result<(), String> {
 }
 
 /// Espera a que se cumpla `spec`, comprobando cada [`POLL`].
+/// Espera a que se cumpla `spec`. `tick` se llama en cada vuelta: mientras se espera, se
+/// siguen colocando las ventanas que vayan apareciendo.
 fn wait(
     spec: &WaitSpec,
     mut child: Option<Box<dyn Child>>,
@@ -318,6 +298,7 @@ fn wait(
     progress: &dyn Progress,
     index: u32,
     label: &str,
+    tick: &mut dyn FnMut(),
 ) -> Result<(), WaitFailed> {
     let mut checked = Action::Wait(spec.clone());
     validate_action(&mut checked).map_err(WaitFailed::Failed)?;
@@ -364,6 +345,7 @@ fn wait(
             return Err(WaitFailed::Cancelled);
         }
         waiter.sleep(POLL);
+        tick();
     }
 }
 
@@ -611,6 +593,9 @@ mod tests {
         seen: RefCell<Vec<(u32, Option<u32>)>>,
         cancel_at: Option<u32>,
         cancel: Cell<bool>,
+        placements: RefCell<Vec<(u32, PlacementState)>>,
+        /// Cancelar en cuanto haya una ventana pendiente de colocar.
+        cancel_when_placing: bool,
     }
 
     impl Progress for Steps {
@@ -622,6 +607,12 @@ mod tests {
         }
         fn cancelled(&self) -> bool {
             self.cancel.get()
+        }
+        fn placement(&self, index: u32, state: PlacementState) {
+            self.placements.borrow_mut().push((index, state));
+            if self.cancel_when_placing && state == PlacementState::Placing {
+                self.cancel.set(true);
+            }
         }
     }
 
@@ -958,6 +949,7 @@ mod tests {
 
     // --- Colocar ventanas (Fase 6.5) ---
 
+    use crate::arrange::PlacementState;
     use crate::placement::{
         MonitorChoice, MonitorInfo, Placement, Rect, WindowInfo, WindowTarget, Zone,
     };
@@ -1187,11 +1179,11 @@ mod tests {
     }
 
     #[test]
-    fn cancelling_while_looking_for_the_window_stops_the_rest() {
+    fn cancelling_while_placing_keeps_what_was_launched_and_says_so() {
         let rec = Recorder::default();
         let wm = FakeWindows::new(vec![], None, 0);
         let steps = Steps {
-            cancel_at: Some(2),
+            cancel_when_placing: true,
             ..Default::default()
         };
         let actions = [
@@ -1210,8 +1202,349 @@ mod tests {
         );
         assert!(out[0].ran);
         assert!(out[0].note.as_deref().unwrap().contains("cancelado"));
+        // Cancelar justo tras lanzar la app: lo que venía detrás ya no se hace.
         assert!(!out[1].ran);
         assert_eq!(*rec.calls.borrow(), vec!["app:code"]);
+    }
+
+    // --- Colocar sin bloquear (ADR 0014, cambio del 2026-11-19) ---
+
+    /// Una ventana que existe entre `from` y `until` (segundos del reloj de mentira).
+    struct Timed {
+        info: WindowInfo,
+        from: f64,
+        until: f64,
+    }
+
+    fn timed(info: WindowInfo, from: f64, until: f64) -> Timed {
+        Timed { info, from, until }
+    }
+
+    /// Ventanas que aparecen y desaparecen según el reloj de la espera, y apuntan cuándo
+    /// se colocó cada una. Cada acción busca el programa que lleva en su nombre.
+    struct ScriptedWindows<'a> {
+        clock: &'a FakeWaiter,
+        script: Vec<Timed>,
+        placed: RefCell<Vec<(isize, Zone, Duration)>>,
+    }
+
+    impl<'a> ScriptedWindows<'a> {
+        fn new(clock: &'a FakeWaiter, script: Vec<Timed>) -> Self {
+            ScriptedWindows {
+                clock,
+                script,
+                placed: RefCell::new(Vec::new()),
+            }
+        }
+        fn placed_ids(&self) -> Vec<isize> {
+            self.placed.borrow().iter().map(|p| p.0).collect()
+        }
+    }
+
+    impl WindowManager for ScriptedWindows<'_> {
+        fn windows(&self) -> Vec<WindowInfo> {
+            let now = self.clock.now().as_secs_f64();
+            self.script
+                .iter()
+                .filter(|t| t.from <= now && now < t.until)
+                .map(|t| t.info.clone())
+                .collect()
+        }
+        fn monitors(&self) -> Vec<MonitorInfo> {
+            FakeWindows::new(vec![], None, 0).monitors()
+        }
+        fn mouse(&self) -> Option<(i32, i32)> {
+            None
+        }
+        fn target(&self, action: &Action) -> WindowTarget {
+            let exe = match action {
+                Action::OpenApp { app_id, .. } => format!("{app_id}.exe"),
+                _ => "otro.exe".into(),
+            };
+            WindowTarget {
+                exe: Some(exe),
+                ..WindowTarget::default()
+            }
+        }
+        fn place(&self, window: isize, zone: Zone, _: &MonitorInfo) -> Result<(), String> {
+            self.placed
+                .borrow_mut()
+                .push((window, zone, self.clock.now()));
+            Ok(())
+        }
+        fn focus(&self, _: isize) -> Result<(), String> {
+            Ok(())
+        }
+    }
+
+    fn app(id: &str, zone: Zone) -> Action {
+        Action::OpenApp {
+            app_id: id.into(),
+            name: id.into(),
+            place: Some(Placement {
+                zone: Some(zone),
+                monitor: MonitorChoice::Primary,
+                reuse_window: false,
+            }),
+        }
+    }
+
+    fn window_of(id: isize, exe: &str, title: &str) -> WindowInfo {
+        WindowInfo {
+            id,
+            exe: exe.into(),
+            title: title.into(),
+            size: (1200, 800),
+            ..WindowInfo::default()
+        }
+    }
+
+    #[test]
+    fn the_next_action_does_not_wait_for_the_previous_window() {
+        let rec = Recorder::default();
+        let clock = FakeWaiter::ready_after(None);
+        // Eclipse tarda 20 s en enseñar su ventana; Opera, 2 s.
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![
+                timed(window_of(1, "eclipse.exe", "ws - Eclipse IDE"), 20.0, 999.0),
+                timed(window_of(2, "opera.exe", "Opera"), 2.0, 999.0),
+            ],
+        );
+        let steps = Steps::default();
+        let out = run_actions(
+            &[
+                app("eclipse", Zone::RightHalf),
+                app("opera", Zone::LeftHalf),
+            ],
+            &rec,
+            &clock,
+            Some(&wm),
+            &steps,
+        );
+        assert!(out.iter().all(|o| o.ran && o.note.is_none()), "{out:?}");
+        assert_eq!(*rec.calls.borrow(), vec!["app:eclipse", "app:opera"]);
+        // Opera se colocó en cuanto apareció, sin esperar a Eclipse.
+        let placed = wm.placed.borrow();
+        assert_eq!(placed[0].0, 2);
+        assert!(placed[0].2 < Duration::from_secs(3), "{placed:?}");
+        assert_eq!(placed[1].0, 1);
+        assert_eq!(
+            *steps.placements.borrow(),
+            vec![
+                (1, PlacementState::Placing),
+                (2, PlacementState::Placing),
+                (2, PlacementState::Placed),
+                (1, PlacementState::Placed),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_launcher_window_is_skipped_and_the_main_one_is_placed() {
+        let rec = Recorder::default();
+        let clock = FakeWaiter::ready_after(None);
+        // El selector de workspace de Eclipse sale primero; la ventana principal, después.
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![
+                timed(
+                    window_of(1, "eclipse.exe", "Eclipse IDE Launcher"),
+                    1.0,
+                    8.0,
+                ),
+                timed(window_of(2, "eclipse.exe", "ws - Eclipse IDE"), 12.0, 999.0),
+            ],
+        );
+        let out = run_actions(
+            &[app("eclipse", Zone::RightHalf)],
+            &rec,
+            &clock,
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out[0].note.is_none(), "{out:?}");
+        assert_eq!(wm.placed_ids(), vec![2]);
+    }
+
+    fn frameless(mut w: WindowInfo) -> WindowInfo {
+        w.frameless = true;
+        w
+    }
+
+    #[test]
+    fn a_splash_screen_without_title_bar_is_not_placed() {
+        let rec = Recorder::default();
+        let clock = FakeWaiter::ready_after(None);
+        // Lo que hace Eclipse de verdad: pantalla de carga «Eclipse» sin barra de título,
+        // luego el selector y por fin la ventana principal.
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![
+                timed(frameless(window_of(1, "eclipse.exe", "Eclipse")), 0.5, 3.0),
+                timed(
+                    window_of(2, "eclipse.exe", "Eclipse IDE Launcher"),
+                    3.6,
+                    10.0,
+                ),
+                timed(
+                    frameless(window_of(3, "eclipse.exe", "Eclipse")),
+                    10.0,
+                    18.0,
+                ),
+                timed(window_of(4, "eclipse.exe", "ws - Eclipse IDE"), 18.0, 999.0),
+            ],
+        );
+        let out = run_actions(
+            &[app("eclipse", Zone::RightHalf)],
+            &rec,
+            &clock,
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out[0].note.is_none(), "{out:?}");
+        assert_eq!(wm.placed_ids(), vec![4]);
+    }
+
+    #[test]
+    fn an_app_without_title_bar_is_placed_after_a_while() {
+        let rec = Recorder::default();
+        let clock = FakeWaiter::ready_after(None);
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![timed(
+                frameless(window_of(1, "juego.exe", "Juego")),
+                1.0,
+                999.0,
+            )],
+        );
+        let out = run_actions(
+            &[app("juego", Zone::Maximized)],
+            &rec,
+            &clock,
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out[0].note.is_none(), "{out:?}");
+        let placed = wm.placed.borrow();
+        assert_eq!(placed.len(), 1);
+        assert!(placed[0].2 >= crate::arrange::FRAMELESS_GRACE, "{placed:?}");
+    }
+
+    #[test]
+    fn if_the_placed_window_closes_at_once_it_follows_the_next_one() {
+        let rec = Recorder::default();
+        let clock = FakeWaiter::ready_after(None);
+        // Una ventana sin pinta de intermedia que se cierra enseguida (un aviso de
+        // arranque): se coloca, desaparece y se coloca la siguiente.
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![
+                timed(window_of(1, "eclipse.exe", "Eclipse"), 1.0, 1.5),
+                timed(window_of(2, "eclipse.exe", "ws - Eclipse IDE"), 4.0, 999.0),
+            ],
+        );
+        let out = run_actions(
+            &[app("eclipse", Zone::RightHalf)],
+            &rec,
+            &clock,
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out[0].note.is_none(), "{out:?}");
+        assert_eq!(wm.placed_ids(), vec![1, 2]);
+    }
+
+    #[test]
+    fn if_only_a_launcher_appears_it_says_which_window_it_saw() {
+        let rec = Recorder::default();
+        let clock = FakeWaiter::ready_after(None);
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![timed(
+                window_of(1, "eclipse.exe", "Eclipse IDE Launcher"),
+                1.0,
+                999.0,
+            )],
+        );
+        let out = run_actions(
+            &[app("eclipse", Zone::RightHalf)],
+            &rec,
+            &clock,
+            Some(&wm),
+            &NoProgress,
+        );
+        let note = out[0].note.as_deref().unwrap();
+        assert!(note.contains("«Eclipse IDE Launcher»"), "{note}");
+        assert!(wm.placed.borrow().is_empty());
+        assert_eq!(clock.now(), WINDOW_TIMEOUT);
+    }
+
+    #[test]
+    fn two_actions_of_the_same_app_never_share_a_window() {
+        let rec = Recorder::default();
+        let clock = FakeWaiter::ready_after(None);
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![
+                timed(
+                    window_of(1, "code.exe", "uno - Visual Studio Code"),
+                    1.0,
+                    999.0,
+                ),
+                timed(
+                    window_of(2, "code.exe", "dos - Visual Studio Code"),
+                    2.0,
+                    999.0,
+                ),
+            ],
+        );
+        let out = run_actions(
+            &[app("code", Zone::LeftHalf), app("code", Zone::RightHalf)],
+            &rec,
+            &clock,
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out.iter().all(|o| o.note.is_none()), "{out:?}");
+        let placed = wm.placed.borrow();
+        assert_eq!(placed.len(), 2);
+        assert_ne!(placed[0].0, placed[1].0);
+    }
+
+    #[test]
+    fn windows_are_placed_while_a_wait_step_is_waiting() {
+        let rec = Recorder::default();
+        // La web responde a los 10 s; la ventana aparece a los 2 s.
+        let clock = FakeWaiter::ready_after(Some(10));
+        let wm = ScriptedWindows::new(
+            &clock,
+            vec![timed(
+                window_of(1, "code.exe", "Visual Studio Code"),
+                2.0,
+                999.0,
+            )],
+        );
+        let out = run_actions(
+            &[
+                app("code", Zone::LeftHalf),
+                wait_for(
+                    WaitUntil::WebResponds {
+                        url: "http://localhost:3000".into(),
+                    },
+                    30,
+                    OnTimeout::Stop,
+                ),
+            ],
+            &rec,
+            &clock,
+            Some(&wm),
+            &NoProgress,
+        );
+        assert!(out.iter().all(|o| o.error.is_none()), "{out:?}");
+        let placed = wm.placed.borrow();
+        assert_eq!(placed.len(), 1);
+        assert!(placed[0].2 < Duration::from_secs(3), "{placed:?}");
     }
 
     #[test]

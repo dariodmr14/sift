@@ -6,8 +6,8 @@ import {
   type Segment,
   type SpaceProgress_Deserialize,
 } from "../bindings";
-import type { RunStep } from "./mode";
-import { progressText, type SummaryLine } from "./runSummary";
+import { placing, type RunStep } from "./mode";
+import { placingText, progressText, type SummaryLine } from "./runSummary";
 import { Glyph, type GlyphName } from "../components/Glyph";
 import { Keycap } from "../components/Keycap";
 
@@ -82,7 +82,10 @@ export function RunningPanel({
   steps: RunStep[];
   cancelling: boolean;
 }) {
-  const current = steps[steps.length - 1] as RunStep | undefined;
+  const last = steps[steps.length - 1] as RunStep | undefined;
+  // El último paso con colocación ya se lanzó: se pinta como los demás.
+  const current = last && !last.placement ? last : undefined;
+  const launched = current ? steps.slice(0, -1) : steps;
   const left = progress ? progress.total - progress.step : 0;
   return (
     <div
@@ -92,13 +95,8 @@ export function RunningPanel({
     >
       <p className="mb-3 text-sm font-semibold">Abriendo «{title}»</p>
       <ol className="space-y-1.5 text-sm">
-        {steps.slice(0, -1).map((s) => (
-          <li key={s.step} className="flex gap-2">
-            <span className="w-4 shrink-0 text-center text-success">
-              <Glyph name="check" />
-            </span>
-            <span className="min-w-0 truncate">{s.label}</span>
-          </li>
+        {launched.map((s) => (
+          <LaunchedStep key={s.step} step={s} />
         ))}
         {current && (
           <li className="flex gap-2">
@@ -119,17 +117,42 @@ export function RunningPanel({
         )}
       </ol>
       <p className="mt-3 text-xs text-muted">
-        {!current
-          ? cancelling
-            ? "Cancelando…"
-            : "Empezando…"
-          : left > 0
-            ? left === 1
-              ? "Falta 1 paso"
-              : `Faltan ${left} pasos`
-            : "Último paso"}
+        {cancelling
+          ? "Cancelando…"
+          : steps.length === 0
+            ? "Empezando…"
+            : left > 0
+              ? left === 1
+                ? "Falta 1 paso"
+                : `Faltan ${left} pasos`
+              : current
+                ? "Último paso"
+                : placing(steps)
+                  ? "Colocando las ventanas…"
+                  : "Último paso"}
       </p>
     </div>
+  );
+}
+
+const PLACEMENT_MARK = {
+  placing: { mark: "chevronRight", cls: "text-accent-ink" },
+  placed: { mark: "check", cls: "text-success" },
+  notPlaced: { mark: "warning", cls: "text-accent-ink" },
+} as const satisfies Record<string, { mark: GlyphName; cls: string }>;
+
+/** Un paso ya lanzado: ✓, o «abierto · colocando…» mientras se coloca su ventana. */
+function LaunchedStep({ step }: { step: RunStep }) {
+  const { mark, cls } = PLACEMENT_MARK[step.placement ?? "placed"];
+  return (
+    <li className="flex gap-2">
+      <span className={`w-4 shrink-0 text-center ${cls}`}>
+        <Glyph name={mark} />
+      </span>
+      <span className="min-w-0 truncate">
+        {step.placement === "placing" ? placingText(step.label) : step.label}
+      </span>
+    </li>
   );
 }
 

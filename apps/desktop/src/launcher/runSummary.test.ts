@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { progressText, summarize, type Outcome } from "./runSummary";
+import {
+  placingText,
+  progressText,
+  summarize,
+  type Outcome,
+} from "./runSummary";
 
 const ok = (index: number, label: string): Outcome => ({
   index,
@@ -108,5 +113,17 @@ describe("avisos", () => {
     expect(s.needsAttention).toBe(true);
     expect(s.headline).toBe("Abierto, con avisos");
     expect(s.lines.map((l) => l.state)).toEqual(["warning", "ok"]);
+  });
+});
+
+describe("placingText", () => {
+  it("dice qué se abrió y que se está colocando", () => {
+    expect(placingText("Abrir Eclipse")).toBe("Eclipse abierto · colocando…");
+    expect(placingText("Abrir carpeta Facturas")).toBe(
+      "Carpeta Facturas abierta · colocando…",
+    );
+    expect(placingText("Abrir https://ejemplo.es")).toBe(
+      "https://ejemplo.es abierta · colocando…",
+    );
   });
 });

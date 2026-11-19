@@ -221,6 +221,9 @@ pub struct WindowInfo {
     pub app_id: Option<String>,
     /// Ancho y alto en píxeles (0 si no se sabe).
     pub size: (i32, i32),
+    /// Sin barra de título: las pantallas de carga (la de Eclipse) suelen serlo; las
+    /// ventanas principales, aunque se pinten su propia barra (Claude, Opera), no.
+    pub frameless: bool,
 }
 
 /// Qué ventana se busca tras abrir algo: de qué programa y, para desempatar, algo que suela
