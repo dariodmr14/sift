@@ -157,7 +157,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 
 ### 6. Introducción
 - [x] ✅ Las barritas de progreso se quedan.
-- [ ] ⏳ Jerarquía: en el paso 1 el ojo salta del título a «Se abre desde cualquier sitio…» y se salta la explicación. Orden natural en todos los pasos (título, explicación, acción), con el texto escalonado tras el título.
+- [x] ✅ **Resuelto** (`feat/intro-jerarquia`: la explicación va en texto normal y la acción en su propio bloque; lo de debajo del título entra escalonado, 70 ms entre uno y otro, nada con «reducir movimiento»). Jerarquía: en el paso 1 el ojo salta del título a «Se abre desde cualquier sitio…» y se salta la explicación. Orden natural en todos los pasos (título, explicación, acción), con el texto escalonado tras el título.
 - [ ] ⏳ Más vida: una animación ilustrativa por paso, una sola vez, rápida, coherente con Vidrio y nada con «reducir movimiento». Propuesta antes de implementarla.
 
 ### 7. Indicador de carga propio

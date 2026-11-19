@@ -73,6 +73,7 @@
   --dur-veil-out: 260ms;
   --dur-enter: 120ms;
   --dur-step: 200ms; /* cambio de paso en la introducción */
+  --stagger: 70ms; /* entre la explicación y la acción de un paso, tras el título */
   --dur-state: 150ms; /* cambios de estado: coger, soltar, pasar el ratón, pulsar (el «fast» de Fluent) */
   --dur-exit: 80ms;
   --ease-enter: cubic-bezier(0, 0, 0, 1); /* "decelerate" de Fluent */
@@ -369,6 +370,21 @@ body,
   .sift-pop {
     animation: sift-pop var(--dur-state) var(--ease-enter) both;
   }
+  /* Dentro de un paso: título → explicación → acción. El título entra con el paso y lo
+     demás le sigue escalonado (`--stagger` entre uno y otro), con opacidad y 4 px. */
+  .sift-stagger > * {
+    animation: sift-swap var(--dur-step) var(--ease-enter) both;
+    animation-delay: calc(var(--stagger) * 4);
+  }
+  .sift-stagger > :nth-child(1) {
+    animation-delay: var(--stagger);
+  }
+  .sift-stagger > :nth-child(2) {
+    animation-delay: calc(var(--stagger) * 2);
+  }
+  .sift-stagger > :nth-child(3) {
+    animation-delay: calc(var(--stagger) * 3);
+  }
   /* El atajo pulsado: las teclas dibujadas «se hunden» 1 px y se oscurecen. */
   .sift-pressed .sift-key {
     transform: translateY(1px);
@@ -461,7 +477,8 @@ body,
   .sift-step-back,
   .sift-fill,
   .sift-pop,
-  .sift-progress {
+  .sift-progress,
+  .sift-stagger > * {
     animation: none;
   }
   .sift-option.sift-option-soft,
