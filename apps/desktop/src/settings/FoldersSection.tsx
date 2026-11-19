@@ -17,6 +17,7 @@ import {
   unreadReason,
   type StatusLine,
 } from "./folders";
+import { SiftLoader } from "../components/SiftLoader";
 
 /** Ajustes → Carpetas: dónde busca Sift y cómo va. Pensado para cualquiera. */
 export function FoldersSection() {
@@ -141,7 +142,11 @@ function StatusPanel({
     <div className="space-y-2 rounded-window border border-line px-4 py-3">
       <div className="flex items-center justify-between gap-4">
         {/* Se anuncia solo el texto, no cada avance de la barra. */}
-        <p role="status" className="text-sm font-semibold">
+        <p
+          role="status"
+          className="flex items-center gap-2 text-sm font-semibold"
+        >
+          {running && <SiftLoader />}
           {line.text}
         </p>
         <Button

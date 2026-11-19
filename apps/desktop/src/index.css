@@ -74,6 +74,7 @@
   --dur-enter: 120ms;
   --dur-step: 200ms; /* cambio de paso en la introducción */
   --dur-art: 350ms; /* cada pieza de las ilustraciones de la introducción */
+  --dur-loader: 1200ms; /* una vuelta del indicador de carga (abrir y cerrar) */
   --stagger: 70ms; /* entre la explicación y la acción de un paso, tras el título */
   --dur-state: 150ms; /* cambios de estado: coger, soltar, pasar el ratón, pulsar (el «fast» de Fluent) */
   --dur-exit: 80ms;
@@ -476,6 +477,58 @@ body,
   }
 }
 
+/*
+ * Indicador de carga (SiftLoader.tsx): las tres barras del tamiz, de 13, 9 y 5 sobre 16
+ * como el icono, se cierran y se vuelven a abrir por turnos (`scaleX`). Color de acento.
+ */
+.sift-loader {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--loader) * 0.125);
+  width: var(--loader);
+  height: var(--loader);
+  flex-shrink: 0;
+}
+.sift-loader-sm {
+  --loader: 16px;
+}
+.sift-loader-md {
+  --loader: 32px;
+}
+.sift-loader > span {
+  height: calc(var(--loader) * 0.16);
+  border-radius: 999px;
+  background: var(--accent);
+  animation: sift-sieve var(--dur-loader) ease-in-out infinite;
+}
+.sift-loader > span:nth-child(1) {
+  width: 81%;
+}
+.sift-loader > span:nth-child(2) {
+  width: 56%;
+  animation-delay: calc(var(--dur-loader) / 8);
+}
+.sift-loader > span:nth-child(3) {
+  width: 31%;
+  animation-delay: calc(var(--dur-loader) / 4);
+}
+@keyframes sift-sieve {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  40% {
+    transform: scaleX(0.35);
+  }
+}
+@keyframes sift-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 @keyframes sift-step-next {
   from {
     opacity: 0;
@@ -557,6 +610,13 @@ body,
   .sift-stagger > *,
   .sift-art [class*="sift-art-"] {
     animation: none;
+  }
+  /* El indicador de carga no se mueve: late despacio, solo con opacidad. */
+  .sift-loader > span {
+    animation: none;
+  }
+  .sift-loader {
+    animation: sift-pulse calc(var(--dur-loader) * 2) ease-in-out infinite;
   }
   /* El último fotograma: la tarjeta del Espacio ya se ha abierto en ventanas. */
   .sift-art-open {

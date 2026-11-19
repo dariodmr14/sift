@@ -11,6 +11,7 @@ import { Highlighted } from "./panels";
 import { previewReason, reasonLabel } from "./preview";
 import { spaceSteps } from "./spacePreview";
 import type { PreviewState } from "./usePreview";
+import { SiftLoading } from "../components/SiftLoader";
 
 export const NO_PREVIEW_TEXT = "Este resultado no tiene vista previa.";
 
@@ -132,7 +133,14 @@ export function PreviewPanel({
               />
             </p>
           )
-        ) : null}
+        ) : (
+          // Si la vista previa tarda (un PDF grande), el tamiz; lo rápido no parpadea.
+          <SiftLoading
+            label="Preparando la vista previa…"
+            delay={300}
+            size="md"
+          />
+        )}
       </div>
     </section>
   );

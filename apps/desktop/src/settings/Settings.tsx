@@ -16,6 +16,7 @@ import { StatusSection } from "./StatusSection";
 import { Intro } from "./Intro";
 import { Welcome } from "./Welcome";
 import { Button } from "./ui";
+import { SiftLoading } from "../components/SiftLoader";
 
 /** Cómo escucha Sift el atajo, explicado (solo en «Avanzado»). */
 
@@ -138,14 +139,18 @@ function Settings() {
                   )}
                 </>
               ) : (
-                <p>Cargando…</p>
+                <SiftLoading label="Cargando…" delay={300} />
               )}
             </div>
           )}
           {page === "status" && (
             <div className="h-full overflow-y-auto p-6">
               <Section title="Estado">
-                {status ? <StatusSection status={status} /> : <p>Cargando…</p>}
+                {status ? (
+                  <StatusSection status={status} />
+                ) : (
+                  <SiftLoading label="Cargando…" delay={300} />
+                )}
               </Section>
             </div>
           )}

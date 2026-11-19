@@ -4,6 +4,7 @@ import { SpaceIcon, svgDataUrl } from "../components/SpaceIcon";
 import type { Icon } from "./draft";
 import { buildSvg, searchIcons, type IconNode } from "./iconLibrary";
 import { Button, ErrorText, TextInput } from "./ui";
+import { SiftLoading } from "../components/SiftLoader";
 
 type Tab = Icon["kind"];
 
@@ -144,7 +145,7 @@ function LibraryTab({
         onChange={(e) => setQuery(e.currentTarget.value)}
       />
       {!library ? (
-        <p className="text-xs text-muted">Cargando iconos…</p>
+        <SiftLoading label="Cargando iconos…" delay={300} />
       ) : (
         <div className="grid max-h-56 grid-cols-12 gap-1 overflow-y-auto">
           {hits.map((hit) => {

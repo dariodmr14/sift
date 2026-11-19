@@ -32,6 +32,15 @@ describe("tokens de diseño", () => {
     );
   });
 
+  // El indicador de carga (SiftLoader): con «reducir movimiento», las barras quietas y
+  // solo un pulso de opacidad.
+  it("con «reducir movimiento» el indicador de carga solo late", () => {
+    const css = readFileSync(join(import.meta.dirname, "index.css"), "utf8");
+    const reduce = css.slice(css.lastIndexOf("prefers-reduced-motion"));
+    expect(reduce).toMatch(/\.sift-loader > span \{\s*animation: none;/);
+    expect(reduce).toMatch(/\.sift-loader \{\s*animation: sift-pulse/);
+  });
+
   it.each(files.map((f) => [relative(import.meta.dirname, f), f]))(
     "%s usa solo tokens",
     (_name, path) => {
