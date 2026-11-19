@@ -8,7 +8,7 @@ describe("shortFolder", () => {
 
   it("acorta las rutas largas por el principio", () => {
     expect(
-      shortFolder(String.raw`C:\Users\Darío\Documents\Uni\BD\Teoría\tema4.pdf`),
+      shortFolder(String.raw`C:\Users\Núria\Documents\Uni\BD\Teoría\tema4.pdf`),
     ).toBe(String.raw`…\Uni\BD\Teoría`);
   });
 

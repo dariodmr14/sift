@@ -36,7 +36,7 @@ Lo más útil de cada fase de Sift, contado al terminarla. El resumen está en e
 - Los pesos y umbrales «a ojo» del diseño estaban mal: el umbral de parecido no ayudaba (la protección real es el tipo de búsqueda) y un tercer recuperador que parecía obvio (BM25 con alguna de las palabras) no mejoraba nada. `eval/` lo dijo en minutos.
 - Lo caro de una búsqueda no era el modelo (4 ms) sino cargar cien documentos de Tantivy para enseñar diez: leer solo ids de las columnas rápidas y cargar el texto al final bajó la p95 de 70 a 37 ms.
 - Un vector por **texto** (hash) y no por fragmento: el 40 % de los fragmentos estaban repetidos, y reindexar un archivo no tira sus vectores.
-- usearch (C++) abre las rutas con la codificación ANSI de Windows: con `C:\Users\Darío` no guardaba el índice. Los tests no lo vieron porque la carpeta temporal se llama `DARO~1`; ahora hay uno con tildes.
+- usearch (C++) abre las rutas con la codificación ANSI de Windows: con `C:\Users\Núria` no guardaba el índice. Los tests no lo vieron porque la carpeta temporal tiene un nombre corto sin tildes (del tipo `NURIA~1`); ahora hay uno con tildes.
 
 **Fase 5**
 - Diagnosticar con datos y no con intuición: la sospecha era el modelo, y la causa grande resultó otra. La búsqueda de palabras devolvía *cero* resultados con frases como «cómo evitar redundancia en tablas» (ningún fragmento tiene todas las palabras), así que la fusión solo veía la semántica. Admitir que falte una palabra subió el total de 0,65 a 0,75.

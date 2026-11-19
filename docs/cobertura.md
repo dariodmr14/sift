@@ -64,4 +64,4 @@ cargo llvm-cov --workspace --html           # informe navegable en target/llvm-c
 
 - Los tests de componentes de Ajustes necesitan dos apaños para jsdom: `window.matchMedia`, que usa `Sortable.tsx` para «reducir movimiento», y `listMonitors`, que pide `PlacementEditor`. Si más tests los necesitan, irían a un archivo de preparación común.
 - `FoldersSection.ui.test.tsx` lleva `.ui` porque ya existe `FoldersSection.test.ts` (lógica pura). Con el mismo nombre, TypeScript y ESLint se confunden.
-- **Accesibilidad:** `Field` mete el texto de ayuda dentro de la `<label>`, así que el nombre accesible del campo incluye toda la ayuda y un lector de pantalla la lee entera. Lo mejor es pasar la ayuda con `aria-describedby`. Está en `docs/pendiente-decidir.md`.
+- **Accesibilidad:** `Field` mete el texto de ayuda dentro de la `<label>`, así que el nombre accesible del campo incluye toda la ayuda y un lector de pantalla la lee entera. Lo mejor es pasar la ayuda con `aria-describedby`. Está en `docs/proceso/pendiente-decidir.md`.

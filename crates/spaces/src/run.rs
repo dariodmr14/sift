@@ -925,7 +925,7 @@ mod tests {
         let rec = Recorder::default();
         let waiter = FakeWaiter::ready_after(Some(0));
         let actions = vec![wait_for(
-            web("http://campus.uniovi.es"),
+            web("http://campus.example.edu"),
             60,
             OnTimeout::Stop,
         )];

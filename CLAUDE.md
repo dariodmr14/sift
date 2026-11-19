@@ -19,8 +19,8 @@ Todo es local: lo único que sale del PC son descargas puntuales (modelo de embe
 | `FEEDBACK.md` | Lo que nota Darío usando la app |
 | `docs/adr/` | Decisiones de arquitectura (plantilla: `docs/adr/0001-*.md`) |
 | `docs/design-system.md` | Sistema de diseño Vidrio |
-| `docs/unslop-direccion.md` | Dirección de diseño aprobada (carácter, momentos y firma) |
-| `docs/auditoria-fase-7.md` | Auditoría y orden de los bloques de la Fase 7 |
+| `docs/proceso/unslop-direccion.md` | Dirección de diseño aprobada (carácter, momentos y firma) |
+| `docs/proceso/auditoria-fase-7.md` | Auditoría y orden de los bloques de la Fase 7 |
 | `docs/capturas/` | Capturas de antes y después de las pasadas de diseño |
 | `docs/aprendido.md` | Lo aprendido en cada fase |
 | `docs/instalar.md` | Instalar la versión de uso diario |

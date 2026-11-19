@@ -5,7 +5,7 @@
 
 ## Contexto
 
-La primera vez que se abre Sift, la barra solo dice «Aún no tienes Espacios». No pide carpetas para buscar y, si se usa la búsqueda por significado, descarga unos 120 MB del modelo sin preguntar. La auditoría de la Fase 7 (F7, en [auditoria-fase-7.md](../auditoria-fase-7.md)) lo marca como problema.
+La primera vez que se abre Sift, la barra solo dice «Aún no tienes Espacios». No pide carpetas para buscar y, si se usa la búsqueda por significado, descarga unos 120 MB del modelo sin preguntar. La auditoría de la Fase 7 (F7, en [auditoria-fase-7.md](../proceso/auditoria-fase-7.md)) lo marca como problema.
 
 El criterio de «hecho» de la Fase 7 es que una persona que no conoce Sift lo usa sin explicaciones. Ahora mismo no se cumple en el primer arranque.
 
