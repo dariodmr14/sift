@@ -253,6 +253,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             spaces::check_wait,
             spaces::cancel_space_run,
             spaces::list_monitors,
+            spaces::identify_monitors,
             spaces::list_apps,
             spaces::get_icons,
             spaces::pick_path,

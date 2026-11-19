@@ -441,7 +441,70 @@ mod platform {
         BOOL(1)
     }
 
+    /// El nombre de cada pantalla según su EDID («ZOWIE XL LCD»), por su dispositivo
+    /// (`\\.\DISPLAY1`): el mismo que enseña Configuración de Windows.
+    fn friendly_names() -> std::collections::HashMap<String, String> {
+        use windows::Win32::Devices::Display::{
+            DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME, DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME,
+            DISPLAYCONFIG_MODE_INFO, DISPLAYCONFIG_PATH_INFO, DISPLAYCONFIG_SOURCE_DEVICE_NAME,
+            DISPLAYCONFIG_TARGET_DEVICE_NAME, DisplayConfigGetDeviceInfo,
+            GetDisplayConfigBufferSizes, QDC_ONLY_ACTIVE_PATHS, QueryDisplayConfig,
+        };
+        let mut out = std::collections::HashMap::new();
+        let utf16 = |s: &[u16]| {
+            let end = s.iter().position(|&c| c == 0).unwrap_or(s.len());
+            String::from_utf16_lossy(&s[..end])
+        };
+        // SAFETY: los búferes tienen el tamaño que pide Windows y viven durante cada
+        // llamada; cada estructura lleva su tamaño en la cabecera, como piden las API.
+        unsafe {
+            let (mut paths_len, mut modes_len) = (0u32, 0u32);
+            if GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &mut paths_len, &mut modes_len)
+                .is_err()
+            {
+                return out;
+            }
+            let mut paths = vec![DISPLAYCONFIG_PATH_INFO::default(); paths_len as usize];
+            let mut modes = vec![DISPLAYCONFIG_MODE_INFO::default(); modes_len as usize];
+            if QueryDisplayConfig(
+                QDC_ONLY_ACTIVE_PATHS,
+                &mut paths_len,
+                paths.as_mut_ptr(),
+                &mut modes_len,
+                modes.as_mut_ptr(),
+                None,
+            )
+            .is_err()
+            {
+                return out;
+            }
+            for path in &paths[..paths_len as usize] {
+                let mut source = DISPLAYCONFIG_SOURCE_DEVICE_NAME::default();
+                source.header.r#type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME;
+                source.header.size = std::mem::size_of::<DISPLAYCONFIG_SOURCE_DEVICE_NAME>() as u32;
+                source.header.adapterId = path.sourceInfo.adapterId;
+                source.header.id = path.sourceInfo.id;
+                let mut target = DISPLAYCONFIG_TARGET_DEVICE_NAME::default();
+                target.header.r#type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME;
+                target.header.size = std::mem::size_of::<DISPLAYCONFIG_TARGET_DEVICE_NAME>() as u32;
+                target.header.adapterId = path.targetInfo.adapterId;
+                target.header.id = path.targetInfo.id;
+                if DisplayConfigGetDeviceInfo(&mut source.header) != 0
+                    || DisplayConfigGetDeviceInfo(&mut target.header) != 0
+                {
+                    continue;
+                }
+                let name = utf16(&target.monitorFriendlyDeviceName);
+                if !name.is_empty() {
+                    out.insert(utf16(&source.viewGdiDeviceName), name);
+                }
+            }
+        }
+        out
+    }
+
     pub fn monitors() -> Vec<MonitorInfo> {
+        let friendly = friendly_names();
         let mut handles: Vec<HMONITOR> = Vec::new();
         // SAFETY: ver `collect_monitor`.
         unsafe {
@@ -481,8 +544,13 @@ mod platform {
                                 String::from_utf16_lossy(&device.DeviceString[..end])
                             })
                             .filter(|n| !n.is_empty() && !n.to_lowercase().contains("generic"));
+                    let end = info.szDevice.iter().position(|&c| c == 0).unwrap_or(32);
+                    let device_name = String::from_utf16_lossy(&info.szDevice[..end]);
+                    let number = display_number(&device_name).unwrap_or(i as u32 + 1);
+                    let model = friendly.get(&device_name).cloned().or(model);
                     Some(MonitorInfo {
-                        name: model.unwrap_or_else(|| format!("Pantalla {}", i + 1)),
+                        name: model.unwrap_or_else(|| format!("Pantalla {number}")),
+                        number,
                         bounds: to_rect(info.monitorInfo.rcMonitor),
                         work: to_rect(info.monitorInfo.rcWork),
                         primary: info.monitorInfo.dwFlags & MONITORINFOF_PRIMARY != 0,
@@ -490,6 +558,16 @@ mod platform {
                 }
             })
             .collect()
+    }
+
+    /// `\\.\DISPLAY2` → 2.
+    pub fn display_number(device: &str) -> Option<u32> {
+        device
+            .rsplit("DISPLAY")
+            .next()
+            .filter(|_| device.contains("DISPLAY"))?
+            .parse()
+            .ok()
     }
 
     pub fn mouse() -> Option<(i32, i32)> {
@@ -900,6 +978,27 @@ mod tests {
                 windows::Win32::UI::WindowsAndMessaging::WM_CLOSE,
                 windows::Win32::Foundation::WPARAM(0),
                 windows::Win32::Foundation::LPARAM(0),
+            );
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn the_windows_number_comes_from_the_device_name() {
+        assert_eq!(platform::display_number(r"\.\DISPLAY2"), Some(2));
+        assert_eq!(platform::display_number(r"\.\DISPLAY12"), Some(12));
+        assert_eq!(platform::display_number("otro"), None);
+    }
+
+    /// Enseña las pantallas como las ve Sift (número de Windows y modelo).
+    /// `cargo test -p sift-desktop print_monitors -- --ignored --nocapture`
+    #[test]
+    #[ignore = "solo informa"]
+    fn print_monitors() {
+        for m in Win32Windows.monitors() {
+            eprintln!(
+                "{} · {} · principal: {} · {:?}",
+                m.number, m.name, m.primary, m.bounds
             );
         }
     }

@@ -10,8 +10,14 @@ import {
   type Zone,
 } from "../bindings";
 import { Glyph } from "../components/Glyph";
-import { Field, Select } from "./ui";
-import { monitorOptions, sameChoice, ZONE_GROUPS, ZONES } from "./zones";
+import { Button, Field, Select } from "./ui";
+import {
+  monitorOptions,
+  placementSummary,
+  sameChoice,
+  ZONE_GROUPS,
+  ZONES,
+} from "./zones";
 
 export interface PlacementValue {
   /** `null` = no colocarla (pero sí usar la ya abierta, si `reuseWindow`). */
@@ -63,6 +69,8 @@ export function PlacementEditor({
   onChange: (value: PlacementValue | null) => void;
 }) {
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
+  // Plegado si ya hay una posición elegida: una línea con lo elegido y «Cambiar».
+  const [open, setOpen] = useState(!value?.zone);
   useEffect(() => {
     let alive = true;
     void commands.listMonitors().then((r) => {
@@ -85,9 +93,35 @@ export function PlacementEditor({
   const set = (next: Partial<PlacementValue>) =>
     onChange(normalizePlacement({ ...current, ...next }));
 
+  const summary = placementSummary(current, options);
+  if (!open)
+    return (
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <span className="block text-xs text-muted">Colocar su ventana</span>
+          <p className="truncate text-sm">
+            {current.zone ? `Posición: ${summary}` : summary}
+          </p>
+        </div>
+        <Button
+          onClick={() => setOpen(true)}
+          aria-label={`Cambiar dónde colocar su ventana (${summary})`}
+        >
+          Cambiar
+        </Button>
+      </div>
+    );
+
   return (
     <div className="space-y-3">
-      <span className="block text-xs text-muted">Colocar su ventana</span>
+      <div className="flex items-center gap-3">
+        <span className="flex-1 text-xs text-muted">Colocar su ventana</span>
+        {current.zone && (
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Listo
+          </Button>
+        )}
+      </div>
       <div
         role="radiogroup"
         aria-label="Dónde colocar su ventana"
@@ -124,30 +158,41 @@ export function PlacementEditor({
           </div>
         ))}
       </div>
-      <p className="text-sm">
+      <p className="text-sm font-semibold" aria-live="polite">
+        Posición seleccionada:{" "}
         {current.zone
           ? ZONES.find((z) => z.id === current.zone)?.label
           : NO_PLACE_LABEL}
       </p>
       {current.zone && (
-        <Field label="Pantalla">
-          <Select
-            value={selectedMonitor}
-            onChange={(e) => {
-              const option = options.find(
-                (o) => o.value === e.currentTarget.value,
-              );
-              if (option) set({ monitor: option.choice });
-            }}
-            className="w-full max-w-sm"
+        <div className="flex items-end gap-2">
+          <div className="w-full max-w-sm">
+            <Field label="Pantalla">
+              <Select
+                value={selectedMonitor}
+                onChange={(e) => {
+                  const option = options.find(
+                    (o) => o.value === e.currentTarget.value,
+                  );
+                  if (option) set({ monitor: option.choice });
+                }}
+                className="w-full"
+              >
+                {options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <Button
+            onClick={() => void commands.identifyMonitors()}
+            title="Enseña unos segundos el número de cada pantalla"
           >
-            {options.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
+            Identificar
+          </Button>
+        </div>
       )}
       <label className="flex items-center gap-2 text-sm">
         <input

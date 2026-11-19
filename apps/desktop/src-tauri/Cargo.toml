@@ -51,6 +51,7 @@ tempfile = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows = { workspace = true, features = [
+  "Win32_Devices_Display",
   "Win32_Graphics_Dwm",
   "Win32_Graphics_Gdi",
   "Win32_Storage_EnhancedStorage",

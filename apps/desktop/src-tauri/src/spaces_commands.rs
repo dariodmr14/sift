@@ -307,6 +307,57 @@ pub async fn list_monitors() -> Result<Vec<sift_spaces::placement::MonitorInfo>,
     run_blocking(|| Ok(crate::window_manager::Win32Windows.monitors())).await
 }
 
+/// Cuánto se ve el número de cada pantalla al pulsar «Identificar».
+const IDENTIFY_FOR: std::time::Duration = std::time::Duration::from_secs(3);
+
+/// «Identificar»: enseña unos segundos, en cada pantalla, el número que le da Windows (el
+/// mismo del desplegable), para saber cuál es cuál. Como el botón de Configuración.
+#[tauri::command]
+#[specta::specta]
+pub async fn identify_monitors(app: AppHandle) -> Result<(), AppError> {
+    use sift_spaces::placement::WindowManager;
+    use tauri::{PhysicalPosition, WebviewUrl, WebviewWindowBuilder};
+    let monitors = run_blocking(|| Ok(crate::window_manager::Win32Windows.monitors())).await?;
+    let mut labels = Vec::new();
+    for m in monitors {
+        let label = format!("identify-{}", m.number);
+        if let Some(old) = app.get_webview_window(&label) {
+            let _ = old.close();
+        }
+        let built =
+            WebviewWindowBuilder::new(&app, &label, WebviewUrl::App("identify.html".into()))
+                .initialization_script(format!("window.__siftScreen = {};", m.number))
+                .title(format!("Pantalla {}", m.number))
+                .inner_size(200.0, 200.0)
+                .decorations(false)
+                .resizable(false)
+                .always_on_top(true)
+                .skip_taskbar(true)
+                .focused(false)
+                .visible(false)
+                .build();
+        match built {
+            Ok(window) => {
+                // Arriba a la izquierda de su pantalla, con margen.
+                let _ = window
+                    .set_position(PhysicalPosition::new(m.bounds.left + 48, m.bounds.top + 48));
+                let _ = window.show();
+                labels.push(label);
+            }
+            Err(e) => tracing::warn!("no se pudo enseñar el número de la pantalla: {e}"),
+        }
+    }
+    std::thread::spawn(move || {
+        std::thread::sleep(IDENTIFY_FOR);
+        for label in labels {
+            if let Some(w) = app.get_webview_window(&label) {
+                let _ = w.close();
+            }
+        }
+    });
+    Ok(())
+}
+
 /// Cancela el Espacio en marcha (Esc en la barra). Lo ya abierto o lanzado sigue abierto;
 /// lo que faltaba no se ejecuta.
 #[tauri::command]

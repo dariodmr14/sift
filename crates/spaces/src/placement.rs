@@ -165,12 +165,15 @@ pub fn with_invisible_borders(target: Rect, window: Rect, visible: Rect) -> Rect
 }
 
 /// Una pantalla.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[cfg_attr(feature = "specta", derive(specta::Type))]
 #[serde(rename_all = "camelCase")]
 pub struct MonitorInfo {
     /// Nombre del modelo si Windows lo sabe («DELL U2720Q»); si no, «Pantalla 2».
     pub name: String,
+    /// El número que le da Windows (el de Configuración → Pantalla y el de «Identificar»;
+    /// sale de `\\.\DISPLAY2`). 0 si no se sabe.
+    pub number: u32,
     /// La pantalla entera y el área útil (sin la barra de tareas).
     pub bounds: Rect,
     pub work: Rect,
@@ -419,6 +422,7 @@ mod tests {
             bottom: 1080,
         };
         MonitorInfo {
+            number: 0,
             name: name.into(),
             bounds,
             work: Rect {

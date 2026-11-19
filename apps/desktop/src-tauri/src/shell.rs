@@ -32,7 +32,13 @@ impl IconCache {
         if let Some(hit) = self.0.lock().unwrap_or_else(|p| p.into_inner()).get(key) {
             return hit.clone();
         }
-        let loaded = platform::icon_data_url(&parsing_name(key));
+        // Las apps de la Tienda (id con «!»): su logo «sin placa». El icono que da el Shell
+        // lleva detrás una placa del color de acento (las esquinas azules del de Claude).
+        let loaded = key
+            .strip_prefix("app:")
+            .filter(|id| id.contains('!'))
+            .and_then(platform::package_logo)
+            .or_else(|| platform::icon_data_url(&parsing_name(key)));
         // Solo se guarda lo que salió bien: un fallo puede ser pasajero (la carpeta se acaba
         // de crear, Windows aún no tiene listo su icono) y se reintenta la próxima vez.
         if loaded.is_some() {
@@ -55,6 +61,58 @@ fn parsing_name(key: &str) -> String {
         Some(id) => format!("shell:AppsFolder\\{id}"),
         None => key.to_owned(),
     }
+}
+
+/// El logo pequeño de una app de la Tienda en su manifiesto (`Square44x44Logo`), p. ej.
+/// `assets\\Square44x44Logo.png`. Busca primero el de esa app (`Id="…"`), por si el paquete
+/// trae varias.
+fn manifest_logo(manifest: &str, app: &str) -> Option<String> {
+    const ATTR: &str = "Square44x44Logo=\"";
+    let from = manifest.find(&format!("Id=\"{app}\"")).unwrap_or(0);
+    let start = manifest[from..]
+        .find(ATTR)
+        .map(|i| from + i)
+        .or_else(|| manifest.find(ATTR))?
+        + ATTR.len();
+    let end = manifest[start..].find('"')? + start;
+    Some(manifest[start..end].replace('/', "\\"))
+}
+
+/// De los archivos de la carpeta del logo, la variante «sin placa» (la que Windows usa en la
+/// barra de tareas) del tamaño más cercano a `want` por arriba; si no hay, la más grande.
+/// `stem` es el nombre del logo sin extensión, en minúsculas.
+fn pick_unplated(files: &[String], stem: &str, want: u32) -> Option<String> {
+    let size_of = |name: &str| -> Option<u32> {
+        let lower = name.to_lowercase();
+        if !lower.starts_with(&format!("{stem}.")) || !lower.ends_with(".png") {
+            return None;
+        }
+        // «altform-unplated» y su variante para el tema claro; nunca las de contraste alto.
+        if !lower.contains("altform-unplated") && !lower.contains("altform-lightunplated") {
+            return None;
+        }
+        if lower.contains("contrast-") {
+            return None;
+        }
+        let size = lower.split("targetsize-").nth(1)?;
+        size.split(|c: char| !c.is_ascii_digit())
+            .next()?
+            .parse()
+            .ok()
+    };
+    let mut sized: Vec<(u32, bool, &String)> = files
+        .iter()
+        .filter_map(|f| size_of(f).map(|n| (n, f.to_lowercase().contains("lightunplated"), f)))
+        .collect();
+    // Antes la normal que la del tema claro; luego, la más pequeña que llegue a `want`.
+    sized.sort_by_key(|(n, light, _)| {
+        (
+            *n < want,
+            *light,
+            if *n >= want { *n } else { u32::MAX - n },
+        )
+    });
+    sized.first().map(|(_, _, f)| (*f).clone())
 }
 
 /// Abre el Explorador en la carpeta del archivo, con el archivo seleccionado.
@@ -146,8 +204,64 @@ mod platform {
 
     use super::InstalledApp;
 
-    /// Tamaño del icono en píxeles (se ve nítido también con escalado al 150 %).
-    const ICON_PX: i32 = 48;
+    /// Tamaño del icono en píxeles (se ve nítido también con escalado al 200 %).
+    const ICON_PX: i32 = 64;
+
+    /// El logo «sin placa» de una app de la Tienda (`Familia_editor!App`), como data URL.
+    /// `None` si no se encuentra: entonces se usa el icono del Shell.
+    pub fn package_logo(app_id: &str) -> Option<String> {
+        use windows::Win32::Foundation::ERROR_INSUFFICIENT_BUFFER;
+        use windows::Win32::Storage::Packaging::Appx::{
+            GetPackagePathByFullName, GetPackagesByPackageFamily,
+        };
+        use windows::core::PWSTR;
+
+        let (family, app) = app_id.split_once('!')?;
+        let family = HSTRING::from(family);
+        // SAFETY: cada búfer tiene el tamaño que pide Windows en la primera llamada y vive
+        // durante la segunda.
+        let dir = unsafe {
+            let (mut count, mut len) = (0u32, 0u32);
+            let first = GetPackagesByPackageFamily(&family, &mut count, None, &mut len, None);
+            if first != ERROR_INSUFFICIENT_BUFFER || count == 0 {
+                return None;
+            }
+            let mut names = vec![PWSTR::null(); count as usize];
+            let mut buf = vec![0u16; len as usize];
+            GetPackagesByPackageFamily(
+                &family,
+                &mut count,
+                Some(names.as_mut_ptr()),
+                &mut len,
+                Some(PWSTR(buf.as_mut_ptr())),
+            )
+            .ok()
+            .ok()?;
+            let full = PCWSTR(names.first()?.0);
+            let mut path_len = 0u32;
+            let _ = GetPackagePathByFullName(full, &mut path_len, None);
+            let mut path = vec![0u16; path_len as usize];
+            GetPackagePathByFullName(full, &mut path_len, Some(PWSTR(path.as_mut_ptr())))
+                .ok()
+                .ok()?;
+            let end = path.iter().position(|&c| c == 0).unwrap_or(path.len());
+            std::path::PathBuf::from(String::from_utf16_lossy(&path[..end]))
+        };
+        let manifest = std::fs::read_to_string(dir.join("AppxManifest.xml")).ok()?;
+        let logo = dir.join(super::manifest_logo(&manifest, app)?);
+        let folder = logo.parent()?;
+        let stem = logo.file_stem()?.to_string_lossy().to_lowercase();
+        let files: Vec<String> = std::fs::read_dir(folder)
+            .ok()?
+            .filter_map(|e| e.ok()?.file_name().into_string().ok())
+            .collect();
+        let best = super::pick_unplated(&files, &stem, ICON_PX as u32)?;
+        let png = std::fs::read(folder.join(best)).ok()?;
+        Some(format!(
+            "data:image/png;base64,{}",
+            base64::engine::general_purpose::STANDARD.encode(png)
+        ))
+    }
 
     /// Ejecuta `f` en un hilo nuevo con COM inicializado (apartamento STA, el que exige
     /// el Shell). Los hilos de Tauri/tokio no son de COM, así que no se usa el actual.
@@ -320,6 +434,9 @@ mod platform {
     pub fn list_apps() -> Result<Vec<InstalledApp>, String> {
         Ok(Vec::new())
     }
+    pub fn package_logo(_: &str) -> Option<String> {
+        None
+    }
     pub fn icon_data_url(_: &str) -> Option<String> {
         None
     }
@@ -388,6 +505,83 @@ mod pixels {
         fn encodes_a_valid_png() {
             let png = encode_png(vec![255; 2 * 2 * 4], 2, 2).unwrap();
             assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
+        }
+    }
+}
+
+#[cfg(test)]
+mod logo_tests {
+    use super::{manifest_logo, pick_unplated};
+
+    #[test]
+    fn the_logo_of_each_app_comes_from_its_manifest() {
+        let xml = r#"<Applications>
+            <Application Id="Otra"><uap:VisualElements Square44x44Logo="a/Otra.png"/></Application>
+            <Application Id="Claude"><uap:VisualElements Square44x44Logo="assets/Square44x44Logo.png"/></Application>
+        </Applications>"#;
+        assert_eq!(
+            manifest_logo(xml, "Claude").as_deref(),
+            Some(r"assets\Square44x44Logo.png")
+        );
+        assert_eq!(manifest_logo(xml, "NoEsta").as_deref(), Some(r"a\Otra.png"));
+        assert_eq!(manifest_logo("<x/>", "Claude"), None);
+    }
+
+    #[test]
+    fn the_unplated_logo_closest_above_the_size_wins() {
+        let files: Vec<String> = [
+            "Square44x44Logo.scale-200.png",
+            "Square44x44Logo.targetsize-48.png",
+            "Square44x44Logo.targetsize-48_altform-unplated.png",
+            "Square44x44Logo.targetsize-64_altform-lightunplated.png",
+            "Square44x44Logo.targetsize-96_altform-unplated.png",
+            "Square44x44Logo.targetsize-256_altform-unplated.png",
+            "Square44x44Logo.targetsize-64_altform-unplated_contrast-black.png",
+            "Otro.targetsize-64_altform-unplated.png",
+        ]
+        .map(String::from)
+        .to_vec();
+        assert_eq!(
+            pick_unplated(&files, "square44x44logo", 64).as_deref(),
+            Some("Square44x44Logo.targetsize-96_altform-unplated.png")
+        );
+        // Si ninguno llega, el más grande.
+        assert_eq!(
+            pick_unplated(&files, "square44x44logo", 512).as_deref(),
+            Some("Square44x44Logo.targetsize-256_altform-unplated.png")
+        );
+        // Sin variantes «sin placa», nada: se usa el icono del Shell.
+        assert_eq!(pick_unplated(&files[..2], "square44x44logo", 64), None);
+    }
+}
+
+/// Guarda en una carpeta los iconos de unas apps reales, para mirarlos.
+/// `SIFT_ICON_DIR=<carpeta> cargo test -p sift-desktop dump_app_icons -- --ignored`
+#[cfg(all(test, windows))]
+mod icon_probe {
+    use base64::Engine;
+
+    #[test]
+    #[ignore = "solo informa: lee iconos de apps instaladas"]
+    fn dump_app_icons() {
+        let dir = std::env::var("SIFT_ICON_DIR").unwrap();
+        let eclipse =
+            std::env::var("USERPROFILE").unwrap() + r"\eclipse\java-2025-09\eclipse\eclipse.exe";
+        for (name, id) in [
+            ("claude", "Claude_pzs8sxrjxfjjc!Claude"),
+            ("opera", "OperaSoftware.OperaGXWebBrowser.1759849920"),
+            ("vscode", "Microsoft.VisualStudioCode"),
+            ("eclipse", eclipse.as_str()),
+        ] {
+            let url = super::IconCache::default().get_or_load(&super::app_icon_key(id));
+            eprintln!("{name}: {}", url.is_some());
+            if let Some(url) = url {
+                let b64 = url.trim_start_matches("data:image/png;base64,");
+                let png = base64::engine::general_purpose::STANDARD
+                    .decode(b64)
+                    .unwrap();
+                std::fs::write(format!("{dir}/{name}.png"), png).unwrap();
+            }
         }
     }
 }

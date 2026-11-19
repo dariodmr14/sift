@@ -66,6 +66,11 @@ export const commands = {
 	cancelSpaceRun: () => __TAURI_INVOKE<void>("cancel_space_run"),
 	/**  Las pantallas conectadas, para elegir dónde colocar una ventana en el editor. */
 	listMonitors: () => typedError<MonitorInfo[], AppError>(__TAURI_INVOKE("list_monitors")),
+	/**
+	 *  «Identificar»: enseña unos segundos, en cada pantalla, el número que le da Windows (el
+	 *  mismo del desplegable), para saber cuál es cuál. Como el botón de Configuración.
+	 */
+	identifyMonitors: () => typedError<null, AppError>(__TAURI_INVOKE("identify_monitors")),
 	listApps: () => typedError<InstalledApp[], AppError>(__TAURI_INVOKE("list_apps")),
 	/**  Iconos de Windows para varias claves a la vez (`app:<id>` o una ruta). */
 	getIcons: (keys: string[]) => typedError<(string | null)[], AppError>(__TAURI_INVOKE("get_icons", { keys })),
@@ -539,6 +544,11 @@ export type MonitorChoice =
 export type MonitorInfo = {
 	/**  Nombre del modelo si Windows lo sabe («DELL U2720Q»); si no, «Pantalla 2». */
 	name: string,
+	/**
+	 *  El número que le da Windows (el de Configuración → Pantalla y el de «Identificar»;
+	 *  sale de `\\.\DISPLAY2`). 0 si no se sabe.
+	 */
+	number: number,
 	/**  La pantalla entera y el área útil (sin la barra de tareas). */
 	bounds: Rect,
 	work: Rect,
