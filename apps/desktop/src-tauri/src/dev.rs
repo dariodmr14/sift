@@ -92,22 +92,20 @@ fn demo_spaces(demo: &Path) -> Vec<SpaceDraft> {
             aliases: vec!["tienda".into(), "cerámica".into()],
             icon: Icon::Auto,
             actions: vec![
+                // Solo el Explorador y el Bloc de notas (un `.txt`): se puede abrir en una
+                // grabación sin que salga ninguna app ni cuenta de quien graba.
                 Action::OpenFolder {
                     path: shop.clone(),
                     place: place(Zone::LeftHalf),
                 },
-                Action::OpenFile {
-                    path: shop.join("notas-reunion-cliente.md"),
-                    place: place(Zone::RightHalf),
-                },
                 Action::Wait(WaitSpec {
-                    until: WaitUntil::Seconds { secs: 2 },
+                    until: WaitUntil::Seconds { secs: 1 },
                     timeout_secs: 60,
                     on_timeout: OnTimeout::Stop,
                 }),
-                Action::OpenUrl {
-                    url: "https://example.com".into(),
-                    place: None,
+                Action::OpenFile {
+                    path: shop.join("presupuesto.txt"),
+                    place: place(Zone::RightHalf),
                 },
             ],
         },

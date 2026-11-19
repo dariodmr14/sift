@@ -33,10 +33,14 @@ impl IconCache {
             return hit.clone();
         }
         let loaded = platform::icon_data_url(&parsing_name(key));
-        self.0
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .insert(key.to_owned(), loaded.clone());
+        // Solo se guarda lo que salió bien: un fallo puede ser pasajero (la carpeta se acaba
+        // de crear, Windows aún no tiene listo su icono) y se reintenta la próxima vez.
+        if loaded.is_some() {
+            self.0
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .insert(key.to_owned(), loaded.clone());
+        }
         loaded
     }
 }
