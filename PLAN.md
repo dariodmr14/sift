@@ -236,7 +236,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 
 **Hecho cuando:** una persona que no lo conoce lo instala y lo usa sin explicaciones.
 
-**Estado (2026-11-18):** todas las tareas hechas y comprobadas en pantalla (`docs/capturas/final/`). Falta lo único que no se puede comprobar solo: que alguien que no conoce Sift lo instale y lo use sin explicaciones. Cuando Darío lo pruebe con una persona, se cierra la fase.
+**Estado (2026-11-18):** todas las tareas hechas y comprobadas en pantalla (`docs/capturas/final/`). Falta lo único que no se puede comprobar solo: que alguien que no conoce Sift lo instale y lo use sin explicaciones. Cuando Darío lo pruebe con una persona, se cierra la fase. Guion de esa prueba y de la instalación limpia en Windows Sandbox: [docs/prueba-instalacion.md](docs/prueba-instalacion.md).
 
 ### Fase 8 — Lanzamiento
 - [ ] Instalador (NSIS/MSI) y release en GitHub con GitHub Actions.
