@@ -4649,7 +4649,7 @@ checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
 
 [[package]]
 name = "sift-core"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -4659,7 +4659,7 @@ dependencies = [
 
 [[package]]
 name = "sift-desktop"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "anyhow",
  "base64 0.23.1",
@@ -4696,7 +4696,7 @@ dependencies = [
 
 [[package]]
 name = "sift-embeddings"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "ort",
  "tempfile",
@@ -4706,7 +4706,7 @@ dependencies = [
 
 [[package]]
 name = "sift-extract"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "blake3",
  "encoding_rs",
@@ -4719,7 +4719,7 @@ dependencies = [
 
 [[package]]
 name = "sift-indexer"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "globset",
  "sift-extract",
@@ -4733,7 +4733,7 @@ dependencies = [
 
 [[package]]
 name = "sift-search"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "criterion",
  "globset",
@@ -4752,7 +4752,7 @@ dependencies = [
 
 [[package]]
 name = "sift-spaces"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -4763,7 +4763,7 @@ dependencies = [
 
 [[package]]
 name = "sift-storage"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "blake3",
  "half",

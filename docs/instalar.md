@@ -31,6 +31,7 @@ El script:
 
 Al instalarlo:
 
+- Es un asistente en español con la imagen de Sift (ADR 0019). Al final, «Abrir Sift» lo arranca.
 - **Windows puede avisar** de que el programa no está firmado (SmartScreen): «Más información» → «Ejecutar de todas formas». Firmarlo cuesta dinero y está en el backlog.
 - Se instala **solo para tu usuario** (no pide permisos de administrador), en `%LOCALAPPDATA%\Sift`, con acceso en el menú Inicio.
 - Si `npm run tauri dev` está abierto, ciérralo antes: el paso de las dependencias necesita reinstalarlas.
