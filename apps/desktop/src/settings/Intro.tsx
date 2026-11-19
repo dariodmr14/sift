@@ -195,23 +195,25 @@ function HotkeyStep({ hotkey }: { hotkey: string }) {
   }, []);
   const keys = hotkeyText(hotkey).split("+");
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted">
+    <div className="sift-stagger space-y-4">
+      <p className="text-sm">
         Sift busca en tus archivos por su nombre, por lo que dicen y por lo que
         tratan, y abre de una vez todo lo que usas para una tarea. Todo se queda
         en tu PC.
       </p>
-      <p className="text-sm">
-        Se abre desde cualquier sitio con un atajo. Pruébalo: pulsa ahora
-      </p>
-      <p
-        className={`flex items-center gap-1 text-xl ${pressed ? "sift-pressed" : ""}`}
-        aria-label={hotkeyText(hotkey)}
-      >
-        {keys.map((k, i) => (
-          <Keycap key={i} k={k} />
-        ))}
-      </p>
+      <div className="space-y-2">
+        <p className="text-sm text-muted">
+          Se abre desde cualquier sitio con un atajo. Pruébalo: pulsa ahora
+        </p>
+        <p
+          className={`flex items-center gap-1 text-xl ${pressed ? "sift-pressed" : ""}`}
+          aria-label={hotkeyText(hotkey)}
+        >
+          {keys.map((k, i) => (
+            <Keycap key={i} k={k} />
+          ))}
+        </p>
+      </div>
       {pressed ? (
         <Done>Eso es. Pulsa Esc para volver aquí y sigue.</Done>
       ) : (
@@ -241,7 +243,7 @@ function FoldersStep({ w }: { w: ReturnType<typeof useWelcome> }) {
     roots.length,
   );
   return (
-    <div className="space-y-4">
+    <div className="sift-stagger space-y-4">
       <p className="text-sm">
         Elige las carpetas con tus archivos. Sift las lee en segundo plano y las
         tiene al día. Puedes añadir más cuando quieras.
@@ -301,7 +303,7 @@ function SearchStep() {
   const [query, setQuery] = useState("");
   const hits = useFileSearch(query, null).slice(0, 5);
   return (
-    <div className="space-y-4">
+    <div className="sift-stagger space-y-4">
       <p className="text-sm">
         Escribe una palabra que esté en alguno de tus archivos, o de qué trata.
         Es la misma búsqueda que la de la barra.
@@ -353,7 +355,7 @@ function SearchStep() {
 function SmartStep({ w }: { w: ReturnType<typeof useWelcome> }) {
   const smart = w.smart;
   return (
-    <div className="space-y-4">
+    <div className="sift-stagger space-y-4">
       <p className="text-sm">
         Encuentra también lo que trata de lo mismo con otras palabras: buscas
         «gastos del piso» y sale tu hoja «alquiler y facturas».
@@ -433,7 +435,7 @@ function SpaceStep({ hotkey }: { hotkey: string }) {
     );
 
   return (
-    <div className="space-y-4">
+    <div className="sift-stagger space-y-4">
       <p className="text-sm">
         Un Espacio abre de golpe todo lo de una tarea: carpetas, webs, apps y
         comandos. Crea uno sencillo; lo completas luego en Ajustes. O sigue sin
