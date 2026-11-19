@@ -31,7 +31,7 @@ Todo es local: lo único que sale del PC son descargas puntuales (modelo de embe
 **Estructura:**
 - `apps/desktop/`: app Tauri. `src/` es la UI (React + TS; la barra en `src/launcher/`, Ajustes en `src/settings/`) y `src-tauri/` el arranque y los comandos IPC.
 - `crates/*`: núcleo en Rust (`core`, `storage`, `extract`, `indexer`, `embeddings`, `search`, `spaces`).
-- `eval/`: consultas de evaluación. `docs/adr/`: decisiones. `scripts/`: CI local, instalador, PDFium, e2e y capturas (`capturas.mjs`).
+- `eval/`: consultas de evaluación. `docs/adr/`: decisiones. `demo/`: datos de demostración inventados (`SIFT_DEV_DEMO=1`). `scripts/`: CI local, instalador, PDFium, e2e y capturas (`capturas-final.mjs` y `capturas-intro.mjs`, con los datos de demostración).
 
 **Comandos** (desde la raíz del repo, salvo que se indique otra cosa):
 - **Rust:** `cargo fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`

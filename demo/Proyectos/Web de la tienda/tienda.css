@@ -1,0 +1,17 @@
+/* Estilos de la ficha de producto de la tienda de cerámica. */
+.pieza {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.pieza__foto {
+  border-radius: 8px;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.pieza--unica::after {
+  content: "Pieza única";
+  font-weight: 600;
+}

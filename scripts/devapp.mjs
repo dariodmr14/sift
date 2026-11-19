@@ -142,7 +142,9 @@ export async function connect(urlPart) {
         ...(type === "keyDown" && k.text ? { text: k.text } : {}),
       });
   };
-  return { evaluate, shot, press, errors, close: () => ws.close() };
+  /** Mueve el ratón dentro de la página (quita el estado «encima» y su globo de ayuda). */
+  const mouse = (x, y) => send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  return { evaluate, shot, press, mouse, errors, close: () => ws.close() };
 }
 
 /** Escribe en la caja de la barra como lo haría una persona (dispara `input`). */
