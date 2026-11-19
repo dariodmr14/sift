@@ -9,7 +9,15 @@ import {
   type SetStateAction,
 } from "react";
 import { commands, events } from "../bindings";
-import { addStep, failedMode, type Mode, type SpaceView } from "./mode";
+import {
+  addStep,
+  failedMode,
+  setPlacement,
+  type Mode,
+  type RunStep,
+  type SpaceView,
+} from "./mode";
+import type { SpaceProgress } from "./panels";
 import { summarize } from "./runSummary";
 
 /** Por debajo de esto no se enseña el panel «en marcha»: no debe parpadear. */
@@ -37,16 +45,34 @@ export function useSpaceRun({
     callbacks.current = { onDone, onResetHidden };
   });
 
-  // Por qué paso va el Espacio en marcha.
+  // Por qué paso va el Espacio en marcha. Se apunta desde el principio, aunque el panel
+  // aún no se vea (sale a los 300 ms): si no, faltarían los primeros pasos.
+  const seen = useRef<{ progress: SpaceProgress | null; steps: RunStep[] }>({
+    progress: null,
+    steps: [],
+  });
   useEffect(() => {
-    const stop = events.spaceProgress.listen(({ payload }) =>
-      setMode((m) =>
-        m.kind === "running"
-          ? { ...m, progress: payload, steps: addStep(m.steps, payload) }
-          : m,
-      ),
-    );
-    return () => void stop.then((f) => f());
+    const show = () =>
+      setMode((m) => (m.kind === "running" ? { ...m, ...seen.current } : m));
+    const stopProgress = events.spaceProgress.listen(({ payload }) => {
+      seen.current = {
+        progress: payload,
+        steps: addStep(seen.current.steps, payload),
+      };
+      show();
+    });
+    // Las ventanas se colocan en segundo plano: «abierto · colocando…» y luego ✓.
+    const stopPlacement = events.spacePlacement.listen(({ payload }) => {
+      seen.current = {
+        ...seen.current,
+        steps: setPlacement(seen.current.steps, payload),
+      };
+      show();
+    });
+    return () => {
+      void stopProgress.then((f) => f());
+      void stopPlacement.then((f) => f());
+    };
   }, [setMode]);
 
   const launch = useCallback(
@@ -54,13 +80,13 @@ export function useSpaceRun({
       const title = view.space.name;
       running.current = true;
       cancelRequested.current = false;
+      seen.current = { progress: null, steps: [] };
       const slow = setTimeout(
         () =>
           setMode({
             kind: "running",
             title,
-            progress: null,
-            steps: [],
+            ...seen.current,
             cancelling: false,
           }),
         SLOW_MS,

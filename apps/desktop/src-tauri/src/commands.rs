@@ -288,7 +288,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             NewSpaceRequested,
             crate::materials::GlassMoving,
             crate::indexing::IndexProgress,
-            crate::spaces_commands::SpaceProgress
+            crate::spaces_commands::SpaceProgress,
+            crate::spaces_commands::SpacePlacement
         ])
 }
 

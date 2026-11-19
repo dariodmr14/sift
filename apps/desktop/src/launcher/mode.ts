@@ -1,6 +1,6 @@
 // En qué está la barra: la lista, un Espacio abriéndose o el resumen de lo que pasó.
 
-import type { commands } from "../bindings";
+import type { commands, PlacementState } from "../bindings";
 import type { SpaceProgress } from "./panels";
 import type { SummaryLine } from "./runSummary";
 
@@ -26,6 +26,8 @@ export type Mode =
 export interface RunStep {
   step: number;
   label: string;
+  /** Si hay que colocar su ventana: en qué va (llega en segundo plano). */
+  placement?: PlacementState;
 }
 
 /** Apunta un aviso de progreso: un paso nuevo se añade; el mismo (una espera) no. */
@@ -33,6 +35,21 @@ export function addStep(steps: RunStep[], p: SpaceProgress): RunStep[] {
   const last = steps[steps.length - 1];
   if (last?.step === p.step) return steps;
   return [...steps, { step: p.step, label: p.label }];
+}
+
+/** Apunta en qué va la colocación de la ventana de un paso ya lanzado. */
+export function setPlacement(
+  steps: RunStep[],
+  p: { step: number; state: PlacementState },
+): RunStep[] {
+  return steps.map((s) =>
+    s.step === p.step ? { ...s, placement: p.state } : s,
+  );
+}
+
+/** ¿Queda alguna ventana por colocar? */
+export function placing(steps: RunStep[]): boolean {
+  return steps.some((s) => s.placement === "placing");
 }
 
 /** Qué ocupa la barra bajo la caja; si cambia, el panel entra con una animación breve. */

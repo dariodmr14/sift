@@ -65,3 +65,5 @@ El botón «Probar» de una espera de web o de servicio comprueba la condición 
 - **Esperar a una web de internet.** Rompería la regla de no conectarse a la red.
 - **Capturar la salida de todos los comandos.** Te quitaría su consola cuando sí la quieres ver, por ejemplo con un servidor de desarrollo.
 - **Cerrar lo ya abierto al cancelar o al fallar.** Darío pidió explícitamente lo contrario. Además, cerrar procesos ajenos es arriesgado.
+
+**Cambio (2026-11-19).** Un paso «Esperar a que…» es ahora lo único que hace esperar a un Espacio: colocar ventanas va en segundo plano (ADR 0014) y sigue funcionando mientras se espera. Al cancelar, lo que quedaba por colocar se cuenta como «cancelado antes de colocar su ventana».

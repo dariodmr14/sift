@@ -1,12 +1,14 @@
 //! Espacios: el modelo (nombre, alias, icono, acciones), su validación, cómo se ejecutan
 //! de forma segura y el formato de exportación.
 
+pub mod arrange;
 pub mod export;
 pub mod model;
 pub mod placement;
 pub mod run;
 pub mod validate;
 
+pub use arrange::PlacementState;
 pub use model::{Action, CommandSpec, Icon, OnTimeout, Space, SpaceDraft, WaitSpec, WaitUntil};
 pub use run::{
     ActionOutcome, Child, NoProgress, Opener, POLL, Progress, Waiter, approval_message,

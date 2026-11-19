@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addStep, panelKey } from "./mode";
+import { addStep, panelKey, placing, setPlacement, type RunStep } from "./mode";
 
 describe("qué ocupa la barra", () => {
   it("los paneles mandan sobre la lista", () => {
@@ -55,5 +55,21 @@ describe("pasos de un Espacio en marcha", () => {
     });
     steps = addStep(steps, { step: 3, total: 3, label: "Abrir VS Code" });
     expect(steps.map((s) => s.step)).toEqual([1, 2, 3]);
+  });
+});
+
+describe("colocar ventanas en segundo plano", () => {
+  it("cada aviso marca su paso, aunque llegue después de otros", () => {
+    let steps: RunStep[] = [
+      { step: 1, label: "Abrir Eclipse" },
+      { step: 2, label: "Abrir Opera" },
+    ];
+    steps = setPlacement(steps, { step: 1, state: "placing" });
+    steps = setPlacement(steps, { step: 2, state: "placing" });
+    steps = setPlacement(steps, { step: 2, state: "placed" });
+    expect(steps.map((s) => s.placement)).toEqual(["placing", "placed"]);
+    expect(placing(steps)).toBe(true);
+    steps = setPlacement(steps, { step: 1, state: "notPlaced" });
+    expect(placing(steps)).toBe(false);
   });
 });

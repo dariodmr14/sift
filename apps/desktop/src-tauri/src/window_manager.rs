@@ -172,10 +172,10 @@ mod platform {
     };
     use windows::Win32::UI::Shell::{IShellItem2, SHCreateItemFromParsingName};
     use windows::Win32::UI::WindowsAndMessaging::{
-        EnumWindows, GW_OWNER, GWL_EXSTYLE, GetCursorPos, GetWindow, GetWindowLongPtrW,
+        EnumWindows, GW_OWNER, GWL_EXSTYLE, GWL_STYLE, GetCursorPos, GetWindow, GetWindowLongPtrW,
         GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsIconic,
         IsWindowVisible, IsZoomed, SW_MAXIMIZE, SW_RESTORE, SWP_NOACTIVATE, SWP_NOZORDER,
-        SetForegroundWindow, SetWindowPos, ShowWindow, WS_EX_TOOLWINDOW,
+        SetForegroundWindow, SetWindowPos, ShowWindow, WS_CAPTION, WS_EX_TOOLWINDOW,
     };
     use windows::core::{BOOL, HSTRING, PCWSTR, PWSTR};
 
@@ -379,6 +379,7 @@ mod platform {
                         return None;
                     }
                     let ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE) as u32;
+                    let style = GetWindowLongPtrW(hwnd, GWL_STYLE) as u32;
                     if ex & WS_EX_TOOLWINDOW.0 != 0 {
                         return None;
                     }
@@ -420,6 +421,7 @@ mod platform {
                         ancestors: ancestors(pid, &all),
                         app_id: app_id_of(hwnd, pid),
                         size: (rect.right - rect.left, rect.bottom - rect.top),
+                        frameless: style & WS_CAPTION.0 != WS_CAPTION.0,
                         path,
                     })
                 }
@@ -900,5 +902,92 @@ mod tests {
                 windows::Win32::Foundation::LPARAM(0),
             );
         }
+    }
+
+    /// Prueba a mano de que las acciones no se esperan (ADR 0014, cambio del 2026-11-19):
+    /// Eclipse (con su workspace ya en uso: tras su pantalla de carga solo enseña su selector) y una ventana
+    /// nueva de Opera GX. Opera se coloca sin esperar a Eclipse; ni la pantalla de carga ni
+    /// el selector se colocan. Cierra solo las ventanas que abrió.
+    /// `cargo test -p sift-desktop slow_apps_do_not_block -- --ignored --nocapture`
+    #[cfg(windows)]
+    #[test]
+    #[ignore = "abre y mueve ventanas en la pantalla"]
+    #[allow(unsafe_code)] // cerrar las ventanas abiertas: ver el SAFETY.
+    fn slow_apps_do_not_block_the_rest() {
+        use sift_spaces::placement::{MonitorChoice, Placement};
+        use sift_spaces::{PlacementState, Progress};
+        use std::time::Instant;
+
+        struct Timeline(Instant);
+        impl Progress for Timeline {
+            fn step(&self, index: u32, label: &str, waited: Option<u32>) {
+                eprintln!(
+                    "{:>6} ms  paso {index}: {label} {waited:?}",
+                    self.0.elapsed().as_millis()
+                );
+            }
+            fn cancelled(&self) -> bool {
+                false
+            }
+            fn placement(&self, index: u32, state: PlacementState) {
+                eprintln!(
+                    "{:>6} ms  paso {index}: {state:?}",
+                    self.0.elapsed().as_millis()
+                );
+            }
+        }
+
+        let open = |app_id: &str, name: &str, zone: Zone| Action::OpenApp {
+            app_id: app_id.into(),
+            name: name.into(),
+            place: Some(Placement {
+                zone: Some(zone),
+                monitor: MonitorChoice::Primary,
+                reuse_window: false,
+            }),
+        };
+        let eclipse =
+            std::env::var("USERPROFILE").unwrap() + r"\eclipse\java-2025-09\eclipse\eclipse.exe";
+        let actions = [
+            open(&eclipse, "Eclipse", Zone::RightHalf),
+            open(
+                "OperaSoftware.OperaGXWebBrowser.1759849920",
+                "Opera GX",
+                Zone::LeftHalf,
+            ),
+        ];
+        let wm = Win32Windows;
+        let before: Vec<isize> = wm.windows().iter().map(|w| w.id).collect();
+        let out = sift_spaces::run_actions(
+            &actions,
+            &crate::shell::WindowsOpener,
+            &crate::waits::LocalWaiter::new(),
+            Some(&wm),
+            &Timeline(Instant::now()),
+        );
+        for o in &out {
+            eprintln!(
+                "resultado {}: {} · {:?} · {:?}",
+                o.index, o.label, o.error, o.note
+            );
+        }
+        // Cerrar solo lo que se abrió (también el selector de Eclipse).
+        for w in wm.windows().iter().filter(|w| !before.contains(&w.id)) {
+            let ours = ["opera.exe", "eclipse.exe", "javaw.exe"];
+            if !ours.contains(&w.exe.as_str()) {
+                continue;
+            }
+            eprintln!("cierro {} «{}»", w.exe, w.title);
+            // SAFETY: pedir que se cierre una ventana existente (como pulsar la X).
+            unsafe {
+                let _ = windows::Win32::UI::WindowsAndMessaging::PostMessageW(
+                    Some(windows::Win32::Foundation::HWND(w.id as *mut _)),
+                    windows::Win32::UI::WindowsAndMessaging::WM_CLOSE,
+                    windows::Win32::Foundation::WPARAM(0),
+                    windows::Win32::Foundation::LPARAM(0),
+                );
+            }
+        }
+        assert!(out[1].note.is_none(), "{out:?}");
     }
 }

@@ -70,6 +70,18 @@ export function summarize(outcomes: Outcome[], cancelled: boolean): Summary {
 }
 
 /** «Paso 2 de 3 · Esperando a que responda …… 12 s» */
+/**
+ * Un paso ya lanzado cuya ventana aún se está colocando: «Abrir Eclipse» → «Eclipse
+ * abierto · colocando…».
+ */
+export function placingText(label: string): string {
+  const opened = label
+    .replace(/^Abrir carpeta (.*)$/, "Carpeta $1 abierta")
+    .replace(/^Abrir (\w+:\/\/.*)$/, "$1 abierta")
+    .replace(/^Abrir (.*)$/, "$1 abierto");
+  return `${opened} · colocando…`;
+}
+
 export function progressText(p: {
   step: number;
   total: number;

@@ -93,6 +93,7 @@ vi.mock("./bindings", () => ({
     launcherShown: { listen },
     launcherHidden: { listen },
     spaceProgress: { listen },
+    spacePlacement: { listen },
   },
 }));
 vi.mock("./appearance", () => ({

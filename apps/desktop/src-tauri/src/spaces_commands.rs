@@ -6,7 +6,9 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use serde::{Deserialize, Serialize};
-use sift_spaces::{Action, ActionOutcome, Icon, NoProgress, Progress, Space, SpaceDraft, WaitSpec};
+use sift_spaces::{
+    Action, ActionOutcome, Icon, NoProgress, PlacementState, Progress, Space, SpaceDraft, WaitSpec,
+};
 use sift_storage::{Database, StorageError};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_dialog::DialogExt;
@@ -68,6 +70,15 @@ pub struct SpaceProgress {
     pub waited: Option<u32>,
 }
 
+/// Evento: en qué va la colocación de la ventana de un paso ya lanzado. Va en segundo
+/// plano (ADR 0014): llega cuando aparece la ventana, también después de otros pasos.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct SpacePlacement {
+    pub step: u32,
+    pub state: PlacementState,
+}
+
 /// El Espacio que se está ejecutando (uno a la vez) y la orden de cancelarlo.
 #[derive(Default)]
 pub struct SpaceRun {
@@ -94,6 +105,9 @@ impl Progress for EventProgress<'_> {
     }
     fn cancelled(&self) -> bool {
         self.cancel.load(Ordering::Relaxed)
+    }
+    fn placement(&self, index: u32, state: PlacementState) {
+        let _ = SpacePlacement { step: index, state }.emit(self.app);
     }
 }
 

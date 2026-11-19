@@ -150,6 +150,7 @@ export const events = {
 	launcherHidden: makeEvent<LauncherHidden, LauncherHidden>("launcher-hidden"),
 	launcherShown: makeEvent<LauncherShown, LauncherShown>("launcher-shown"),
 	newSpaceRequested: makeEvent<NewSpaceRequested, NewSpaceRequested>("new-space-requested"),
+	spacePlacement: makeEvent<SpacePlacement, SpacePlacement>("space-placement"),
 	spaceProgress: makeEvent<SpaceProgress_Serialize, SpaceProgress_Deserialize>("space-progress"),
 };
 
@@ -562,6 +563,15 @@ export type PathKind = "file" | "folder";
 /**  Dónde se coloca una ventana al abrir una acción. */
 export type Placement = Placement_Serialize | Placement_Deserialize;
 
+/**  En qué va la colocación de la ventana de una acción (para el panel «en marcha»). */
+export type PlacementState = 
+/**  Abierta; esperando a su ventana para colocarla. */
+"placing" | 
+/**  Colocada (o la ya abierta, traída al frente). */
+"placed" | 
+/**  No se pudo colocar (el motivo va en la nota de la acción). */
+"notPlaced";
+
 /**  Dónde se coloca una ventana al abrir una acción. */
 export type Placement_Deserialize = {
 	/**
@@ -754,6 +764,15 @@ export type SpaceDraft_Serialize = {
 	aliases: string[],
 	icon: Icon,
 	actions: Action_Serialize[],
+};
+
+/**
+ *  Evento: en qué va la colocación de la ventana de un paso ya lanzado. Va en segundo
+ *  plano (ADR 0014): llega cuando aparece la ventana, también después de otros pasos.
+ */
+export type SpacePlacement = {
+	step: number,
+	state: PlacementState,
 };
 
 /**

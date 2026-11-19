@@ -26,7 +26,7 @@ Las exportaciones anteriores siguen siendo válidas: el campo es opcional y no s
 Es lo difícil. Seguir el proceso lanzado no sirve: VS Code, los navegadores y el Explorador **reutilizan** un proceso que ya existía, y el que se lanzó termina enseguida. Por eso:
 
 1. Antes de abrir, se apuntan las ventanas que ya hay.
-2. Después, durante como mucho 15 s, se busca una ventana **nueva** del programa esperado:
+2. Después, durante como mucho 15 s (60 s y sin bloquear desde el cambio del 2026-11-19, al final), se busca una ventana **nueva** del programa esperado:
    - una carpeta → `explorer.exe`;
    - un archivo o una web → el programa predeterminado para ese tipo, según Windows;
    - una app → su `.exe` si su id es una ruta; si es de la Tienda, se busca por su nombre en el título.
@@ -81,3 +81,14 @@ Desde el editor de la versión de desarrollo, «Probar» con «Mitad derecha de 
 - **su carpeta de instalación**: el acceso directo de Opera apunta a `launcher.exe` y sus ventanas son de `opera.exe`, en la misma carpeta. La carpeta de Windows nunca cuenta.
 
 Si no se sabe nada del programa, solo vale una ventana cuyo título lo nombre; nunca la primera que haya. Tampoco cuentan las ventanas de menos de 320 × 200 (pantallas de carga). Comprobado con las ventanas reales de Claude, Opera GX y Eclipse.
+
+**Cambio (2026-11-19): las acciones no se esperan unas a otras.** Antes, cada acción que colocaba una ventana esperaba a que esa ventana apareciera (hasta 15 s) antes de lanzar la siguiente: un Espacio con Eclipse, que tarda y además enseña primero el selector de workspace, retrasaba todo lo demás. Ahora (`sift_spaces::arrange::Placer`):
+- **Cada acción se lanza en cuanto se ha lanzado la anterior.** Se apunta qué ventana hay que colocar y se sigue.
+- **Un solo bucle coloca todas las ventanas pendientes** según aparecen: después de cada acción, en cada vuelta de un paso «Esperar a que…» (lo único que de verdad espera) y, al final, hasta que no quede ninguna. Se mira cada 250 ms.
+- **60 s de margen por ventana**, en vez de 15: ya no retrasa nada, y da tiempo a elegir el workspace.
+- **Ventanas intermedias**: las que por su título son un selector, una carga o una actualización («Eclipse IDE Launcher», «Loading…», «Actualizando…») no se colocan; tampoco las que no tienen barra de título, como la pantalla de carga de Eclipse (un `Static` de 452 × 302 sin `WS_CAPTION`; Claude, Opera y el propio Eclipse sí la tienen aunque se pinten la suya). Se sigue esperando a la principal. Si una ventana sin barra de título dura 20 s y no sale otra, se toma por la principal (hay apps así). Si solo aparece una intermedia, el aviso lo dice: «solo vi su ventana «Eclipse IDE Launcher»: no la coloqué».
+- **Si la ventana colocada se cierra antes de 1,5 s**, se sigue esperando a la siguiente del mismo programa.
+- **Una ventana, una acción**: dos acciones de la misma app nunca se quedan con la misma ventana.
+- El panel «en marcha» lo enseña con el evento `SpacePlacement`: «Eclipse abierto · colocando…» y luego ✓ (o ⚠ si no se pudo).
+
+Descartado: un hilo por ventana. Daría lo mismo con más complicación (varios hilos llamando a Win32 a la vez y compartiendo qué ventanas ya son de alguien); un bucle con el mismo reloj que las esperas es fácil de probar con el reloj de mentira.
