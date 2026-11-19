@@ -181,6 +181,17 @@
   }
 }
 
+/*
+ * Las opciones de un desplegable nativo se pintan con el fondo del propio control. Con el
+ * vidrio ese fondo es casi transparente y WebView2 lo resuelve en blanco, con el texto claro
+ * del tema oscuro encima: blanco sobre blanco. Colores sólidos del tema, siempre.
+ */
+option,
+optgroup {
+  background-color: var(--surface-solid);
+  color: var(--fg);
+}
+
 html,
 body,
 #root {

@@ -242,7 +242,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - [ ] Instalador (NSIS/MSI) y release en GitHub con GitHub Actions.
 - [ ] Actualizaciones automáticas (plugin updater de Tauri).
 - [ ] README completo: GIF, instalación, arquitectura, decisiones y métricas.
-- [ ] Vídeo demo de 30–60 s y post en LinkedIn.
+- [ ] Vídeo demo de 30–60 s y post en LinkedIn. **Se graba con la versión final**, para no enseñar pantallas antiguas (decidido el 2026-11-19). Hay una primera versión fuera del repo, en el equipo de Darío (`Documents\Sift - vídeo de presentación`), con su proyecto de HyperFrames y su guion de grabación.
 
 **Hecho cuando:** cualquiera puede descargarlo desde GitHub e instalarlo.
 
