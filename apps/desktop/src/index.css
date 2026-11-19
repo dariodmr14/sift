@@ -73,6 +73,7 @@
   --dur-veil-out: 260ms;
   --dur-enter: 120ms;
   --dur-step: 200ms; /* cambio de paso en la introducción */
+  --dur-art: 350ms; /* cada pieza de las ilustraciones de la introducción */
   --stagger: 70ms; /* entre la explicación y la acción de un paso, tras el título */
   --dur-state: 150ms; /* cambios de estado: coger, soltar, pasar el ratón, pulsar (el «fast» de Fluent) */
   --dur-exit: 80ms;
@@ -400,6 +401,81 @@ body,
   }
 }
 
+/*
+ * Ilustraciones de la introducción (IntroArt.tsx): cada pieza entra una vez con su retraso
+ * (`--d`) y se queda en su sitio. Solo opacidad y transformaciones.
+ */
+.sift-art [class*="sift-art-"] {
+  animation-duration: var(--dur-art);
+  animation-timing-function: var(--ease-enter);
+  animation-fill-mode: both;
+  animation-delay: var(--d, 0ms);
+}
+.sift-art-press {
+  animation-name: sift-art-press;
+}
+.sift-art-drop {
+  animation-name: sift-art-drop;
+}
+.sift-art-fly {
+  animation-name: sift-art-fly;
+}
+.sift-art-fall {
+  animation-name: sift-art-drop;
+}
+.sift-art-grow {
+  animation-name: sift-fill;
+}
+.sift-art-fade {
+  animation-name: sift-exit;
+  animation-direction: reverse;
+}
+.sift-art-open {
+  animation-name: sift-art-open;
+}
+.sift-art-window-l {
+  animation-name: sift-art-window-l;
+}
+.sift-art-window-r {
+  animation-name: sift-art-window-r;
+}
+@keyframes sift-art-press {
+  50% {
+    transform: translateY(2px);
+    background: var(--selected);
+  }
+}
+@keyframes sift-art-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes sift-art-fly {
+  from {
+    opacity: 0;
+    transform: translateX(-120px);
+  }
+}
+@keyframes sift-art-open {
+  to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@keyframes sift-art-window-l {
+  from {
+    opacity: 0;
+    transform: translateX(40%) scale(0.3);
+  }
+}
+@keyframes sift-art-window-r {
+  from {
+    opacity: 0;
+    transform: translateX(-40%) scale(0.3);
+  }
+}
+
 @keyframes sift-step-next {
   from {
     opacity: 0;
@@ -478,8 +554,13 @@ body,
   .sift-fill,
   .sift-pop,
   .sift-progress,
-  .sift-stagger > * {
+  .sift-stagger > *,
+  .sift-art [class*="sift-art-"] {
     animation: none;
+  }
+  /* El último fotograma: la tarjeta del Espacio ya se ha abierto en ventanas. */
+  .sift-art-open {
+    opacity: 0;
   }
   .sift-option.sift-option-soft,
   .sift-pressed .sift-key {

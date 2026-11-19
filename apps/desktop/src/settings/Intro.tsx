@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { commands, events, type FileHit, type RootView } from "../bindings";
 import { Glyph } from "../components/Glyph";
+import { IntroArt } from "./IntroArt";
 import { Keycap, Shortcut } from "../components/Keycap";
 import { shortFolder } from "../launcher/files";
 import { Highlighted } from "../launcher/panels";
@@ -103,6 +104,7 @@ export function Intro({
             direction === "forward" ? "sift-step-next" : "sift-step-back"
           }`}
         >
+          <IntroArt id={id} keys={hotkeyText(hotkey).split("+")} />
           <p className="text-xs text-muted">
             Paso {step + 1} de {INTRO_STEPS.length}
           </p>
