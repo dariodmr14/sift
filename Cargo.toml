@@ -81,6 +81,16 @@ todo = "warn"
 
 # Los perfiles solo cuentan en la raíz del workspace.
 # https://tauri.app/concept/size/#cargo-configuration
+# Las pruebas de aguante (`scripts/aguante/`): optimizado como la versión de verdad, pero con
+# `debug_assertions`, así es «desarrollo» para Sift (`dev::is_dev`): usa su identificador y sus
+# datos (`dev.sift.app-dev`), nunca los de la versión diaria. Sin LTO para compilar antes.
+[profile.aguante]
+inherits = "release"
+debug-assertions = true
+overflow-checks = false
+lto = false
+codegen-units = 16
+
 [profile.release]
 codegen-units = 1
 lto = true
