@@ -77,6 +77,8 @@ export function useSpaceRun({
 
   const launch = useCallback(
     async (view: SpaceView) => {
+      // Un Enter doble (o doble clic) antes de que salga el panel no lo abre dos veces.
+      if (running.current) return;
       const title = view.space.name;
       running.current = true;
       cancelRequested.current = false;
@@ -91,9 +93,18 @@ export function useSpaceRun({
           }),
         SLOW_MS,
       );
-      const result = await commands.runSpace(view.space.id);
-      clearTimeout(slow);
-      running.current = false;
+      // Si la llamada falla del todo (no un error de Sift, sino de la comunicación), la
+      // barra no puede quedarse atascada en «Abriendo…»: se dice y se libera (auditoría 1.0).
+      let result: Awaited<ReturnType<typeof commands.runSpace>>;
+      try {
+        result = await commands.runSpace(view.space.id);
+      } catch (e) {
+        setMode(failedMode(title, String(e)));
+        return;
+      } finally {
+        clearTimeout(slow);
+        running.current = false;
+      }
       if (result.status === "error") {
         setMode(failedMode(title, result.error.message));
         return;

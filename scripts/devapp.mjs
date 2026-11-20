@@ -102,10 +102,25 @@ export async function connect(urlPart) {
       errors.push(msg.params.args.map((a) => a.value ?? a.description).join(" "));
   };
   await new Promise((r) => (ws.onopen = r));
+  // Si la app se cierra (o se cae) con una llamada en el aire, que falle en vez de esperar
+  // para siempre: así los scripts llegan a su limpieza (devolver los datos de desarrollo).
+  const rejects = new Map();
+  ws.onclose = () => {
+    for (const [n, reject] of rejects) {
+      pending.delete(n);
+      reject(new Error("la app se ha cerrado"));
+    }
+    rejects.clear();
+  };
   const send = (method, params = {}) =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
       const n = ++id;
-      pending.set(n, resolve);
+      pending.set(n, (msg) => {
+        rejects.delete(n);
+        resolve(msg);
+      });
+      rejects.set(n, reject);
+      if (ws.readyState !== WebSocket.OPEN) return ws.onclose();
       ws.send(JSON.stringify({ id: n, method, params }));
     });
   await send("Runtime.enable");

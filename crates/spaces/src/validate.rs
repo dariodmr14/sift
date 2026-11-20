@@ -16,11 +16,59 @@ pub const MAX_IMAGE_BASE64: usize = 350_000;
 pub const MAX_WAIT_SECS: u32 = 600;
 pub const IMAGE_MIMES: [&str; 3] = ["image/png", "image/svg+xml", "image/x-icon"];
 
-/// Extensiones que, abiertas como "archivo", **ejecutarían** algo. Se rechazan: para
-/// ejecutar está la acción "comando", que pide confirmación.
-const EXECUTABLE_EXTENSIONS: [&str; 14] = [
-    "exe", "com", "bat", "cmd", "ps1", "vbs", "vbe", "js", "jse", "wsf", "wsh", "msi", "scr", "hta",
+/// Lo que Sift abre **sin preguntar** con «abrir» de Windows: documentos, imágenes, audio,
+/// vídeo, comprimidos y texto o código que se abre en un editor. Es una lista de lo
+/// PERMITIDO (auditoría 1.0): cualquier otra extensión (un `.exe`, un `.lnk`, un `.hta`, un
+/// `.js`, un `.docm` con macros… o una que aún no existe) puede ejecutar algo, así que en un
+/// Espacio pide la misma confirmación de Windows que un comando y en la barra se pregunta antes
+/// de abrirla. Quedan fuera a propósito los scripts que Windows ejecuta al abrirlos (`.js`,
+/// `.vbs`, `.py`, `.ps1`, `.bat`…) y los documentos con macros (`.docm`, `.xlsm`…).
+const SAFE_TO_OPEN: &[&str] = &[
+    // Documentos
+    "pdf", "txt", "md", "markdown", "rtf", "doc", "docx", "odt", "xls", "xlsx", "ods", "csv", "tsv",
+    "ppt", "pptx", "odp", "epub", "pages", "numbers", "key", "xps", "oxps",
+    // Imágenes
+    "png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "ico", "tif", "tiff", "heic", "heif", "avif",
+    "raw", "psd", // Audio y vídeo
+    "mp3", "wav", "flac", "ogg", "oga", "m4a", "aac", "opus", "wma", "mid", "midi", "mp4", "m4v",
+    "mkv", "avi", "mov", "wmv", "webm", "mpg", "mpeg", "3gp",
+    // Comprimidos (se abren en el Explorador o en su programa; no se ejecuta nada)
+    "zip", "7z", "rar", "tar", "gz", "tgz", "bz2", "xz",
+    // Web, datos y texto de configuración (se abren en el navegador o en un editor)
+    "html", "htm", "xml", "json", "jsonc", "yaml", "yml", "toml", "ini", "cfg", "conf", "log",
+    "tex", "bib", "srt", "vtt", "ipynb",
+    // Código que Windows no ejecuta al abrirlo (se abre en el editor)
+    "c", "h", "cpp", "hpp", "cc", "cs", "java", "kt", "go", "rs", "swift", "ts", "tsx", "jsx",
+    "css", "scss", "sass", "less", "sql", "r", "m", "lua", "dart", "scala", "hs", "ex", "exs",
+    "php", "rb", "pl", "vue", "svelte",
 ];
+
+/// ¿Se puede abrir esta ruta sin preguntar? Solo si su extensión está en [`SAFE_TO_OPEN`]
+/// (sin mayúsculas) y el nombre no lleva los trucos que Windows ignora al abrir: puntos o
+/// espacios al final («x.pdf.» es otra cosa para el Explorador) ni «:» de un flujo
+/// alternativo de NTFS («notas.txt:y.exe»). Sin extensión, tampoco.
+pub fn is_safe_to_open(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    if name.contains(':') || name.ends_with(['.', ' ']) {
+        return false;
+    }
+    name.rsplit_once('.').is_some_and(|(stem, ext)| {
+        !stem.is_empty() && SAFE_TO_OPEN.contains(&ext.to_ascii_lowercase().as_str())
+    })
+}
+
+/// ¿Es una carpeta que se puede abrir sin preguntar? Tiene que existir y ser una carpeta de
+/// verdad, y su nombre no puede acabar en `.{…}`: esas son «carpetas» especiales de Windows
+/// (un CLSID) que el Explorador trata como otra cosa, p. ej. un panel de control.
+pub fn is_plain_folder(path: &Path) -> bool {
+    let junction = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|n| n.contains(".{") || n.starts_with('{'));
+    !junction && path.is_dir()
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ValidationError {
@@ -101,22 +149,24 @@ pub fn validate(mut draft: SpaceDraft) -> Result<SpaceDraft, ValidationError> {
 /// Valida una acción suelta (también se usa al pulsar "probar" en el editor).
 pub fn validate_action(action: &mut Action) -> Result<(), String> {
     match action {
-        Action::OpenFolder { path, .. } => check_path(path),
-        Action::OpenFile { path, .. } => {
+        Action::OpenFolder { path, .. } => {
             check_path(path)?;
-            let ext = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .map(str::to_ascii_lowercase)
-                .unwrap_or_default();
-            if EXECUTABLE_EXTENSIONS.contains(&ext.as_str()) {
-                return Err(format!(
-                    "«.{ext}» es un ejecutable; para ejecutar algo usa la acción «comando» \
-                     (pide confirmación) o «aplicación»"
-                ));
+            // Una «carpeta» que es un archivo (un `.exe`) se ejecutaría al abrirla: solo vale
+            // una carpeta de verdad (auditoría 1.0). Si aún no existe se acepta (puede ser
+            // un disco que no está conectado), y al abrirla se vuelve a comprobar.
+            let special = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.contains(".{") || n.starts_with('{'));
+            if special || (path.exists() && !is_plain_folder(path)) {
+                return Err("no es una carpeta".into());
             }
             Ok(())
         }
+        // Un archivo que no está en la lista de lo que se abre sin preguntar
+        // ([`is_safe_to_open`]) se acepta, pero al abrirlo pide la confirmación de Windows,
+        // como un comando (ver `run::pending_approvals`).
+        Action::OpenFile { path, .. } => check_path(path),
         Action::OpenUrl { url, .. } => {
             *url = url.trim().to_owned();
             let lower = url.to_ascii_lowercase();
@@ -166,8 +216,18 @@ fn check_path(path: &Path) -> Result<(), String> {
     if path.as_os_str().is_empty() {
         return Err("falta la ruta".into());
     }
+    let text = path.to_string_lossy();
+    // Rutas de red (\\equipo\carpeta) o de dispositivo (\\?\…, \\.\…): Sift solo abre
+    // cosas de este PC. Abrir una ruta de red, además, manda tus credenciales a ese equipo.
+    if text.starts_with(r"\\") || text.starts_with("//") {
+        return Err("Sift solo abre rutas de este PC (C:\\…), no de red".into());
+    }
     if !path.is_absolute() {
         return Err("la ruta tiene que ser completa (p. ej. C:\\Users\\…)".into());
+    }
+    // Un «:» más allá de la unidad (C:) es un flujo alternativo de NTFS.
+    if text.chars().skip(2).any(|c| c == ':') {
+        return Err("la ruta no es válida".into());
     }
     Ok(())
 }
@@ -346,19 +406,104 @@ mod tests {
     }
 
     #[test]
-    fn open_file_rejects_executables() {
+    fn only_listed_extensions_open_without_asking() {
+        let safe = |p: &str| is_safe_to_open(Path::new(p));
+        for p in [
+            r"C:\Apuntes\tema4.pdf",
+            r"C:\x\Foto.JPG",
+            r"C:\x\notas.md",
+            r"C:\x\informe.docx",
+            r"C:\x\main.rs",
+        ] {
+            assert!(safe(p), "{p}");
+        }
+        // Programas, scripts, accesos directos, paneles, macros… y lo desconocido: no.
+        for p in [
+            r"C:\x\setup.EXE",
+            r"C:\x\run.bat",
+            r"C:\x\script.ps1",
+            r"C:\x\a.js",
+            r"C:\x\a.vbs",
+            r"C:\x\a.py",
+            r"C:\x\a.lnk",
+            r"C:\x\a.url",
+            r"C:\x\a.hta",
+            r"C:\x\a.reg",
+            r"C:\x\a.cpl",
+            r"C:\x\a.docm",
+            r"C:\x\a.settingcontent-ms",
+            r"C:\x\a.extension-que-no-existe",
+            r"C:\x\sin-extension",
+            r"C:\x\.pdf",
+        ] {
+            assert!(!safe(p), "{p}");
+        }
+        // Los trucos que Windows ignora al abrir: punto o espacio al final y flujos de NTFS.
+        assert!(!safe(r"C:\x\setup.pdf."));
+        assert!(!safe(r"C:\x\setup.pdf "));
+        assert!(!safe(r"C:\x\notas.txt:setup.exe"));
+        assert!(!safe(r"C:\x\setup.exe:notas.txt"));
+    }
+
+    #[test]
+    fn any_local_file_is_accepted_and_ads_are_rejected() {
         let check = |p: &str| {
             validate_action(&mut Action::OpenFile {
                 path: abs(p),
                 place: None,
             })
         };
+        // Se acepta (pedirá confirmación al abrir, ver `run::pending_approvals`).
         assert!(check(r"C:\Apuntes\tema4.pdf").is_ok());
-        assert!(check(r"C:\x\setup.EXE").unwrap_err().contains("ejecutable"));
-        assert!(check(r"C:\x\run.bat").is_err());
-        assert!(check(r"C:\x\script.ps1").is_err());
+        assert!(check(r"C:\x\setup.exe").is_ok());
+        assert!(check(r"C:\x\notas.txt:setup.exe").is_err());
+        assert!(check(r"\\equipo\x\a.pdf").is_err());
     }
 
+    #[test]
+    fn a_folder_must_be_a_folder_and_paths_must_be_local() {
+        let folder = |p: &str| {
+            validate_action(&mut Action::OpenFolder {
+                path: abs(p),
+                place: None,
+            })
+        };
+        // Uno que existe y no es carpeta (el Cargo.toml de este crate).
+        let file = Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+        assert!(
+            validate_action(&mut Action::OpenFolder {
+                path: file,
+                place: None
+            })
+            .is_err()
+        );
+        assert!(folder(r"C:\Proyectos\Web").is_ok());
+        assert!(is_plain_folder(Path::new(env!("CARGO_MANIFEST_DIR"))));
+        // Carpetas especiales de Windows (un CLSID): no.
+        assert!(folder(r"C:\x\Panel.{21EC2020-3AEA-1069-A2DD-08002B30309D}").is_err());
+        assert!(folder(r"C:\x\{21EC2020-3AEA-1069-A2DD-08002B30309D}").is_err());
+        // Rutas de red o de dispositivo: no.
+        assert!(folder(r"\\equipo\carpeta").is_err());
+        assert!(folder(r"\\?\C:\x").is_err());
+    }
+
+    #[test]
+    fn the_sandbox_security_spaces_behave_as_the_guide_says() {
+        // docs/prueba-instalacion.md, C1 y C2.
+        let trap = include_str!("../../../scripts/sandbox-pruebas/espacio-trampa.json");
+        let by_path = include_str!("../../../scripts/sandbox-pruebas/espacio-app-por-ruta.json");
+        if Path::new(r"C:\Windows\System32\calc.exe").exists() {
+            let err = crate::export::from_json(trap).unwrap_err().to_string();
+            assert!(err.contains("no es una carpeta"), "{err}");
+        }
+        let spaces = crate::export::from_json(by_path).unwrap();
+        let pending = crate::run::pending_approvals(&spaces[0].actions, |_| false);
+        assert_eq!(
+            pending.len(),
+            1,
+            "abrir calc.exe por su ruta pide confirmación"
+        );
+    }
     #[test]
     fn paths_must_be_absolute() {
         let mut a = Action::OpenFolder {

@@ -190,31 +190,31 @@ fn auto_icon_key(draft: &SpaceDraft) -> Option<String> {
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn create_space(app: AppHandle, draft: SpaceDraft) -> Result<Space, AppError> {
     Ok(app.state::<Db>().lock().create_space(draft)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn update_space(app: AppHandle, id: i32, draft: SpaceDraft) -> Result<Space, AppError> {
     Ok(app.state::<Db>().lock().update_space(id.into(), draft)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn duplicate_space(app: AppHandle, id: i32) -> Result<Space, AppError> {
     Ok(app.state::<Db>().lock().duplicate_space(id.into())?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn delete_space(app: AppHandle, id: i32) -> Result<(), AppError> {
     Ok(app.state::<Db>().lock().delete_space(id.into())?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn reorder_spaces(app: AppHandle, ids: Vec<i32>) -> Result<(), AppError> {
     let ids: Vec<i64> = ids.into_iter().map(i64::from).collect();

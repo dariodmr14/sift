@@ -32,6 +32,9 @@ pub const HOTKEY: &str = "Ctrl+Alt+Space";
 const NO_SEED_ENV: &str = "SIFT_DEV_NO_SEED";
 /// Arrancar la versión de desarrollo con los datos de demostración (ver [`demo_folder`]).
 const DEMO_ENV: &str = "SIFT_DEV_DEMO";
+/// Arrancar la versión de desarrollo leyendo solo esta carpeta (las pruebas de aguante,
+/// `scripts/aguante/`, con sus archivos generados). Solo en desarrollo.
+const ROOT_ENV: &str = "SIFT_DEV_ROOT";
 /// Nombre de la copia de `demo/` en Documentos públicos.
 const DEMO_FOLDER: &str = "Sift (demostración)";
 
@@ -212,6 +215,12 @@ pub fn seed(db: &mut sift_storage::Database) {
     let empty =
         db.list_roots().is_ok_and(|r| r.is_empty()) && db.list_spaces().is_ok_and(|s| s.is_empty());
     if !empty || seed_demo(db) {
+        return;
+    }
+    if let Some(root) = std::env::var_os(ROOT_ENV).map(PathBuf::from) {
+        if let Err(e) = db.add_root(&root) {
+            tracing::warn!("pruebas de aguante: no se pudo añadir la carpeta: {e}");
+        }
         return;
     }
     let repo = repo_root();

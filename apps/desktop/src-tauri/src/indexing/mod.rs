@@ -24,6 +24,7 @@
 //!
 //! El progreso se publica como evento para la UI, como mucho cada 120 ms.
 
+mod download;
 mod status;
 mod sync;
 mod vectorize;
@@ -99,6 +100,8 @@ impl Indexing {
             embedder: None,
             target_vectors: None,
             unsaved_vectors: 0,
+            jobs: jobs.clone(),
+            download: download::ModelDownload::default(),
         };
         let crashed = status.clone();
         let spawned = std::thread::Builder::new()

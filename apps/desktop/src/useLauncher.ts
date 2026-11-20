@@ -6,12 +6,17 @@ import {
   prefersReducedMotion,
 } from "./appearance";
 
+/** Lo pendiente de un cierre con animación: se cancela si la barra se vuelve a abrir. */
+let pendingHide: (() => void) | null = null;
+
 /** Reinicia una animación CSS: quita las clases, fuerza un reflow y pone la nueva. */
 function playMotion(
   el: HTMLElement | null,
   cls: "sift-enter" | "sift-exit" | "sift-from",
 ) {
   if (!el) return;
+  // Otra animación (abrir de nuevo, o la barra ya oculta): el cierre de antes ya no vale.
+  pendingHide?.();
   el.classList.remove("sift-enter", "sift-exit", "sift-from");
   void el.offsetWidth; // sin esto, el navegador no vuelve a empezar la animación
   el.classList.add(cls);
@@ -74,8 +79,23 @@ export function dismissLauncher(el: HTMLElement | null) {
     void commands.hideLauncher();
     return;
   }
-  el.addEventListener("animationend", () => void commands.hideLauncher(), {
-    once: true,
-  });
   playMotion(el, "sift-exit");
+  // Solo cuenta el final de la animación de salida de la propia barra (no las de dentro:
+  // el tamiz, los paneles…), y por si nunca termina (ventana oculta), un tope de tiempo.
+  // Si se vuelve a abrir antes, se cancela (auditoría 1.0).
+  const hide = () => {
+    cleanup();
+    void commands.hideLauncher();
+  };
+  const onEnd = (e: AnimationEvent) => {
+    if (e.target === el && e.animationName === "sift-exit") hide();
+  };
+  const timer = window.setTimeout(hide, 300);
+  const cleanup = () => {
+    el.removeEventListener("animationend", onEnd);
+    window.clearTimeout(timer);
+    pendingHide = null;
+  };
+  el.addEventListener("animationend", onEnd);
+  pendingHide = cleanup;
 }

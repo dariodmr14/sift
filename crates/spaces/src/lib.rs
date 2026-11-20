@@ -14,4 +14,4 @@ pub use run::{
     ActionOutcome, Child, NoProgress, Opener, POLL, Progress, Waiter, approval_message,
     check_wait_now, display_command, label, pending_approvals, run_action, run_actions,
 };
-pub use validate::{ValidationError, validate, validate_action};
+pub use validate::{ValidationError, is_plain_folder, is_safe_to_open, validate, validate_action};

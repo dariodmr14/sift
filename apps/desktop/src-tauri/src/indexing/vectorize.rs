@@ -9,6 +9,7 @@ use sift_extract::Extractor;
 use tauri::Manager;
 
 use super::Job;
+use super::download::{Context, Step};
 use super::status::{IndexPhase, SmartStatus};
 use super::worker::{Worker, drain};
 
@@ -31,6 +32,7 @@ impl Worker {
             .indexing
             .disable_smart_search;
         if !enabled {
+            self.download.cancel();
             self.smart.set(None);
             self.embedder = None;
             self.target_vectors = None;
@@ -54,6 +56,37 @@ impl Worker {
                 };
             });
             return done;
+        }
+        // La descarga va en su propio hilo: mientras tanto, el indexado sigue con los
+        // archivos (auditoría 1.0). Al acabar, ese hilo manda `Job::Smart` y se vuelve aquí.
+        if missing {
+            match self.download_step(card) {
+                Step::Ready => {}
+                Step::Running => {
+                    let total_mb = (card.download_bytes() / 1_000_000) as u32;
+                    self.update(|s| {
+                        s.running = true;
+                        s.phase = IndexPhase::Downloading;
+                        s.smart.enabled = true;
+                        s.smart.awaiting_permission = false;
+                        s.smart.note = None;
+                        s.smart.download_mb = total_mb;
+                    });
+                    return done;
+                }
+                Step::Failed(note) => {
+                    self.update(|s| {
+                        s.running = false;
+                        s.phase = IndexPhase::Idle;
+                        s.smart = SmartStatus {
+                            enabled: true,
+                            note: Some(note),
+                            ..SmartStatus::default()
+                        };
+                    });
+                    return done;
+                }
+            }
         }
         if missing && let Err(note) = self.prepare_smart(card) {
             tracing::warn!(%note, "búsqueda inteligente no disponible por ahora");
@@ -87,48 +120,30 @@ impl Worker {
         )
     }
 
-    /// Descarga el modelo si falta, lo carga (dos veces: indexado y consultas) y carga o
+    /// ¿Está el modelo? Si no, empieza (o sigue) su descarga en otro hilo.
+    fn download_step(&mut self, card: &'static sift_embeddings::ModelCard) -> Step {
+        let Ok(app_data) = self.app.path().app_data_dir() else {
+            return Step::Failed("No se encuentra la carpeta de datos de Sift.".into());
+        };
+        let dir = crate::models::model_dir(&app_data, card);
+        let ready = crate::models::is_ready(&dir, card);
+        let (app, status, jobs) = (self.app.clone(), self.status.clone(), self.jobs.clone());
+        self.download.step(ready, move || Context {
+            app,
+            status,
+            jobs,
+            dir,
+            card,
+        })
+    }
+
+    /// Carga el modelo ya descargado (dos veces: indexado y consultas) y carga o
     /// reconstruye el índice de vectores. `Err` con el motivo en palabras.
     fn prepare_smart(&mut self, card: &'static sift_embeddings::ModelCard) -> Result<(), String> {
         let app_data = self.app.path().app_data_dir().map_err(|e| e.to_string())?;
         let dir = crate::models::model_dir(&app_data, card);
         if !crate::models::is_ready(&dir, card) {
-            let total_mb = (card.download_bytes() / 1_000_000) as u32;
-            self.update(|s| {
-                s.running = true;
-                s.phase = IndexPhase::Downloading;
-                s.smart = SmartStatus {
-                    enabled: true,
-                    download_mb: total_mb,
-                    ..SmartStatus::default()
-                };
-            });
-            let started = Instant::now();
-            let cancel = self.cancel.clone();
-            let result = crate::models::download(&dir, card, &cancel, |done, _| {
-                self.update_throttled(|s| s.smart.downloaded_mb = (done / 1_000_000) as u32);
-            });
-            if let Err(e) = result {
-                // El detalle técnico, al log; a la persona, qué pasa y qué hará Sift.
-                tracing::warn!(error = %e, "no se pudo descargar la búsqueda inteligente");
-                return Err(match e {
-                    crate::models::DownloadError::Network(_) => {
-                        "Sin conexión: se descargará cuando la haya.".to_owned()
-                    }
-                    crate::models::DownloadError::Corrupt(_) => {
-                        "La descarga llegó dañada: se volverá a intentar.".to_owned()
-                    }
-                    crate::models::DownloadError::Io(_) => {
-                        "No se pudo guardar la descarga. ¿Queda espacio en el disco?".to_owned()
-                    }
-                    crate::models::DownloadError::Cancelled => "Descarga cancelada.".to_owned(),
-                });
-            }
-            tracing::info!(
-                model = card.id,
-                secs = started.elapsed().as_secs_f64(),
-                "modelo de búsqueda inteligente descargado"
-            );
+            return Err("Falta descargar la búsqueda inteligente.".into());
         }
         let load = |threads| {
             sift_embeddings::OnnxEmbedder::load(card, &dir, threads).map_err(|e| {
@@ -204,8 +219,10 @@ impl Worker {
     ) -> Result<sift_search::VectorIndex, String> {
         let path = crate::smart::vectors_path(app_data, card);
         let db = self.db();
-        let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-        let stored = db.count_embeddings(card.id).map_err(|e| e.to_string())?;
+        let stored = {
+            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
+            db.count_embeddings(card.id).map_err(|e| e.to_string())?
+        };
         if let Some(v) = sift_search::VectorIndex::load(&path, card.dims)
             && v.len() as u64 == stored
         {
@@ -213,10 +230,16 @@ impl Worker {
         }
         let started = Instant::now();
         let v = sift_search::VectorIndex::new(card.dims).map_err(|e| e.to_string())?;
+        // Con el candado solo mientras se leen los vectores; construir el índice y guardarlo
+        // (lo lento) va sin él, para no parar la vista previa ni los Ajustes (auditoría 1.0).
         let mut batch = Vec::new();
-        db.for_each_embedding(card.id, |h, vector| batch.push((h, vector)))
-            .map_err(|e| e.to_string())?;
+        {
+            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
+            db.for_each_embedding(card.id, |h, vector| batch.push((h, vector)))
+                .map_err(|e| e.to_string())?;
+        }
         v.add(&batch).map_err(|e| e.to_string())?;
+        drop(batch);
         if let Err(e) = v.save(&path) {
             tracing::warn!(error = %e, "no se pudo guardar el índice de vectores");
         }

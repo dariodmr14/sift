@@ -1,4 +1,8 @@
 //! Comandos IPC de la búsqueda de archivos y de Ajustes → Carpetas.
+//!
+//! Los que leen o escriben la base de datos son `#[tauri::command(async)]`: si fueran
+//! síncronos correrían en el hilo principal, que es el que atiende el atajo, y esperarían al
+//! candado de la base de datos mientras el indexador lo tiene (auditoría 1.0).
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -175,7 +179,7 @@ pub struct FilePreview {
 
 /// La vista previa de un resultado de la barra: un fragmento más largo que el de la
 /// lista, sacado de SQLite (no se lee el archivo). Solo se pide con la vista previa abierta.
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn preview_file(
     app: AppHandle,
@@ -225,7 +229,7 @@ fn build_preview(chunk: &sift_storage::PreviewChunk, query: &str) -> FilePreview
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn list_roots(app: AppHandle) -> Result<Vec<RootView>, AppError> {
     Ok(db(&app)
@@ -257,7 +261,7 @@ const UNREAD_EXAMPLES: usize = 3;
 
 /// Los archivos de una carpeta que no se pudieron leer, agrupados por motivo (no se
 /// listan todos).
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn unread_files(app: AppHandle, root_id: i32) -> Result<Vec<UnreadGroupView>, AppError> {
     Ok(db(&app)
@@ -351,7 +355,7 @@ fn is_covered(path: &std::path::Path, roots: &[PathBuf]) -> bool {
 }
 
 /// Datos de la bienvenida: si ya se vio, el atajo y las carpetas sugeridas.
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn get_welcome(app: AppHandle) -> Result<WelcomeView, AppError> {
     let settings = crate::load_settings(&app);
@@ -379,7 +383,7 @@ pub fn get_welcome(app: AppHandle) -> Result<WelcomeView, AppError> {
 }
 
 /// Añade Documentos o Escritorio (la bienvenida).
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn add_suggested_folder(app: AppHandle, kind: SuggestedKind) -> Result<(), AppError> {
     let path = suggested_path(&app, kind)
@@ -409,7 +413,7 @@ pub fn finish_welcome(app: AppHandle, open_launcher: bool) -> Result<(), AppErro
 }
 
 /// El usuario acepta descargar el modelo de búsqueda inteligente (unos 120 MB).
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn allow_model_download(app: AppHandle) -> Result<(), AppError> {
     crate::update_settings(&app, |s| {
@@ -422,7 +426,7 @@ pub fn allow_model_download(app: AppHandle) -> Result<(), AppError> {
 }
 
 /// Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan).
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn remove_root(app: AppHandle, id: i32) -> Result<(), AppError> {
     let indexing = app.state::<Indexing>();
@@ -438,7 +442,7 @@ pub fn remove_root(app: AppHandle, id: i32) -> Result<(), AppError> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn get_ignore_patterns(app: AppHandle) -> Result<Vec<String>, AppError> {
     Ok(db(&app).ignore_patterns()?)
@@ -446,7 +450,7 @@ pub fn get_ignore_patterns(app: AppHandle) -> Result<Vec<String>, AppError> {
 
 /// Guarda los patrones (si son válidos) y resincroniza: lo que ahora se ignora sale del
 /// índice y lo que ya no, entra.
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn set_ignore_patterns(app: AppHandle, patterns: Vec<String>) -> Result<Vec<String>, AppError> {
     IgnoreRules::new(&patterns).map_err(|e| AppError::Invalid(e.to_string()))?;
@@ -519,7 +523,7 @@ pub struct RecentFile {
 
 /// «Abierto recientemente»: lo último que abriste desde Sift. Se pide al abrir la barra,
 /// después de pintarla, así que no cuenta en los < 100 ms.
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn recent_files(app: AppHandle) -> Result<Vec<RecentFile>, AppError> {
     /// Los que caben en la barra con los Espacios.
@@ -575,6 +579,38 @@ pub async fn open_file(app: AppHandle, path: String, page: Option<u32>) -> Resul
         tracing::warn!("no se pudo apuntar la apertura: {e}");
     }
     app.state::<FrecencyCache>().invalidate();
+    // Lo que no está en la lista de lo que se abre sin preguntar (un `.bat`, un `.js`, un
+    // `.lnk`, un `.exe`…) se **ejecutaría** al abrirlo: antes, un diálogo de Windows (no de
+    // la interfaz, que no puede aprobar nada por su cuenta) pregunta (auditoría 1.0).
+    if !sift_spaces::is_safe_to_open(&path) {
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let dialog = app.clone();
+        let open = tauri::async_runtime::spawn_blocking(move || {
+            use tauri_plugin_dialog::{MessageDialogButtons, MessageDialogKind};
+            dialog
+                .dialog()
+                .message(format!(
+                    "«{name}» puede ejecutar un programa al abrirlo.\n\n\
+                     Ábrelo solo si sabes qué es y de dónde viene."
+                ))
+                .title("Sift: confirmar")
+                .kind(MessageDialogKind::Warning)
+                .buttons(MessageDialogButtons::OkCancelCustom(
+                    "Abrir".into(),
+                    "Cancelar".into(),
+                ))
+                .blocking_show()
+        })
+        .await
+        .map_err(|e| AppError::System(e.to_string()))?;
+        if !open {
+            tracing::info!("apertura de un archivo que ejecuta algo no confirmada");
+            return Ok(());
+        }
+    }
     // Un PDF con página, en esa página si el lector lo permite (si no, normal).
     let is_pdf = sift_extract::extension(&path) == "pdf";
     tauri::async_runtime::spawn_blocking(move || match page {
@@ -587,7 +623,7 @@ pub async fn open_file(app: AppHandle, path: String, page: Option<u32>) -> Resul
 }
 
 /// Abre la carpeta que contiene el archivo, con él seleccionado (como «Abrir ubicación»).
-#[tauri::command]
+#[tauri::command(async)]
 #[specta::specta]
 pub fn reveal_file(app: AppHandle, path: String) -> Result<(), AppError> {
     let path = PathBuf::from(path);

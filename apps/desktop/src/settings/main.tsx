@@ -4,6 +4,7 @@ import Settings from "./Settings";
 import "../index.css";
 import { applyAppearance, applyWindowMaterial } from "../appearance";
 import { commands, events } from "../bindings";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 
 // Mismo tema, acento y vidrio que la barra. La ventana se crea oculta: se le dice a Rust
 // que la muestre cuando ya hay tema, vidrio y un primer render, para que el primer
@@ -27,6 +28,8 @@ void events.glassMoving.listen((e) => {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <Settings />
+    <ErrorBoundary>
+      <Settings />
+    </ErrorBoundary>
   </React.StrictMode>,
 );

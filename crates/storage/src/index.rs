@@ -717,6 +717,53 @@ mod tests {
         }
     }
 
+    /// Disco lleno (auditoría 1.0): con la base de datos limitada a unas pocas páginas, guardar
+    /// acaba fallando. Tiene que ser un error (no un cierre), sin dejar el archivo a medias, y
+    /// lo guardado antes se tiene que poder seguir leyendo; al haber sitio, se sigue guardando.
+    #[test]
+    fn disk_full_is_an_error_not_a_crash_and_the_database_stays_usable() {
+        let dir = std::env::temp_dir().join(format!("sift-disco-lleno-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("sift.db");
+        let mut db = Database::open(&path).unwrap();
+        let root = db.add_root(Path::new(r"C:\Uni")).unwrap().id;
+        let pages: i64 = db
+            .conn
+            .query_row("PRAGMA page_count", [], |r| r.get(0))
+            .unwrap();
+        db.conn
+            .execute_batch(&format!("PRAGMA max_page_count = {}", pages + 40))
+            .unwrap();
+        let text = "presupuesto ".repeat(2_000);
+        let mut saved = Vec::new();
+        let mut failure = None;
+        for i in 0..1_000 {
+            let p = format!(r"C:\Uni\nota-{i}.md");
+            match db.upsert_file(&file(root, &p), &[chunk(0, &text), chunk(1, &text)]) {
+                Ok(_) => saved.push(p),
+                Err(e) => {
+                    failure = Some((p, e));
+                    break;
+                }
+            }
+        }
+        let (failed, error) = failure.expect("con el disco «lleno» tendría que fallar");
+        assert!(matches!(error, StorageError::Sqlite(_)), "{error}");
+        assert!(!saved.is_empty(), "antes de llenarse se guardó algo");
+        // Lo de antes sigue ahí y el archivo que falló no quedó a medias.
+        assert!(db.is_indexed(Path::new(&saved[0])).unwrap());
+        assert!(!db.is_indexed(Path::new(&failed)).unwrap());
+        // Con sitio otra vez, se sigue guardando.
+        db.conn
+            .execute_batch("PRAGMA max_page_count = 1073741823")
+            .unwrap();
+        db.upsert_file(&file(root, &failed), &[chunk(0, &text)])
+            .unwrap();
+        assert!(db.is_indexed(Path::new(&failed)).unwrap());
+        drop(db);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn preview_chunk_picks_the_requested_or_the_first_chunk() {
         let mut db = Database::open_in_memory().unwrap();
