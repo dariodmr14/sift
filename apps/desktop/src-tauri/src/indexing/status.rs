@@ -49,6 +49,18 @@ pub struct IndexStatus {
     pub smart: SmartStatus,
 }
 
+impl IndexStatus {
+    /// Un trabajo ha terminado (revisión completa o cambios recientes): al día, y todo lo
+    /// que había que leer, leído. Sin esto, tras unos cambios el estado decía «0 de 7» en
+    /// reposo, y quien leyera el progreso creería que faltan archivos.
+    pub(super) fn finish(&mut self) {
+        self.running = false;
+        self.phase = IndexPhase::Idle;
+        self.current_root = None;
+        self.done = self.total;
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct SmartStatus {
@@ -89,3 +101,25 @@ pub(super) const STOPPED_NOTE: &str =
 /// Evento: el estado del indexado ha cambiado.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct IndexProgress(pub IndexStatus);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_finished_run_is_idle_with_everything_read() {
+        let mut s = IndexStatus {
+            running: true,
+            phase: IndexPhase::Updating,
+            current_root: Some("C:\\Notas".into()),
+            done: 0,
+            total: 7,
+            ..IndexStatus::default()
+        };
+        s.finish();
+        assert!(!s.running);
+        assert_eq!(s.phase, IndexPhase::Idle);
+        assert_eq!(s.current_root, None);
+        assert_eq!((s.done, s.total), (7, 7));
+    }
+}

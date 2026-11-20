@@ -6,7 +6,8 @@
 // (El disco lleno se prueba en Rust: crates/storage, test `disk_full_*`.)
 //
 // Uso (desde la raíz):
-//   node scripts/aguante/robustez.mjs "<carpeta grande>" "<carpeta de archivos raros>" <salida.json>
+//   node scripts/aguante/robustez.mjs "<carpeta grande>" "<carpeta de archivos raros>" <salida.json> [--solo-raros]
+// (`--solo-raros` se salta los cierres bruscos, que tardan casi una hora con 100 000 archivos.)
 
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -15,6 +16,7 @@ import path from "node:path";
 import { connectBar, invoke, memory, setAsideDevData, sleep, startSift, waitIndexed } from "./comun.mjs";
 
 const [big, odd, outFile] = process.argv.slice(2);
+const onlyOdd = process.argv.includes("--solo-raros");
 if (!big || !odd || !outFile) throw new Error("uso: robustez.mjs <carpeta grande> <carpeta rara> <salida.json>");
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const result = { startedAt: new Date().toISOString() };
@@ -68,26 +70,29 @@ let restore = setAsideDevData();
 let app, locked;
 try {
   // 1. Cierres bruscos a mitad de indexado.
-  const crashes = [];
-  for (const after of [25_000, 60_000]) {
-    app = startSift(big);
+  if (!onlyOdd) {
+    const crashes = [];
+    for (const after of [25_000, 60_000]) {
+      app = startSift(big);
+      const bar = await connectBar();
+      await sleep(after);
+      const s = await invoke(bar, "index_status");
+      crashes.push({ killedAfterMs: after, done: s.done, total: s.total, phase: s.phase });
+      log(`cierre brusco tras ${after / 1000} s (${s.done}/${s.total})`);
+      app.kill();
+      await sleep(3000);
+    }
+    app = startSift(null);
     const bar = await connectBar();
-    await sleep(after);
+    const idx = await waitIndexed(bar, app.pid, { log });
     const s = await invoke(bar, "index_status");
-    crashes.push({ killedAfterMs: after, done: s.done, total: s.total, phase: s.phase });
-    log(`cierre brusco tras ${after / 1000} s (${s.done}/${s.total})`);
-    app.kill();
-    await sleep(3000);
+    const q = await invoke(bar, "search_files", { query: "presupuesto", seq: 1, filter: null });
+    const files = (await invoke(bar, "list_roots")).reduce((n, r) => n + r.files, 0);
+    result.crash = { crashes, recoveredSeconds: idx.seconds, files, readAfterRestart: s.total, error: s.error ?? null, searchHits: q?.results?.hits?.length ?? 0 };
+    log("recuperado:", JSON.stringify(result.crash));
+    app.stop();
+    await sleep(4000);
   }
-  app = startSift(null);
-  const bar = await connectBar();
-  const idx = await waitIndexed(bar, app.pid, { log });
-  const s = await invoke(bar, "index_status");
-  const q = await invoke(bar, "search_files", { query: "presupuesto", seq: 1, filter: null });
-  result.crash = { crashes, recoveredSeconds: idx.seconds, files: s.total, error: s.error ?? null, searchHits: q?.results?.hits?.length ?? 0 };
-  log("recuperado:", JSON.stringify(result.crash));
-  app.stop();
-  await sleep(4000);
   restore();
   restore = null;
 

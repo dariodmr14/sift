@@ -124,7 +124,8 @@ export async function waitIndexed(bar, pid, { timeoutMs = 4 * 3600_000, every = 
     peak = { siftWorkingMb: Math.max(peak.siftWorkingMb, m.siftWorkingMb), webviewMb: Math.max(peak.webviewMb, m.webviewMb) };
     samples.push({ t: Math.round((Date.now() - t0) / 1000), done: s.done, total: s.total, phase: s.phase, ...m });
     log(`${Math.round((Date.now() - t0) / 1000)} s · ${s.phase} ${s.done}/${s.total} · ${m.siftWorkingMb} MB`);
-    if (!s.running && s.total > 0 && s.done >= s.total) break;
+    // Acabado: en reposo y con una revisión completa terminada en esta sesión (`last`).
+    if (!s.running && s.phase === "idle" && s.last) break;
     if (Date.now() - t0 > timeoutMs) throw new Error("el indexado no acabó a tiempo");
     await sleep(every);
   }
