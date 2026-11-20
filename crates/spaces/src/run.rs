@@ -115,20 +115,42 @@ pub fn pending_approvals<'a>(
         .filter_map(|a| match a {
             Action::RunCommand(c) => Some(c.clone()),
             Action::OpenApp { app_id, .. } => app_as_program(app_id),
+            Action::OpenFile { path, .. } => file_as_program(path),
             _ => None,
         })
         .filter(|c| !is_approved(c) && seen.insert(c.clone()))
         .collect()
 }
 
-/// Una «aplicación» dada por la ruta de un programa (`C:\…\x.exe`, un acceso directo del
-/// escritorio) y no por su id de Windows (`Microsoft.VisualStudioCode`, `Claude_…!Claude`):
-/// abrirla es ejecutar ese programa, así que pide la misma confirmación que un comando la
-/// primera vez. Un Espacio importado no puede abrir un programa sin preguntar (auditoría 1.0).
+/// ¿Es un identificador de app de Windows y nada más? Solo letras, cifras y `. _ - !` y
+/// espacios (`Microsoft.VisualStudioCode`, `Claude_pzs8sxrjxfjjc!Claude`,
+/// `Microsoft.Office.WINWORD.EXE.15`). Es una lista de lo PERMITIDO: una ruta (`C:\…\x.exe`,
+/// `{GUID}\x.exe`) o cualquier otra cosa no lo es.
+fn is_plain_app_id(app_id: &str) -> bool {
+    !app_id.is_empty()
+        && app_id
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '.' | '_' | '-' | '!' | ' '))
+}
+
+/// Una «aplicación» que no es un id de Windows (ver [`is_plain_app_id`]), por ejemplo la
+/// ruta de un programa o de un acceso directo: abrirla es ejecutar ese programa, así que
+/// pide la misma confirmación que un comando la primera vez. Un Espacio importado no puede
+/// abrir un programa sin preguntar (auditoría 1.0).
 pub fn app_as_program(app_id: &str) -> Option<CommandSpec> {
-    let looks_like_path = app_id.contains(['\\', '/', ':']);
-    looks_like_path.then(|| CommandSpec {
+    (!is_plain_app_id(app_id)).then(|| CommandSpec {
         program: app_id.to_owned(),
+        args: vec![],
+        cwd: None,
+    })
+}
+
+/// Un archivo que no está en la lista de lo que se abre sin preguntar
+/// ([`crate::validate::is_safe_to_open`]: un `.exe`, un `.lnk`, un `.bat`, un `.docm`…)
+/// pide la misma confirmación que un comando la primera vez (auditoría 1.0).
+pub fn file_as_program(path: &Path) -> Option<CommandSpec> {
+    (!crate::validate::is_safe_to_open(path)).then(|| CommandSpec {
+        program: path.to_string_lossy().into_owned(),
         args: vec![],
         cwd: None,
     })
@@ -416,7 +438,7 @@ pub fn run_action(action: &Action, opener: &dyn Opener) -> Result<(), String> {
     match &checked {
         Action::OpenFolder { path, .. } => {
             // Se comprueba otra vez al abrir: la ruta pudo cambiar después de guardar.
-            if !path.is_dir() {
+            if !crate::validate::is_plain_folder(path) {
                 return Err(format!("no existe la carpeta: {}", path.display()));
             }
             opener.open_path(path)
@@ -1615,6 +1637,40 @@ mod tests {
         assert!(
             pending_approvals(&[app(exe)], |_| true).is_empty(),
             "aprobada una vez, ya no pregunta"
+        );
+    }
+
+    #[test]
+    fn files_and_apps_outside_the_allowlist_ask_first() {
+        let file = |p: &str| Action::OpenFile {
+            path: PathBuf::from(p),
+            place: None,
+        };
+        let app = |id: &str| Action::OpenApp {
+            app_id: id.into(),
+            name: "x".into(),
+            place: None,
+        };
+        let pending = pending_approvals(
+            &[
+                file(r"C:\Apuntes\tema4.pdf"),
+                file(r"C:\x\acceso.lnk"),
+                file(r"C:\x\script.js"),
+                app(r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\cmd.exe"),
+                app("Microsoft.Office.WINWORD.EXE.15"),
+                app("calc.exe | evil"),
+            ],
+            |_| false,
+        );
+        let programs: Vec<_> = pending.iter().map(|c| c.program.as_str()).collect();
+        assert_eq!(
+            programs,
+            [
+                r"C:\x\acceso.lnk",
+                r"C:\x\script.js",
+                r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\cmd.exe",
+                "calc.exe | evil",
+            ]
         );
     }
 

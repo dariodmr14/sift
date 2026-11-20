@@ -579,11 +579,37 @@ pub async fn open_file(app: AppHandle, path: String, page: Option<u32>) -> Resul
         tracing::warn!("no se pudo apuntar la apertura: {e}");
     }
     app.state::<FrecencyCache>().invalidate();
-    // Un script o un acceso directo indexado (un `.bat`, un `.js`…) se **ejecutaría** al
-    // abrirlo: en vez de eso se enseña en su carpeta, seleccionado (auditoría 1.0). Para
-    // ejecutar algo está la acción «comando» de los Espacios, que pide confirmación.
-    if sift_spaces::is_executable(&path) {
-        return crate::shell::reveal_in_explorer(&path).map_err(AppError::System);
+    // Lo que no está en la lista de lo que se abre sin preguntar (un `.bat`, un `.js`, un
+    // `.lnk`, un `.exe`…) se **ejecutaría** al abrirlo: antes, un diálogo de Windows (no de
+    // la interfaz, que no puede aprobar nada por su cuenta) pregunta (auditoría 1.0).
+    if !sift_spaces::is_safe_to_open(&path) {
+        let name = path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let dialog = app.clone();
+        let open = tauri::async_runtime::spawn_blocking(move || {
+            use tauri_plugin_dialog::{MessageDialogButtons, MessageDialogKind};
+            dialog
+                .dialog()
+                .message(format!(
+                    "«{name}» puede ejecutar un programa al abrirlo.\n\n\
+                     Ábrelo solo si sabes qué es y de dónde viene."
+                ))
+                .title("Sift: confirmar")
+                .kind(MessageDialogKind::Warning)
+                .buttons(MessageDialogButtons::OkCancelCustom(
+                    "Abrir".into(),
+                    "Cancelar".into(),
+                ))
+                .blocking_show()
+        })
+        .await
+        .map_err(|e| AppError::System(e.to_string()))?;
+        if !open {
+            tracing::info!("apertura de un archivo que ejecuta algo no confirmada");
+            return Ok(());
+        }
     }
     // Un PDF con página, en esa página si el lector lo permite (si no, normal).
     let is_pdf = sift_extract::extension(&path) == "pdf";
