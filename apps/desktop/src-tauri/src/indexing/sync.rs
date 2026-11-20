@@ -142,10 +142,7 @@ impl Worker {
         }
         let result = sync_paths(ctx, &pass.roots, &paths, &mut sink);
         if was_idle {
-            self.update(|s| {
-                s.running = false;
-                s.phase = IndexPhase::Idle;
-            });
+            self.update(IndexStatus::finish);
         }
         match result {
             Ok(report) => {
@@ -316,10 +313,7 @@ impl Worker {
             "indexado terminado"
         );
         self.update(|s| {
-            s.running = false;
-            s.phase = IndexPhase::Idle;
-            s.current_root = None;
-            s.done = total as u32;
+            s.finish();
             s.last = Some(last);
         });
         again
