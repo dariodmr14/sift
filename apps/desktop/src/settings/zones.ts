@@ -91,10 +91,39 @@ const GENERIC_NAME = /^Pantalla \d+$/;
  * concreta: si cambias de principal en Windows, la sigue. Si la guardada ya no está
  * conectada, se añade para no perderla al editar.
  */
+/**
+ * Una pantalla guardada que ya no se llama ni está igual (p. ej. de antes de usar el número y
+ * el modelo de Windows): la de ahora que le corresponde, con la misma regla que Rust
+ * (`placement::updated_choice`): la que está en el mismo sitio o, si no, la única con ese
+ * nombre. `null` si no hace falta cambiar nada o si de verdad no está conectada.
+ */
+export function updatedChoice(
+  choice: MonitorChoice,
+  monitors: MonitorInfo[],
+): MonitorChoice | null {
+  if (choice.kind !== "specific") return null;
+  const atPlace = (m: MonitorInfo) =>
+    m.bounds.left === choice.left && m.bounds.top === choice.top;
+  if (monitors.some((m) => m.name === choice.name && atPlace(m))) return null;
+  const sameName = monitors.filter((m) => m.name === choice.name);
+  const found =
+    monitors.find(atPlace) ?? (sameName.length === 1 ? sameName[0] : null);
+  if (!found) return null;
+  return {
+    kind: "specific",
+    name: found.name,
+    left: found.bounds.left,
+    top: found.bounds.top,
+  };
+}
+
 export function monitorOptions(
   monitors: MonitorInfo[],
-  current: MonitorChoice,
+  saved: MonitorChoice,
 ): MonitorOption[] {
+  // Una referencia antigua cuenta como la pantalla de ahora que le corresponde: así no sale
+  // repetida como «no conectada».
+  const current = updatedChoice(saved, monitors) ?? saved;
   // El número de Windows manda; si no lo hay (0), de izquierda a derecha.
   const sorted = [...monitors].sort(
     (a, b) =>

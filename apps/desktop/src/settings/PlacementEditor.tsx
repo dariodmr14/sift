@@ -15,6 +15,7 @@ import {
   monitorOptions,
   placementSummary,
   sameChoice,
+  updatedChoice,
   ZONE_GROUPS,
   ZONES,
 } from "./zones";
@@ -87,13 +88,14 @@ export function PlacementEditor({
     reuseWindow: false,
   };
   const options = monitorOptions(monitors, current.monitor);
+  // Una pantalla guardada con su nombre de antes se muestra como la de ahora.
+  const monitor = updatedChoice(current.monitor, monitors) ?? current.monitor;
   const selectedMonitor =
-    options.find((o) => sameChoice(o.choice, current.monitor))?.value ??
-    "primary";
+    options.find((o) => sameChoice(o.choice, monitor))?.value ?? "primary";
   const set = (next: Partial<PlacementValue>) =>
     onChange(normalizePlacement({ ...current, ...next }));
 
-  const summary = placementSummary(current, options);
+  const summary = placementSummary({ ...current, monitor }, options);
   if (!open)
     return (
       <div className="flex items-center gap-3">

@@ -111,6 +111,34 @@ impl Progress for EventProgress<'_> {
     }
 }
 
+/// Al arrancar: pone al día las pantallas guardadas en los Espacios que ya no coinciden con
+/// las de ahora (p. ej. guardadas antes de usar el número y el modelo de Windows), si se puede
+/// saber cuál es (`sift_spaces::placement::updated_choice`). Las que de verdad no están
+/// conectadas se quedan como estaban.
+pub fn update_saved_monitors(db: &mut Database) {
+    use sift_spaces::placement::WindowManager;
+    let monitors = crate::window_manager::Win32Windows.monitors();
+    if monitors.is_empty() {
+        return;
+    }
+    let Ok(spaces) = db.list_spaces() else {
+        return;
+    };
+    let mut updated = 0;
+    for space in spaces {
+        let mut draft = space.draft.clone();
+        if sift_spaces::placement::update_saved_monitors(&mut draft, &monitors) {
+            match db.update_space(space.id, draft) {
+                Ok(_) => updated += 1,
+                Err(e) => tracing::warn!("no se pudo poner al día la pantalla de un Espacio: {e}"),
+            }
+        }
+    }
+    if updated > 0 {
+        tracing::info!(espacios = updated, "pantallas guardadas puestas al día");
+    }
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub enum PathKind {

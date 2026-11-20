@@ -4,7 +4,7 @@ members = ["apps/desktop/src-tauri", "crates/*"]
 
 # Metadatos comunes: cada crate los hereda con `xxx.workspace = true`.
 [workspace.package]
-version = "1.0.0-rc.2"
+version = "1.0.0-rc.3"
 edition = "2024"
 rust-version = "1.99"
 # Todos los derechos reservados (ver LICENSE). `LicenseRef-` es la forma SPDX de

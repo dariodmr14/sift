@@ -167,3 +167,13 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Resuelto** (`feat/instalador`, imágenes aprobadas; ADR 0019: icono, imagen lateral y cabecera, solo en español, textos propios y «Abrir Sift»). Icono de Sift, imágenes lateral y de cabecera con el estilo de Vidrio, textos en español y «Abrir Sift» al final. Decir qué se puede personalizar y enseñar las imágenes antes.
 
 Al terminar: instalador 1.0.0-rc.2 y cómo actualizar el instalado.
+
+## 2026-11-20 — Usando la 1.0.0-rc.2
+
+### 1. Indicador de carga en el panel «Abriendo…»
+- [x] ✅ **Resuelto** (`fix/rc3`: el tamiz en el paso en marcha, en cada ventana que se coloca y junto a «Colocando las ventanas…»; además en las tarjetas «en marcha» de Estado, en «Probar» y en la descarga de General, que no enseñaba progreso; con test). El panel «Abriendo «…»» / «Colocando las ventanas…» no usa el indicador de carga con el logo. Usarlo ahí (junto a «Colocando las ventanas…» y en el paso en marcha) y revisar toda la app buscando otros sitios donde algo tarda sin indicador (vista previa, primer indexado, descarga, «Probar»…), con criterio.
+
+### 2. Pantalla duplicada en el desplegable de un Espacio
+- [x] ✅ **Resuelto** (`fix/rc3`: al arrancar, las referencias antiguas pasan a la pantalla de su mismo sitio o, si no, a la única con ese nombre; el editor aplica la misma regla; tests en Rust y en la UI con este caso: tres acciones guardadas como «Pantalla 1» en x = 1920 pasan a «22EN33»). Sale «Pantalla 1 — 22EN33», «Pantalla 2 — ZOWIE XL LCD (principal)», «Donde esté el ratón» y además «Pantalla 1 (no conectada: se usará la principal)». Es un Espacio guardado antes del cambio de nombres de las pantallas. Al cargar, convertir las referencias antiguas a la pantalla correcta cuando se pueda identificar; «no conectada» solo cuando de verdad no esté. Con test.
+
+Al terminar: instalador 1.0.0-rc.3 y cómo actualizar el instalado.
