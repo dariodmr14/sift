@@ -61,6 +61,42 @@ impl From<std::io::Error> for DownloadError {
     }
 }
 
+/// Esperas entre intentos de la descarga si la conexión falla o llega dañada: tres intentos
+/// en total, y cada uno sigue donde se quedó el anterior (`Range`).
+pub const RETRY_WAITS: [std::time::Duration; 2] = [
+    std::time::Duration::from_secs(5),
+    std::time::Duration::from_secs(30),
+];
+
+/// Repite `attempt` mientras falle por la red o llegue dañado, esperando `waits` entre un
+/// intento y otro (y atento a `cancel` mientras espera). Un fallo de disco o una
+/// cancelación no se reintentan: no se arreglan solos.
+pub fn with_retries<T>(
+    waits: &[std::time::Duration],
+    cancel: &AtomicBool,
+    mut attempt: impl FnMut() -> Result<T, DownloadError>,
+) -> Result<T, DownloadError> {
+    let mut waits = waits.iter();
+    loop {
+        match attempt() {
+            Err(e @ (DownloadError::Network(_) | DownloadError::Corrupt(_))) => {
+                let Some(wait) = waits.next() else {
+                    return Err(e);
+                };
+                tracing::info!(error = %e, secs = wait.as_secs(), "descarga fallida; se reintenta");
+                let until = std::time::Instant::now() + *wait;
+                while std::time::Instant::now() < until {
+                    if cancel.load(Ordering::Relaxed) {
+                        return Err(DownloadError::Cancelled);
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+            }
+            other => return other,
+        }
+    }
+}
+
 /// Descarga lo que falte del modelo. `progress(bytes descargados, bytes totales)`.
 pub fn download(
     dir: &Path,
@@ -187,6 +223,47 @@ mod tests {
         let e = verify_and_finish(&part, &target, &file_with(b"modelo")).unwrap_err();
         assert!(matches!(e, DownloadError::Corrupt(_)));
         assert!(!target.exists() && !part.exists());
+    }
+
+    #[test]
+    fn network_failures_are_retried_and_disk_failures_are_not() {
+        use std::cell::Cell;
+        let none = AtomicBool::new(false);
+        let waits = [std::time::Duration::ZERO; 2];
+        // Falla dos veces por la red y a la tercera va: vale.
+        let tries = Cell::new(0);
+        let ok = with_retries(&waits, &none, || {
+            tries.set(tries.get() + 1);
+            if tries.get() < 3 {
+                Err(DownloadError::Network("caída".into()))
+            } else {
+                Ok(())
+            }
+        });
+        assert!(ok.is_ok() && tries.get() == 3);
+        // Siempre falla: tres intentos y el último error.
+        tries.set(0);
+        let err = with_retries(&waits, &none, || -> Result<(), _> {
+            tries.set(tries.get() + 1);
+            Err(DownloadError::Corrupt("x".into()))
+        });
+        assert!(matches!(err, Err(DownloadError::Corrupt(_))) && tries.get() == 3);
+        // Un fallo de disco no se reintenta.
+        tries.set(0);
+        let err = with_retries(&waits, &none, || -> Result<(), _> {
+            tries.set(tries.get() + 1);
+            Err(DownloadError::Io(std::io::Error::other("lleno")))
+        });
+        assert!(matches!(err, Err(DownloadError::Io(_))) && tries.get() == 1);
+        // Cancelado mientras espera: para enseguida.
+        let cancel = AtomicBool::new(true);
+        let long = [std::time::Duration::from_secs(60)];
+        let started = std::time::Instant::now();
+        let err = with_retries(&long, &cancel, || -> Result<(), _> {
+            Err(DownloadError::Network("caída".into()))
+        });
+        assert!(matches!(err, Err(DownloadError::Cancelled)));
+        assert!(started.elapsed() < std::time::Duration::from_secs(5));
     }
 
     #[test]

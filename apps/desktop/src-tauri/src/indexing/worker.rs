@@ -41,6 +41,10 @@ pub(super) struct Worker {
     pub(super) target_vectors: Option<Arc<sift_search::VectorIndex>>,
     /// Vectores añadidos al índice HNSW desde la última vez que se guardó.
     pub(super) unsaved_vectors: usize,
+    /// La cola del propio indexado: la descarga del modelo avisa por aquí al acabar.
+    pub(super) jobs: mpsc::Sender<Job>,
+    /// La descarga del modelo, que va en su propio hilo (ver `download.rs`).
+    pub(super) download: super::download::ModelDownload,
 }
 
 /// Lo que una pasada necesita y no cambia mientras dura.
