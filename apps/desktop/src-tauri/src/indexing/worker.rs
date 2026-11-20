@@ -45,6 +45,9 @@ pub(super) struct Worker {
     pub(super) jobs: mpsc::Sender<Job>,
     /// La descarga del modelo, que va en su propio hilo (ver `download.rs`).
     pub(super) download: super::download::ModelDownload,
+    /// Una conexión de solo lectura a la base de datos, para las consultas largas del
+    /// vectorizado (ver `with_reader`). Se abre la primera vez que hace falta.
+    pub(super) reader: Option<sift_storage::Database>,
 }
 
 /// Lo que una pasada necesita y no cambia mientras dura.
@@ -154,6 +157,29 @@ impl Worker {
 
     pub(super) fn db(&self) -> tauri::State<'_, Db> {
         self.app.state::<Db>()
+    }
+
+    /// Lee con la conexión de solo lectura: las consultas largas (qué falta por vectorizar,
+    /// recorrer los vectores) no tienen el candado de la conexión principal y la barra no
+    /// las espera (auditoría 1.0: con 100 000 archivos, hasta 5 s). Si no se puede abrir,
+    /// se lee por la principal, como antes.
+    pub(super) fn with_reader<T>(&mut self, f: impl FnOnce(&sift_storage::Database) -> T) -> T {
+        if self.reader.is_none()
+            && let Ok(dir) = self.app.path().app_data_dir()
+        {
+            match sift_storage::Database::open_reader(&dir.join("sift.db")) {
+                Ok(reader) => self.reader = Some(reader),
+                Err(e) => tracing::warn!(error = %e, "sin conexión de solo lectura"),
+            }
+        }
+        match &self.reader {
+            Some(reader) => f(reader),
+            None => {
+                let db = self.db();
+                let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
+                f(&db)
+            }
+        }
     }
 
     pub(super) fn update(&self, f: impl FnOnce(&mut IndexStatus)) {

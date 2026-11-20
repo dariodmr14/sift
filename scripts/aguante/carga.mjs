@@ -104,7 +104,17 @@ try {
   const first = performance.now();
   await invoke(bar2, "search_files", { query: "proyecto", seq: ++seq, filter: null });
   result.restart = { secondsToBar: Math.round((Date.now() - t0) / 100) / 10, firstSearchMs: Math.round(performance.now() - first) };
-  await sleep(15_000);
+  // Un minuto buscando cada 250 ms mientras arranca y vectoriza (¿espera la barra a algo?).
+  const probe = [];
+  const probeStart = Date.now();
+  while (Date.now() - probeStart < 60_000) {
+    const t = performance.now();
+    await invoke(bar2, "search_files", { query: "pr", seq: ++seq, filter: null });
+    probe.push(performance.now() - t);
+    await sleep(250);
+  }
+  result.restart.probe = { n: probe.length, p50: percentile(probe, 50), p95: percentile(probe, 95), max: percentile(probe, 100), over100ms: probe.filter((ms) => ms > 100).length };
+  log("sonda tras reiniciar:", JSON.stringify(result.restart.probe));
   result.restart.after15s = await measureSearch(bar2, 5);
   result.restart.memory = memory(app.pid);
   log("reinicio:", JSON.stringify(result.restart));

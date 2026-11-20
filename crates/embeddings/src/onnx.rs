@@ -1,7 +1,8 @@
 //! [`Embedder`] con ONNX Runtime (`ort`) y el tokenizador de Hugging Face (`tokenizers`).
 
-use std::path::Path;
-use std::sync::{Mutex, OnceLock};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use ort::session::Session;
 use ort::session::builder::GraphOptimizationLevel;
@@ -32,15 +33,52 @@ fn runtime(e: impl std::fmt::Display) -> EmbedError {
 
 pub struct OnnxEmbedder {
     card: &'static ModelCard,
-    tokenizer: Tokenizer,
-    /// El mismo tokenizador sin cortar, para contar tokens (no se clona en cada llamada).
-    counter: Tokenizer,
+    /// El tokenizador (con el corte a `max_tokens` y el relleno del lote). Ocupa unos 250 MB
+    /// en memoria (el de e5 tiene 250 000 piezas), así que **uno por modelo** para todo el
+    /// proceso: las dos sesiones de Sift (indexado y consultas) comparten el mismo
+    /// (auditoría 1.0: antes había cuatro copias, 1 GB).
+    tokenizer: Arc<Tokenizer>,
+    /// El mismo sin cortar, para contar tokens. Solo se crea si alguien cuenta (las pruebas
+    /// y `eval/`; la app nunca).
+    counter: OnceLock<Tokenizer>,
     /// ONNX Runtime pide `&mut` para ejecutar: un hilo cada vez.
     session: Mutex<Session>,
     /// El entorno de ONNX Runtime tiene que vivir lo que viva la sesión.
     _env: ort::environment::Environment,
     /// ¿El modelo pide `token_type_ids`? (los BERT sí; ModernBERT no)
     wants_token_types: bool,
+}
+
+/// Tokenizadores ya cargados, por archivo. `Weak`: cuando no queda ningún modelo que lo
+/// use (p. ej. al desactivar la búsqueda inteligente), se libera.
+type TokenizerCache = Mutex<HashMap<(PathBuf, usize), Weak<Tokenizer>>>;
+
+fn shared_tokenizer(path: &Path, max_tokens: usize) -> Result<Arc<Tokenizer>, EmbedError> {
+    static CACHE: OnceLock<TokenizerCache> = OnceLock::new();
+    let mut cache = CACHE
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|p| p.into_inner());
+    let key = (path.to_path_buf(), max_tokens);
+    if let Some(t) = cache.get(&key).and_then(Weak::upgrade) {
+        return Ok(t);
+    }
+    let mut tokenizer =
+        Tokenizer::from_file(path).map_err(|e| EmbedError::Tokenizer(e.to_string()))?;
+    tokenizer.with_padding(Some(PaddingParams {
+        strategy: PaddingStrategy::BatchLongest,
+        ..PaddingParams::default()
+    }));
+    tokenizer
+        .with_truncation(Some(TruncationParams {
+            max_length: max_tokens,
+            ..TruncationParams::default()
+        }))
+        .map_err(|e| EmbedError::Tokenizer(e.to_string()))?;
+    let tokenizer = Arc::new(tokenizer);
+    cache.retain(|_, w| w.strong_count() > 0);
+    cache.insert(key, Arc::downgrade(&tokenizer));
+    Ok(tokenizer)
 }
 
 impl OnnxEmbedder {
@@ -54,19 +92,7 @@ impl OnnxEmbedder {
                 ));
             }
         }
-        let mut tokenizer = Tokenizer::from_file(dir.join(card.tokenizer.name))
-            .map_err(|e| EmbedError::Tokenizer(e.to_string()))?;
-        let counter = tokenizer.clone();
-        tokenizer.with_padding(Some(PaddingParams {
-            strategy: PaddingStrategy::BatchLongest,
-            ..PaddingParams::default()
-        }));
-        tokenizer
-            .with_truncation(Some(TruncationParams {
-                max_length: card.max_tokens,
-                ..TruncationParams::default()
-            }))
-            .map_err(|e| EmbedError::Tokenizer(e.to_string()))?;
+        let tokenizer = shared_tokenizer(&dir.join(card.tokenizer.name), card.max_tokens)?;
 
         let env = environment()?;
         let session = Session::builder(&env)
@@ -74,6 +100,13 @@ impl OnnxEmbedder {
             .with_optimization_level(GraphOptimizationLevel::Level3)
             .map_err(runtime)?
             .with_intra_threads(threads.max(1))
+            .map_err(runtime)?
+            // Sin el «arena» de ONNX Runtime: guarda para siempre la memoria del lote más
+            // grande que haya visto (+570 MB con 8 fragmentos de 512 tokens) y Sift pasa casi
+            // todo el tiempo en reposo (auditoría 1.0, medido con `examples/memoria.rs`). Cuesta
+            // un ~15 % de velocidad al vectorizar (en segundo plano); las consultas, igual.
+            // Desactivar también `memory_pattern` no ahorra nada más y es un 35 % más lento.
+            .with_execution_providers([ort::ep::CPU::default().with_arena_allocator(false).build()])
             .map_err(runtime)?
             .commit_from_file(dir.join(card.model.name))
             .map_err(runtime)?;
@@ -84,7 +117,7 @@ impl OnnxEmbedder {
         Ok(OnnxEmbedder {
             card,
             tokenizer,
-            counter,
+            counter: OnceLock::new(),
             session: Mutex::new(session),
             _env: env,
             wants_token_types,
@@ -93,12 +126,15 @@ impl OnnxEmbedder {
 
     /// Cuántos tokens tiene un texto (sin cortar). Para medir cuántos pasan del tope.
     pub fn count_tokens(&self, text: &str) -> usize {
-        self.counter
-            .encode(text, true)
-            .map_or(0, |e| e.get_ids().len())
+        let counter = self.counter.get_or_init(|| {
+            let mut t = (*self.tokenizer).clone();
+            t.with_padding(None);
+            let _ = t.with_truncation(None);
+            t
+        });
+        counter.encode(text, true).map_or(0, |e| e.get_ids().len())
     }
 }
-
 impl Embedder for OnnxEmbedder {
     fn card(&self) -> &'static ModelCard {
         self.card

@@ -179,6 +179,15 @@ const MIGRATIONS: &[&str] = &[
     ALTER TABLE chunks ADD COLUMN page INTEGER;
     UPDATE files SET content_hash = NULL, mtime = -1 WHERE ext = 'pdf';
     "#,
+    // v7: lo que falta por vectorizar se busca sin leer el texto de los fragmentos
+    // (auditoría 1.0). Con 100 000 archivos, recorrer `chunks` (el texto va en la misma
+    // fila) tardaba 5,5 s cada 64 vectores, con el candado puesto: la barra esperaba.
+    r#"
+    CREATE INDEX chunks_embed ON chunks(file_id, ordinal, text_hash);
+    CREATE INDEX chunks_hash_embed ON chunks(text_hash, file_id, ordinal);
+    -- El nuevo empieza por `text_hash`: sirve para todo lo que usaba este.
+    DROP INDEX chunks_text_hash;
+    "#,
 ];
 
 pub struct Database {
@@ -195,6 +204,21 @@ impl Database {
         // WAL: las lecturas no esperan a las escrituras y un corte de luz no corrompe.
         conn.pragma_update(None, "journal_mode", "WAL")?;
         Self::prepare(conn)
+    }
+
+    /// Una conexión más a una base de datos que ya está abierta, **solo para leer**. En
+    /// modo WAL, sus lecturas no esperan a las escrituras de la otra conexión ni la paran:
+    /// el indexado la usa para las consultas largas (qué falta por vectorizar, recorrer los
+    /// vectores) sin tener el candado de la conexión principal, que es la que usa la barra
+    /// (auditoría 1.0). No migra nada: eso lo hace [`Database::open`].
+    pub fn open_reader(path: &Path) -> Result<Database, StorageError> {
+        use rusqlite::OpenFlags;
+        let conn = Connection::open_with_flags(
+            path,
+            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        )?;
+        conn.busy_timeout(std::time::Duration::from_secs(5))?;
+        Ok(Database { conn })
     }
 
     /// Base de datos en memoria, para los tests.
@@ -253,6 +277,28 @@ mod tests {
     fn fresh_database_gets_the_latest_schema() {
         let db = Database::open_in_memory().unwrap();
         assert_eq!(db.schema_version().unwrap() as usize, MIGRATIONS.len());
+    }
+
+    #[test]
+    fn a_reader_sees_what_was_written_reads_while_writing_and_cannot_write() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("sift.db");
+        let mut db = Database::open(&path).unwrap();
+        let reader = Database::open_reader(&path).unwrap();
+        db.add_root(Path::new(r"C:\Uni")).unwrap();
+        assert_eq!(reader.list_roots().unwrap().len(), 1);
+        // Con una escritura a medias (una transacción abierta), el lector sigue leyendo.
+        let tx = db.conn.transaction().unwrap();
+        tx.execute("INSERT INTO roots (path) VALUES ('C:\\Otra')", [])
+            .unwrap();
+        assert_eq!(
+            reader.list_roots().unwrap().len(),
+            1,
+            "no ve lo no confirmado"
+        );
+        tx.commit().unwrap();
+        assert_eq!(reader.list_roots().unwrap().len(), 2);
+        assert!(reader.conn.execute("DELETE FROM roots", []).is_err());
     }
 
     #[test]

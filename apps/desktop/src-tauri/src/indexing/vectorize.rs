@@ -17,6 +17,9 @@ use super::worker::{Worker, drain};
 const EMBED_BATCH: usize = 8;
 /// Cada cuántos vectores nuevos se guarda el índice HNSW en disco.
 const SAVE_VECTORS_EVERY: usize = 2_000;
+/// Cuántos textos pendientes se piden de una vez. Buscarlos recorre todos los fragmentos
+/// (~0,5 s con 100 000 archivos, por la conexión de solo lectura): mejor pocas veces.
+const PENDING_PAGE: usize = 512;
 
 impl Worker {
     /// Un rato de trabajo de búsqueda inteligente: prepararla si no lo está (descargar y
@@ -159,18 +162,16 @@ impl Worker {
         // ¿Con qué modelo se busca? Con el actual si ya lo cubre todo o si no hay otro;
         // si se está cambiando de modelo, con el anterior hasta que el nuevo acabe
         // (ADR 0009, punto 7): nunca se queda sin búsqueda por significado.
-        let (done, total, others) = {
-            let db = self.db();
-            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
+        let (done, total, others) = self.with_reader(|db| -> Result<_, String> {
             let (done, total) = db
                 .embedding_progress(card.id, &sift_storage::EmbedPolicy::standard())
                 .map_err(|e| e.to_string())?;
-            (
+            Ok((
                 done,
                 total,
                 db.embedding_models().map_err(|e| e.to_string())?,
-            )
-        };
+            ))
+        })?;
         let previous = others
             .iter()
             .filter(|(id, _)| id != card.id)
@@ -213,16 +214,14 @@ impl Worker {
     /// El índice de vectores de un modelo: el guardado si cuadra con SQLite; si no, se
     /// reconstruye desde SQLite (segundos: no se recalcula nada).
     fn open_vectors(
-        &self,
+        &mut self,
         app_data: &std::path::Path,
         card: &sift_embeddings::ModelCard,
     ) -> Result<sift_search::VectorIndex, String> {
         let path = crate::smart::vectors_path(app_data, card);
-        let db = self.db();
-        let stored = {
-            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-            db.count_embeddings(card.id).map_err(|e| e.to_string())?
-        };
+        let stored = self
+            .with_reader(|db| db.count_embeddings(card.id))
+            .map_err(|e| e.to_string())?;
         if let Some(v) = sift_search::VectorIndex::load(&path, card.dims)
             && v.len() as u64 == stored
         {
@@ -230,14 +229,11 @@ impl Worker {
         }
         let started = Instant::now();
         let v = sift_search::VectorIndex::new(card.dims).map_err(|e| e.to_string())?;
-        // Con el candado solo mientras se leen los vectores; construir el índice y guardarlo
-        // (lo lento) va sin él, para no parar la vista previa ni los Ajustes (auditoría 1.0).
+        // Por la conexión de solo lectura: ni leer los vectores ni construir el índice paran
+        // la barra, la vista previa o los Ajustes (auditoría 1.0).
         let mut batch = Vec::new();
-        {
-            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-            db.for_each_embedding(card.id, |h, vector| batch.push((h, vector)))
-                .map_err(|e| e.to_string())?;
-        }
+        self.with_reader(|db| db.for_each_embedding(card.id, |h, vector| batch.push((h, vector))))
+            .map_err(|e| e.to_string())?;
         v.add(&batch).map_err(|e| e.to_string())?;
         drop(batch);
         if let Err(e) = v.save(&path) {
@@ -266,21 +262,17 @@ impl Worker {
                 sync: false,
             };
         };
-        let progress = |worker: &Worker| {
-            let db = worker.db();
-            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-            db.embedding_progress(card.id, &policy).unwrap_or((0, 0))
+        let progress = |worker: &mut Worker| {
+            worker
+                .with_reader(|db| db.embedding_progress(card.id, &policy))
+                .unwrap_or((0, 0))
         };
         let (mut done, total) = progress(self);
         let mut sync = false;
         let mut last_page = Vec::new();
         loop {
             if last_page.is_empty() {
-                let page = {
-                    let db = self.db();
-                    let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-                    db.pending_texts(card.id, &policy, 64)
-                };
+                let page = self.with_reader(|db| db.pending_texts(card.id, &policy, PENDING_PAGE));
                 match page {
                     Ok(mut page) if !page.is_empty() => {
                         // Longitudes parecidas en cada lote: menos relleno que calcular.
@@ -363,11 +355,16 @@ impl Worker {
         // Al terminar (o al ceder): limpiar vectores huérfanos y guardar el índice.
         let finished = !sync;
         if finished {
-            let pruned = {
-                let db = self.db();
-                let mut db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-                db.prune_embeddings(card.id, &policy)
-            };
+            // Buscarlos (lento) por la conexión de solo lectura; borrarlos, con el candado.
+            // Si entre medias un archivo nuevo vuelve a usar uno de esos textos, se recalcula
+            // en la siguiente pasada: no se pierde nada.
+            let pruned = self
+                .with_reader(|db| db.orphan_embeddings(card.id, &policy))
+                .and_then(|gone| {
+                    let db = self.db();
+                    let mut db = db.0.lock().unwrap_or_else(|p| p.into_inner());
+                    db.delete_embeddings(card.id, &gone).map(|()| gone)
+                });
             match pruned {
                 Ok(gone) if !gone.is_empty() => {
                     let _ = target.remove(&gone);
