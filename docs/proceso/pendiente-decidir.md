@@ -62,3 +62,19 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 - **Por qué no se arregla ya:** todas sus versiones están afectadas y no hay ninguna corregida. `npm audit fix --force` propone bajar vitest a la 3, y eso no lo soluciona.
 - **A quién afecta:** solo a herramientas de desarrollo, con patrones que escribimos nosotros. La app tiene 0 avisos (`npm audit --omit=dev`, lo que comprueba la CI).
 - **Qué hacer:** cuando salga una versión de `picomatch` arreglada, `npm update` en `apps/desktop/` y comprobar `npm audit`. Decidido con Darío el 2026-11-18: se deja apuntado hasta entonces.
+
+## Auditoría 1.0 (2026-11-20, trabajando solo)
+
+### 11. Qué se abre sin preguntar — decidido sin ti
+- **Contexto:** pediste una lista de lo **permitido**, no de lo bloqueado. Ahora `SAFE_TO_OPEN` (`crates/spaces/src/validate.rs`) recoge documentos, imágenes, audio, vídeo, comprimidos, texto y el código que Windows no ejecuta al abrirlo. Todo lo demás, también una extensión que aún no existe, pide confirmación.
+- **Hecho:** en un Espacio, un archivo fuera de la lista (o una app que no es un id de Windows, como `C:\…\x.exe` o `{GUID}\cmd.exe`) pide **el mismo diálogo nativo que un comando** la primera vez, y luego queda aprobado. En la barra, cada vez sale un diálogo de Windows «… puede ejecutar un programa al abrirlo» con Abrir / Cancelar (antes, la rc.3 enseñaba el archivo en su carpeta).
+- **Lo que puede molestar:** los accesos directos (`.lnk`) del Escritorio que salgan en la búsqueda preguntan cada vez. **Opciones:** (a) dejarlo así (lo más seguro); (b) recordar la respuesta por archivo, como en los Espacios; (c) resolver el `.lnk` y abrir sin preguntar si apunta a una carpeta o a un documento de la lista. **Recomendación:** (c) para la 1.1.
+- **Fuera de la lista a propósito:** `.js`, `.vbs`, `.py`, `.ps1`, `.bat` (Windows los ejecuta) y los documentos con macros (`.docm`, `.xlsm`…). Si echas de menos alguna extensión que sea segura, se añade en una línea.
+
+### 12. La descarga del modelo, en su propio hilo — decidido sin ti
+- **Contexto:** la descarga iba en el hilo del indexado: mientras bajaban los 135 MB, los archivos cambiados no se indexaban, y una conexión colgada lo paraba todo.
+- **Hecho:** un hilo propio, con tiempos máximos (15 s para conectar, 30 s para la respuesta y 20 min para el cuerpo) y 3 intentos que siguen donde se quedó el anterior (a los 5 s y a los 30 s). Si fallan los tres, se vuelve a probar sola al cabo de 5 minutos, o antes si desactivas y vuelves a activar la búsqueda inteligente.
+
+### 13. Todo en un PR en vez de tres — aviso
+- **Contexto:** pediste un PR por grupo (seguridad, robustez e interfaz). La sesión anterior lo juntó todo en un único commit (`f21c572`) antes de cortarse, y separarlo ahora es reescribir el historial local.
+- **Hecho:** va en un solo PR, con los commits de esta sesión separados por tema y la descripción dividida en los tres grupos.
