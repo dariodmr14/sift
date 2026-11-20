@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { MonitorInfo } from "../bindings";
-import { monitorOptions, placementSummary, ZONE_GROUPS, ZONES } from "./zones";
+import {
+  monitorOptions,
+  placementSummary,
+  updatedChoice,
+  ZONE_GROUPS,
+  ZONES,
+} from "./zones";
 
 const screen = (name: string, left: number, primary: boolean): MonitorInfo => {
   const bounds = { left, top: 0, right: left + 1920, bottom: 1080 };
@@ -112,5 +118,47 @@ describe("número de Windows", () => {
         options,
       ),
     ).toBe("No colocar");
+  });
+});
+
+describe("pantallas guardadas con su nombre de antes", () => {
+  // Como en el PC de Darío: el Espacio se guardó con «Pantalla 1» (por orden, a la derecha);
+  // ahora Sift usa el número y el modelo de Windows.
+  const lg = { ...screen("22EN33", 1920, false), number: 1 };
+  const zowie = { ...screen("ZOWIE XL LCD", 0, true), number: 2 };
+  const old = {
+    kind: "specific" as const,
+    name: "Pantalla 1",
+    left: 1920,
+    top: 0,
+  };
+
+  it("no sale repetida como «no conectada»: cuenta como la pantalla de su sitio", () => {
+    const options = monitorOptions([zowie, lg], old);
+    expect(options.map((o) => o.label)).toEqual([
+      "Pantalla 1 — 22EN33",
+      "Pantalla 2 — ZOWIE XL LCD (principal)",
+      "Donde esté el ratón",
+    ]);
+    expect(updatedChoice(old, [zowie, lg])).toEqual({
+      kind: "specific",
+      name: "22EN33",
+      left: 1920,
+      top: 0,
+    });
+  });
+
+  it("«no conectada» solo cuando de verdad no está", () => {
+    const gone = {
+      kind: "specific" as const,
+      name: "DELL",
+      left: 3840,
+      top: 0,
+    };
+    expect(updatedChoice(gone, [zowie, lg])).toBeNull();
+    const options = monitorOptions([zowie, lg], gone);
+    expect(options[options.length - 1].label).toBe(
+      "DELL (no conectada: se usará la principal)",
+    );
   });
 });

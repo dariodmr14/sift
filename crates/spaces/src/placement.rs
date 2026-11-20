@@ -180,6 +180,58 @@ pub struct MonitorInfo {
     pub primary: bool,
 }
 
+/// Una pantalla guardada que ya no se llama ni está igual (p. ej. guardada antes de que Sift
+/// usara el número y el modelo de Windows: «Pantalla 1» es ahora «22EN33»): la de ahora que le
+/// corresponde, con la misma regla que [`pick_monitor`]: primero la que está en el mismo sitio y,
+/// si no, la única que tiene el mismo nombre. `None` si no hace falta cambiar nada o si de verdad
+/// no está conectada.
+pub fn updated_choice(choice: &MonitorChoice, monitors: &[MonitorInfo]) -> Option<MonitorChoice> {
+    let MonitorChoice::Specific { name, left, top } = choice else {
+        return None;
+    };
+    let at_place = |m: &&MonitorInfo| m.bounds.left == *left && m.bounds.top == *top;
+    if monitors.iter().any(|m| m.name == *name && at_place(&m)) {
+        return None;
+    }
+    let same_name: Vec<&MonitorInfo> = monitors.iter().filter(|m| m.name == *name).collect();
+    let found = monitors.iter().find(at_place).or(if same_name.len() == 1 {
+        Some(same_name[0])
+    } else {
+        None
+    })?;
+    Some(MonitorChoice::Specific {
+        name: found.name.clone(),
+        left: found.bounds.left,
+        top: found.bounds.top,
+    })
+}
+
+/// Pone al día las pantallas guardadas en las acciones de un Espacio ([`updated_choice`]).
+/// Devuelve si cambió algo.
+pub fn update_saved_monitors(
+    draft: &mut crate::model::SpaceDraft,
+    monitors: &[MonitorInfo],
+) -> bool {
+    use crate::model::Action;
+    let mut changed = false;
+    for action in &mut draft.actions {
+        let place = match action {
+            Action::OpenFolder { place, .. }
+            | Action::OpenFile { place, .. }
+            | Action::OpenUrl { place, .. }
+            | Action::OpenApp { place, .. } => place,
+            Action::RunCommand(_) | Action::Wait(_) => continue,
+        };
+        if let Some(p) = place.as_mut()
+            && let Some(new) = updated_choice(&p.monitor, monitors)
+        {
+            p.monitor = new;
+            changed = true;
+        }
+    }
+    changed
+}
+
 /// La pantalla elegida, entre las que hay ahora. Si la concreta ya no está (portátil sin
 /// el monitor), la principal: mejor colocarla ahí que no colocarla.
 pub fn pick_monitor<'a>(
@@ -411,6 +463,113 @@ mod tests {
         assert_eq!(
             (set.left, set.top, set.right, set.bottom),
             (-7, 0, 967, 1047)
+        );
+    }
+
+    #[test]
+    fn an_old_screen_reference_becomes_the_screen_now_in_its_place() {
+        // Como en el PC de Darío: antes «Pantalla 1» (por orden, a la derecha); ahora el
+        // número y el modelo de Windows.
+        let monitors = [
+            monitor("ZOWIE XL LCD", 0, true),
+            monitor("22EN33", 1920, false),
+        ];
+        let old = MonitorChoice::Specific {
+            name: "Pantalla 1".into(),
+            left: 1920,
+            top: 0,
+        };
+        assert_eq!(
+            updated_choice(&old, &monitors),
+            Some(MonitorChoice::Specific {
+                name: "22EN33".into(),
+                left: 1920,
+                top: 0
+            })
+        );
+        // La misma pantalla, movida de sitio: se encuentra por su nombre.
+        let moved = MonitorChoice::Specific {
+            name: "22EN33".into(),
+            left: -1920,
+            top: 0,
+        };
+        assert_eq!(
+            updated_choice(&moved, &monitors),
+            Some(MonitorChoice::Specific {
+                name: "22EN33".into(),
+                left: 1920,
+                top: 0
+            })
+        );
+        // Ya al día, o la principal o el ratón: nada que cambiar.
+        let ok = MonitorChoice::Specific {
+            name: "22EN33".into(),
+            left: 1920,
+            top: 0,
+        };
+        assert_eq!(updated_choice(&ok, &monitors), None);
+        assert_eq!(updated_choice(&MonitorChoice::Primary, &monitors), None);
+        // De verdad no conectada (ni su sitio ni su nombre): se queda como estaba.
+        let gone = MonitorChoice::Specific {
+            name: "DELL".into(),
+            left: 3840,
+            top: 0,
+        };
+        assert_eq!(updated_choice(&gone, &monitors), None);
+    }
+
+    #[test]
+    fn a_space_saved_with_old_screen_names_is_updated() {
+        use crate::model::{Action, Icon, SpaceDraft};
+        let monitors = [
+            monitor("ZOWIE XL LCD", 0, true),
+            monitor("22EN33", 1920, false),
+        ];
+        let place = |name: &str, left: i32| {
+            Some(Placement {
+                zone: Some(Zone::RightHalf),
+                monitor: MonitorChoice::Specific {
+                    name: name.into(),
+                    left,
+                    top: 0,
+                },
+                reuse_window: true,
+            })
+        };
+        let mut draft = SpaceDraft {
+            name: "dev".into(),
+            aliases: vec![],
+            icon: Icon::Auto,
+            actions: vec![
+                Action::OpenApp {
+                    app_id: "a".into(),
+                    name: "Claude".into(),
+                    place: place("Pantalla 1", 1920),
+                },
+                Action::OpenApp {
+                    app_id: "b".into(),
+                    name: "Opera".into(),
+                    place: place("22EN33", 1920),
+                },
+            ],
+        };
+        assert!(update_saved_monitors(&mut draft, &monitors));
+        for a in &draft.actions {
+            let Action::OpenApp { place: Some(p), .. } = a else {
+                panic!()
+            };
+            assert_eq!(
+                p.monitor,
+                MonitorChoice::Specific {
+                    name: "22EN33".into(),
+                    left: 1920,
+                    top: 0
+                }
+            );
+        }
+        assert!(
+            !update_saved_monitors(&mut draft, &monitors),
+            "la segunda vez no cambia nada"
         );
     }
 

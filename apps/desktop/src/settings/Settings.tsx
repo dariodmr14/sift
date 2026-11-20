@@ -16,7 +16,7 @@ import { StatusSection } from "./StatusSection";
 import { Intro } from "./Intro";
 import { Welcome } from "./Welcome";
 import { Button } from "./ui";
-import { SiftLoading } from "../components/SiftLoader";
+import { SiftLoader, SiftLoading } from "../components/SiftLoader";
 
 /** Cómo escucha Sift el atajo, explicado (solo en «Avanzado»). */
 
@@ -198,6 +198,20 @@ function SmartSearchToggle() {
           </span>
         </span>
       </label>
+      {smart &&
+        smart.enabled &&
+        !smart.awaitingPermission &&
+        !smart.ready &&
+        smart.downloadMb > 0 &&
+        smart.downloadedMb < smart.downloadMb && (
+          <p
+            role="status"
+            className="flex items-center gap-2 pl-7 text-xs text-muted tabular-nums"
+          >
+            <SiftLoader />
+            Descargando {smart.downloadedMb} de {smart.downloadMb} MB
+          </p>
+        )}
       {smart?.awaitingPermission && (
         <div className="space-y-2 pl-7">
           <p className="text-xs text-muted">

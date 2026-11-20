@@ -244,6 +244,11 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - [ ] README completo: GIF, instalación, arquitectura, decisiones y métricas.
 - [ ] Vídeo demo de 30–60 s y post en LinkedIn. **Se graba con la versión final**, para no enseñar pantallas antiguas (decidido el 2026-11-19). Hay una primera versión fuera del repo, en el equipo de Darío (`Documents\Sift - vídeo de presentación`), con su proyecto de HyperFrames y su guion de grabación.
 
+- [ ] Preparación de la publicación (apuntado el 2026-11-20):
+  - README en dos idiomas: `README.md` en español (principal) y `README.en.md` en inglés, con un enlace arriba para cambiar de idioma y el vídeo de cada idioma.
+  - Vídeo en inglés: las ventanas y los datos de ejemplo salen en español (p. ej. «Calculadora»); para la versión en inglés, datos de ejemplo y nombres en inglés.
+  - Valorar la traducción de la app al inglés (ver backlog).
+
 **Hecho cuando:** cualquiera puede descargarlo desde GitHub e instalarlo.
 
 ---
@@ -257,6 +262,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 - Calculadora y conversiones en la barra.
 - Sistema de extensiones.
 - macOS y Linux.
+- Traducción de la app al inglés (textos de la interfaz, datos de demostración y vídeo; ver Fase 8).
 - Firma de código del instalador (evita el aviso de SmartScreen; tiene coste).
 - ~~Icono propio de la app y de la bandeja~~ ✅ Hecho (2026-11-18): «el tamiz», ADR 0017.
 - Grabar el atajo pulsándolo en Ajustes, en vez de escribirlo como texto.

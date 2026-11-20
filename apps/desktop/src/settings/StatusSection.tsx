@@ -12,6 +12,7 @@ import {
 import { Glyph, type GlyphName } from "../components/Glyph";
 import { count } from "../format";
 import { statusCards, type Tone } from "./statusCards";
+import { SiftLoader } from "../components/SiftLoader";
 
 const BACKEND_LABEL = {
   registerHotKey:
@@ -89,7 +90,11 @@ export function StatusSection({ status }: { status: Status }) {
               aria-label={TONE[c.tone].label}
               className={`flex size-6 shrink-0 items-center justify-center ${TONE[c.tone].cls}`}
             >
-              <Glyph name={TONE[c.tone].glyph} />
+              {c.tone === "working" ? (
+                <SiftLoader />
+              ) : (
+                <Glyph name={TONE[c.tone].glyph} />
+              )}
             </span>
             <span className="min-w-0">
               <span className="block text-sm font-semibold">{c.title}</span>

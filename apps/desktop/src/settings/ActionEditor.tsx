@@ -8,6 +8,7 @@ import { useSortableItem } from "./Sortable";
 import { Button, ErrorText, Field, TextInput } from "./ui";
 import { canCheckNow, WaitEditor } from "./WaitEditor";
 import { Glyph } from "../components/Glyph";
+import { SiftLoader } from "../components/SiftLoader";
 
 type TestState =
   | { kind: "idle" }
@@ -116,7 +117,14 @@ export function ActionEditor({
               : undefined
           }
         >
-          {test.kind === "running" ? "Probando…" : "Probar"}
+          {test.kind === "running" ? (
+            <span className="flex items-center gap-2">
+              <SiftLoader />
+              Probando…
+            </span>
+          ) : (
+            "Probar"
+          )}
         </Button>
         <Button
           variant="danger"

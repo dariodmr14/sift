@@ -49,7 +49,7 @@ Un caso conocido: abrir una web con el navegador ya abierto añade una pestaña,
 
 Sift tiene en cuenta la escala de cada pantalla, así que todas las coordenadas son píxeles reales.
 
-**Cambio (2026-11-19): cada pantalla, como la llama Windows.** El número es el de Windows (el de `\\.\DISPLAY2`, el mismo de Configuración → Pantalla y de su botón «Identificar»), no el orden de izquierda a derecha, y el nombre es el del modelo según su EDID (`DisplayConfigGetDeviceInfo`: «ZOWIE XL LCD»), que antes salía como «Monitor PnP genérico» y se ocultaba. Una pantalla guardada con el nombre antiguo se sigue encontrando por su posición.
+**Cambio (2026-11-19): cada pantalla, como la llama Windows.** El número es el de Windows (el de `\\.\DISPLAY2`, el mismo de Configuración → Pantalla y de su botón «Identificar»), no el orden de izquierda a derecha, y el nombre es el del modelo según su EDID (`DisplayConfigGetDeviceInfo`: «ZOWIE XL LCD»), que antes salía como «Monitor PnP genérico» y se ocultaba. Una pantalla guardada con el nombre antiguo se sigue encontrando por su posición. Desde la rc.3, además, al arrancar Sift pone al día esas referencias antiguas en los Espacios guardados (`placement::updated_choice`: la pantalla del mismo sitio o, si no, la única con ese nombre), y el editor aplica la misma regla: «no conectada» solo sale cuando de verdad no está.
 
 ### 4. En el editor
 

@@ -211,6 +211,8 @@ pub fn run() {
             let (mut db, storage_error) = open_database(handle);
             // En desarrollo, datos de prueba la primera vez (ver `dev`).
             dev::seed(&mut db);
+            // Espacios guardados con nombres de pantalla de antes: a la pantalla de ahora.
+            spaces_commands::update_saved_monitors(&mut db);
             // ¿Hay ya algo tuyo (carpetas o Espacios)? Entonces no es un equipo nuevo y
             // no hace falta la bienvenida. Si no se puede leer, se supone que sí lo hay.
             let has_data = db.list_roots().map_or(true, |r| !r.is_empty())

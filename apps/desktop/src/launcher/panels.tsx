@@ -10,6 +10,7 @@ import { placing, type RunStep } from "./mode";
 import { placingText, progressText, type SummaryLine } from "./runSummary";
 import { Glyph, type GlyphName } from "../components/Glyph";
 import { Keycap } from "../components/Keycap";
+import { SiftLoader } from "../components/SiftLoader";
 
 export type SpaceProgress = SpaceProgress_Deserialize;
 
@@ -99,9 +100,13 @@ export function RunningPanel({
           <LaunchedStep key={s.step} step={s} />
         ))}
         {current && (
-          <li className="flex gap-2">
-            <span className="w-4 shrink-0 text-center text-accent-ink">
-              <Glyph name="chevronRight" />
+          <li className="flex items-center gap-2">
+            <span className="flex w-4 shrink-0 justify-center">
+              {cancelling ? (
+                <Glyph name="dash" className="text-muted" />
+              ) : (
+                <SiftLoader />
+              )}
             </span>
             <span className="min-w-0 truncate">
               {cancelling
@@ -116,7 +121,10 @@ export function RunningPanel({
           </li>
         )}
       </ol>
-      <p className="mt-3 text-xs text-muted">
+      <p className="mt-3 flex items-center gap-2 text-xs text-muted">
+        {!cancelling && !current && (steps.length === 0 || placing(steps)) && (
+          <SiftLoader />
+        )}
         {cancelling
           ? "Cancelando…"
           : steps.length === 0
@@ -141,13 +149,13 @@ const PLACEMENT_MARK = {
   notPlaced: { mark: "warning", cls: "text-accent-ink" },
 } as const satisfies Record<string, { mark: GlyphName; cls: string }>;
 
-/** Un paso ya lanzado: ✓, o «abierto · colocando…» mientras se coloca su ventana. */
+/** Un paso ya lanzado: ✓, o el tamiz y «abierto · colocando…» mientras se coloca su ventana. */
 function LaunchedStep({ step }: { step: RunStep }) {
   const { mark, cls } = PLACEMENT_MARK[step.placement ?? "placed"];
   return (
-    <li className="flex gap-2">
-      <span className={`w-4 shrink-0 text-center ${cls}`}>
-        <Glyph name={mark} />
+    <li className="flex items-center gap-2">
+      <span className={`flex w-4 shrink-0 justify-center ${cls}`}>
+        {step.placement === "placing" ? <SiftLoader /> : <Glyph name={mark} />}
       </span>
       <span className="min-w-0 truncate">
         {step.placement === "placing" ? placingText(step.label) : step.label}
