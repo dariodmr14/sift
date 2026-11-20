@@ -225,6 +225,31 @@ describe("barra", () => {
     expect(screen.getByText(/no se ejecutó/)).toBeInTheDocument();
   });
 
+  it("un doble Enter no abre el Espacio dos veces", async () => {
+    commands.runSpace.mockReturnValue(new Promise(() => {}));
+    const { user, box } = await renderBar();
+    await user.type(box, "curro");
+    await user.keyboard("{Enter}{Enter}");
+    await waitFor(() => expect(commands.runSpace).toHaveBeenCalledTimes(1));
+    await user.keyboard("{Enter}");
+    expect(commands.runSpace).toHaveBeenCalledTimes(1);
+  });
+
+  it("si la llamada para abrir un Espacio falla del todo, lo dice y la barra no se atasca", async () => {
+    commands.runSpace.mockRejectedValueOnce(new Error("canal cerrado"));
+    const { user, box } = await renderBar();
+    await user.type(box, "curro");
+    await user.keyboard("{Enter}");
+    expect(await screen.findByText(/canal cerrado/)).toBeInTheDocument();
+    // Se puede volver a intentar.
+    commands.runSpace.mockReturnValue(ok({ status: "declined" }));
+    await user.keyboard("{Escape}");
+    await user.clear(box);
+    await user.type(box, "curro");
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(commands.runSpace).toHaveBeenCalledTimes(2));
+  });
+
   it("si se cancela la confirmación de Windows, vuelve a la lista sin más", async () => {
     commands.runSpace.mockReturnValue(ok({ status: "declined" }));
     const { user, box } = await renderBar();
