@@ -113,10 +113,25 @@ pub fn pending_approvals<'a>(
     actions
         .into_iter()
         .filter_map(|a| match a {
-            Action::RunCommand(c) if !is_approved(c) && seen.insert(c.clone()) => Some(c.clone()),
+            Action::RunCommand(c) => Some(c.clone()),
+            Action::OpenApp { app_id, .. } => app_as_program(app_id),
             _ => None,
         })
+        .filter(|c| !is_approved(c) && seen.insert(c.clone()))
         .collect()
+}
+
+/// Una «aplicación» dada por la ruta de un programa (`C:\…\x.exe`, un acceso directo del
+/// escritorio) y no por su id de Windows (`Microsoft.VisualStudioCode`, `Claude_…!Claude`):
+/// abrirla es ejecutar ese programa, así que pide la misma confirmación que un comando la
+/// primera vez. Un Espacio importado no puede abrir un programa sin preguntar (auditoría 1.0).
+pub fn app_as_program(app_id: &str) -> Option<CommandSpec> {
+    let looks_like_path = app_id.contains(['\\', '/', ':']);
+    looks_like_path.then(|| CommandSpec {
+        program: app_id.to_owned(),
+        args: vec![],
+        cwd: None,
+    })
 }
 
 /// Cómo acabó una espera que no se cumplió.
@@ -399,7 +414,14 @@ pub fn run_action(action: &Action, opener: &dyn Opener) -> Result<(), String> {
     let mut checked = action.clone();
     validate_action(&mut checked)?;
     match &checked {
-        Action::OpenFolder { path, .. } | Action::OpenFile { path, .. } => {
+        Action::OpenFolder { path, .. } => {
+            // Se comprueba otra vez al abrir: la ruta pudo cambiar después de guardar.
+            if !path.is_dir() {
+                return Err(format!("no existe la carpeta: {}", path.display()));
+            }
+            opener.open_path(path)
+        }
+        Action::OpenFile { path, .. } => {
             if !path.exists() {
                 return Err(format!("no existe: {}", path.display()));
             }
@@ -446,9 +468,9 @@ pub fn label(action: &Action) -> String {
 /// interfaz pueda darla por buena (auditoría, A4).
 pub fn approval_message(owner: &str, commands: &[CommandSpec]) -> String {
     let what = if commands.len() == 1 {
-        "un comando"
+        "un programa o comando"
     } else {
-        "estos comandos"
+        "estos programas o comandos"
     };
     let mut text = format!("«{owner}» va a ejecutar {what} por primera vez:\n");
     for c in commands {
@@ -1553,11 +1575,62 @@ mod tests {
         let mut up = cmd("docker", &["compose", "up", "-d"]);
         up.cwd = Some(PathBuf::from(r"C:\Proyecto"));
         let one = approval_message("Bases de datos", std::slice::from_ref(&up));
-        assert!(one.starts_with("«Bases de datos» va a ejecutar un comando por primera vez:"));
+        assert!(
+            one.starts_with(
+                "«Bases de datos» va a ejecutar un programa o comando por primera vez:"
+            )
+        );
         assert!(one.contains("docker compose up -d"));
         assert!(one.contains(r"en C:\Proyecto"));
         assert!(!one.contains("  Solo"), "sin espacios de más: {one}");
         let two = approval_message("X", &[up, cmd("code", &["."])]);
-        assert!(two.contains("estos comandos"));
+        assert!(two.contains("estos programas o comandos"));
+    }
+
+    #[test]
+    fn an_app_given_by_a_program_path_asks_like_a_command() {
+        let app = |id: &str| Action::OpenApp {
+            app_id: id.into(),
+            name: "x".into(),
+            place: None,
+        };
+        let exe = r"C:\Users\x\eclipse\eclipse.exe";
+        let pending = pending_approvals(
+            &[
+                app(exe),
+                app("Microsoft.VisualStudioCode"),
+                app("Claude_pzs8sxrjxfjjc!Claude"),
+            ],
+            |_| false,
+        );
+        // Solo la ruta de programa pide confirmación; los ids de Windows, no.
+        assert_eq!(
+            pending,
+            vec![CommandSpec {
+                program: exe.into(),
+                args: vec![],
+                cwd: None
+            }]
+        );
+        assert!(
+            pending_approvals(&[app(exe)], |_| true).is_empty(),
+            "aprobada una vez, ya no pregunta"
+        );
+    }
+
+    #[test]
+    fn opening_a_folder_that_is_a_file_fails_at_run_time() {
+        let rec = Recorder::default();
+        let file = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+        let err = run_action(
+            &Action::OpenFolder {
+                path: file,
+                place: None,
+            },
+            &rec,
+        )
+        .unwrap_err();
+        assert!(err.contains("carpeta"), "{err}");
+        assert!(rec.calls.borrow().is_empty(), "no se abre nada");
     }
 }

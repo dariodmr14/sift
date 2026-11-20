@@ -14,6 +14,13 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use sha2::{Digest, Sha256};
+
+/// Tiempos máximos de la descarga (auditoría 1.0): sin ellos, una conexión colgada dejaba
+/// el indexador parado hasta reiniciar. El cuerpo tiene margen para conexiones lentas
+/// (~135 MB); si se corta, la próxima vez se sigue donde se quedó (`Range`).
+const CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
+const RESPONSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+const BODY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20 * 60);
 use sift_embeddings::{ModelCard, ModelFile};
 
 /// Carpeta de un modelo dentro de la de datos de la app.
@@ -86,7 +93,13 @@ fn fetch(
         target.extension().map_or("", |e| e.to_str().unwrap_or(""))
     ));
     let have = std::fs::metadata(&part).map_or(0, |m| m.len());
-    let mut request = ureq::get(file.url).header("User-Agent", "Sift");
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_connect(Some(CONNECT_TIMEOUT))
+        .timeout_recv_response(Some(RESPONSE_TIMEOUT))
+        .timeout_recv_body(Some(BODY_TIMEOUT))
+        .build()
+        .into();
+    let mut request = agent.get(file.url).header("User-Agent", "Sift");
     if have > 0 && have < file.bytes {
         request = request.header("Range", format!("bytes={have}-"));
     }

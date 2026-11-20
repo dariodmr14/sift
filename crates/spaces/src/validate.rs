@@ -16,11 +16,75 @@ pub const MAX_IMAGE_BASE64: usize = 350_000;
 pub const MAX_WAIT_SECS: u32 = 600;
 pub const IMAGE_MIMES: [&str; 3] = ["image/png", "image/svg+xml", "image/x-icon"];
 
-/// Extensiones que, abiertas como "archivo", **ejecutarían** algo. Se rechazan: para
-/// ejecutar está la acción "comando", que pide confirmación.
-const EXECUTABLE_EXTENSIONS: [&str; 14] = [
-    "exe", "com", "bat", "cmd", "ps1", "vbs", "vbe", "js", "jse", "wsf", "wsh", "msi", "scr", "hta",
+/// Extensiones que, abiertas con «abrir» de Windows, **ejecutarían** algo o lo instalarían
+/// (programas, scripts, accesos directos, paneles, paquetes, macros…). Se rechazan como
+/// «archivo»: para ejecutar está la acción «comando», que pide confirmación (auditoría 1.0).
+const EXECUTABLE_EXTENSIONS: [&str; 47] = [
+    "exe",
+    "com",
+    "bat",
+    "cmd",
+    "ps1",
+    "psm1",
+    "vbs",
+    "vbe",
+    "js",
+    "jse",
+    "wsf",
+    "wsh",
+    "msi",
+    "msp",
+    "scr",
+    "hta",
+    "pif",
+    "lnk",
+    "url",
+    "jar",
+    "py",
+    "pyw",
+    "reg",
+    "cpl",
+    "msc",
+    "inf",
+    "scf",
+    "gadget",
+    "application",
+    "appref-ms",
+    "appx",
+    "appxbundle",
+    "msix",
+    "msixbundle",
+    "appinstaller",
+    "settingcontent-ms",
+    "library-ms",
+    "search-ms",
+    "chm",
+    "docm",
+    "dotm",
+    "xlsm",
+    "xltm",
+    "xlam",
+    "pptm",
+    "ppam",
+    "sys",
 ];
+
+/// ¿Abrir esta ruta con «abrir» de Windows ejecutaría algo? Por su extensión, sin
+/// mayúsculas, y también con los trucos que Windows ignora al abrir: puntos o espacios al
+/// final («x.exe.») y flujos alternativos («x.txt:y.exe»).
+pub fn is_executable(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    // Lo que va tras «:» en un nombre es un flujo alternativo de NTFS: cuenta lo de delante
+    // y lo de detrás.
+    name.split(':').any(|part| {
+        let part = part.trim_end_matches(['.', ' ']);
+        part.rsplit_once('.').is_some_and(|(_, ext)| {
+            EXECUTABLE_EXTENSIONS.contains(&ext.to_ascii_lowercase().as_str())
+        })
+    })
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ValidationError {
@@ -101,19 +165,25 @@ pub fn validate(mut draft: SpaceDraft) -> Result<SpaceDraft, ValidationError> {
 /// Valida una acción suelta (también se usa al pulsar "probar" en el editor).
 pub fn validate_action(action: &mut Action) -> Result<(), String> {
     match action {
-        Action::OpenFolder { path, .. } => check_path(path),
+        Action::OpenFolder { path, .. } => {
+            check_path(path)?;
+            // Una «carpeta» que es un archivo se ejecutaría al abrirla (auditoría 1.0).
+            if path.exists() && !path.is_dir() {
+                return Err("no es una carpeta".into());
+            }
+            if is_executable(path) {
+                return Err("no es una carpeta".into());
+            }
+            Ok(())
+        }
         Action::OpenFile { path, .. } => {
             check_path(path)?;
-            let ext = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .map(str::to_ascii_lowercase)
-                .unwrap_or_default();
-            if EXECUTABLE_EXTENSIONS.contains(&ext.as_str()) {
-                return Err(format!(
-                    "«.{ext}» es un ejecutable; para ejecutar algo usa la acción «comando» \
-                     (pide confirmación) o «aplicación»"
-                ));
+            if is_executable(path) {
+                return Err(concat!(
+                    "este archivo ejecutaría algo al abrirlo; para ejecutar usa la acción ",
+                    "«comando» (pide confirmación) o «aplicación»"
+                )
+                .into());
             }
             Ok(())
         }
@@ -166,8 +236,18 @@ fn check_path(path: &Path) -> Result<(), String> {
     if path.as_os_str().is_empty() {
         return Err("falta la ruta".into());
     }
+    let text = path.to_string_lossy();
+    // Rutas de red (\\equipo\carpeta) o de dispositivo (\\?\…, \\.\…): Sift solo abre
+    // cosas de este PC. Abrir una ruta de red, además, manda tus credenciales a ese equipo.
+    if text.starts_with(r"\\") || text.starts_with("//") {
+        return Err("Sift solo abre rutas de este PC (C:\\…), no de red".into());
+    }
     if !path.is_absolute() {
         return Err("la ruta tiene que ser completa (p. ej. C:\\Users\\…)".into());
+    }
+    // Un «:» más allá de la unidad (C:) es un flujo alternativo de NTFS.
+    if text.chars().skip(2).any(|c| c == ':') {
+        return Err("la ruta no es válida".into());
     }
     Ok(())
 }
@@ -354,9 +434,49 @@ mod tests {
             })
         };
         assert!(check(r"C:\Apuntes\tema4.pdf").is_ok());
-        assert!(check(r"C:\x\setup.EXE").unwrap_err().contains("ejecutable"));
+        assert!(check(r"C:\x\setup.EXE").unwrap_err().contains("ejecutaría"));
         assert!(check(r"C:\x\run.bat").is_err());
         assert!(check(r"C:\x\script.ps1").is_err());
+        // Auditoría 1.0: accesos directos, scripts, paneles y macros también ejecutan algo.
+        for p in [
+            r"C:\x\a.lnk",
+            r"C:\x\a.url",
+            r"C:\x\a.hta",
+            r"C:\x\a.reg",
+            r"C:\x\a.cpl",
+            r"C:\x\a.docm",
+        ] {
+            assert!(check(p).is_err(), "{p}");
+        }
+        // Los trucos que Windows ignora al abrir: punto o espacio al final y flujos de NTFS.
+        assert!(check(r"C:\x\setup.exe.").is_err());
+        assert!(check(r"C:\x\setup.exe ").is_err());
+        assert!(check(r"C:\x\notas.txt:setup.exe").is_err());
+    }
+
+    #[test]
+    fn a_folder_must_be_a_folder_and_paths_must_be_local() {
+        let folder = |p: &str| {
+            validate_action(&mut Action::OpenFolder {
+                path: abs(p),
+                place: None,
+            })
+        };
+        // Un ejecutable no vale como carpeta, exista o no.
+        assert!(folder(r"C:\x\malo.exe").is_err());
+        // Uno que existe y no es carpeta (el Cargo.toml de este crate).
+        let file = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
+        assert!(
+            validate_action(&mut Action::OpenFolder {
+                path: file,
+                place: None
+            })
+            .is_err()
+        );
+        assert!(folder(r"C:\Proyectos\Web").is_ok());
+        // Rutas de red o de dispositivo: no.
+        assert!(folder(r"\\equipo\carpeta").is_err());
+        assert!(folder(r"\\?\C:\x").is_err());
     }
 
     #[test]

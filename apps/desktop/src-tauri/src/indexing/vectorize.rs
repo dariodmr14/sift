@@ -204,8 +204,10 @@ impl Worker {
     ) -> Result<sift_search::VectorIndex, String> {
         let path = crate::smart::vectors_path(app_data, card);
         let db = self.db();
-        let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
-        let stored = db.count_embeddings(card.id).map_err(|e| e.to_string())?;
+        let stored = {
+            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
+            db.count_embeddings(card.id).map_err(|e| e.to_string())?
+        };
         if let Some(v) = sift_search::VectorIndex::load(&path, card.dims)
             && v.len() as u64 == stored
         {
@@ -213,10 +215,16 @@ impl Worker {
         }
         let started = Instant::now();
         let v = sift_search::VectorIndex::new(card.dims).map_err(|e| e.to_string())?;
+        // Con el candado solo mientras se leen los vectores; construir el índice y guardarlo
+        // (lo lento) va sin él, para no parar la vista previa ni los Ajustes (auditoría 1.0).
         let mut batch = Vec::new();
-        db.for_each_embedding(card.id, |h, vector| batch.push((h, vector)))
-            .map_err(|e| e.to_string())?;
+        {
+            let db = db.0.lock().unwrap_or_else(|p| p.into_inner());
+            db.for_each_embedding(card.id, |h, vector| batch.push((h, vector)))
+                .map_err(|e| e.to_string())?;
+        }
         v.add(&batch).map_err(|e| e.to_string())?;
+        drop(batch);
         if let Err(e) = v.save(&path) {
             tracing::warn!(error = %e, "no se pudo guardar el índice de vectores");
         }
