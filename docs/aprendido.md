@@ -77,3 +77,11 @@ Lo más útil de cada fase de Sift, contado al terminarla. El resumen está en e
 - El número de cada pantalla es el de Windows (`\.\DISPLAYn`), no el orden de izquierda a derecha; el modelo sale del EDID (`DisplayConfigGetDeviceInfo`).
 - Un script de capturas con límite de tiempo puede cortarse antes de devolver la carpeta de datos a su sitio: sin límites en los scripts que apartan datos.
 - NSIS lee los `.nsh` como UTF-8 solo si llevan BOM; los textos en español con tildes lo necesitan.
+
+**Auditoría 1.0 (pruebas de aguante)**
+- Una lista de lo permitido es más fácil de defender que una de lo prohibido: la de bloqueados tenía 14 extensiones y se colaban `.lnk`, `.url`, `.hta`, `.reg`… Lo desconocido, por defecto, pregunta.
+- Las cifras de las pruebas pequeñas no avisan de lo que pasa a lo grande. Con 100 000 archivos salió lo que ningún test veía: 1,8 GB de memoria (cuatro copias del tokenizador y el «arena» de ONNX quedándose con el lote más grande) y la barra esperando 4,8 s detrás de una consulta que leía el texto de 322 000 fragmentos.
+- Medir antes de arreglar: un ejemplo pequeño por cada sospecha (`examples/memoria.rs`, `examples/vectores.rs`) dio la causa en minutos. La prueba completa, de más de una hora, solo sirve para confirmar.
+- En SQLite con WAL, una segunda conexión de solo lectura no espera al que escribe ni le hace esperar: las lecturas largas van por ahí, y el candado queda para escribir.
+- Un índice que «cubre» la consulta (con todas las columnas que pide) evita leer la tabla. Con `INDEXED BY` se obliga a usarlo, para que el planificador no cambie de idea con otros datos.
+- Un script de pruebas que espera a un contador se queda colgado si el contador miente: hay que esperar a un hecho («ha terminado una revisión completa»), y el contador que mentía era un fallo de Sift.
