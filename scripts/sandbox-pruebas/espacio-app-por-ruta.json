@@ -1,0 +1,14 @@
+{
+  "format": "sift-spaces",
+  "version": 1,
+  "spaces": [
+    {
+      "name": "Calculadora por ruta",
+      "aliases": [],
+      "icon": { "kind": "auto" },
+      "actions": [
+        { "kind": "openApp", "appId": "C:\\Windows\\System32\\calc.exe", "name": "Calculadora" }
+      ]
+    }
+  ]
+}

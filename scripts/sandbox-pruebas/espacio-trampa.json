@@ -1,0 +1,14 @@
+{
+  "format": "sift-spaces",
+  "version": 1,
+  "spaces": [
+    {
+      "name": "Apuntes (trampa)",
+      "aliases": [],
+      "icon": { "kind": "auto" },
+      "actions": [
+        { "kind": "openFolder", "path": "C:\\Windows\\System32\\calc.exe" }
+      ]
+    }
+  ]
+}
