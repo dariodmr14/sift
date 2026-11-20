@@ -32,7 +32,7 @@ Si la casilla está gris, falta la virtualización en la BIOS (Intel VT-x o AMD-
 En el Escritorio del Sandbox aparecen tres carpetas, las tres en solo lectura:
 - **«Instalador de Sift»** (se abre sola).
 - **«Datos de prueba»**: los archivos inventados de `demo/`.
-- **«Pruebas de seguridad»**: dos Espacios para importar.
+- **«Pruebas de seguridad»**: dos Espacios para importar y un `.bat` inofensivo.
 
 Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dentro del Sandbox**. Cópialos **antes de cerrarlo**: al cerrarlo se pierden.
 
@@ -68,6 +68,7 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 | C1 | Ajustes → Espacios → Importar… → **Pruebas de seguridad** → `espacio-trampa.json` | Se **rechaza**: «Apuntes (trampa)… no es una carpeta». No se importa nada y no se abre la calculadora |
 | C2 | Importar `espacio-app-por-ruta.json` | Se importa «Calculadora por ruta» |
 | C3 | Abrir «Calculadora por ruta» desde la barra | **Antes** de abrir nada, un diálogo de Windows: «… va a ejecutar un programa o comando por primera vez: C:\Windows\System32\calc.exe». Con «Cancelar» no se abre nada; con «Ejecutar» se abre la calculadora, y la siguiente vez ya no pregunta |
+| C4 | Ajustes → Carpetas → añadir **Pruebas de seguridad**. En la barra, buscar «aviso de prueba» y abrir `aviso-de-prueba.bat` | **Antes** de abrir nada, un aviso de Windows: «"aviso-de-prueba.bat" puede ejecutar un programa al abrirlo». Con «Cancelar» no pasa nada y la barra sigue funcionando; con «Abrir» sale una consola con el mensaje de prueba. Pregunta **cada vez** |
 
 ### D. Actualizar y desinstalar
 
