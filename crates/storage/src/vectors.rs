@@ -108,9 +108,11 @@ impl Database {
         limit: usize,
     ) -> Result<Vec<(i64, String)>, StorageError> {
         let (filter, tier) = policy.sql();
+        // Primero los hashes, solo con el índice `chunks_embed` (sin tocar el texto, que es
+        // lo que pesa); luego el texto de los elegidos, uno a uno por su índice.
         let sql = format!(
-            "SELECT c.text_hash, MIN(c.text), MIN({tier}) AS tier, MAX(f.mtime) AS recent
-             FROM chunks c JOIN files f ON f.id = c.file_id
+            "SELECT c.text_hash, MIN({tier}) AS tier, MAX(f.mtime) AS recent
+             FROM files f JOIN chunks c INDEXED BY chunks_embed ON c.file_id = f.id
              WHERE ({filter})
                AND NOT EXISTS (SELECT 1 FROM embeddings e
                                WHERE e.model = ?1 AND e.text_hash = c.text_hash)
@@ -118,11 +120,21 @@ impl Database {
              ORDER BY tier, recent DESC
              LIMIT ?2"
         );
-        let rows = self
+        let hashes: Vec<i64> = self
             .conn
             .prepare(&sql)?
-            .query_map(params![model, limit as i64], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .query_map(params![model, limit as i64], |r| r.get(0))?
             .collect::<Result<_, _>>()?;
+        let mut text = self
+            .conn
+            .prepare("SELECT text FROM chunks WHERE text_hash = ?1 LIMIT 1")?;
+        let mut rows = Vec::with_capacity(hashes.len());
+        for hash in hashes {
+            let t: Option<String> = text.query_row([hash], |r| r.get(0)).optional()?;
+            if let Some(t) = t {
+                rows.push((hash, t));
+            }
+        }
         Ok(rows)
     }
 
@@ -136,7 +148,8 @@ impl Database {
         let (filter, _) = policy.sql();
         let sql = format!(
             "SELECT COUNT(*), COUNT(e.text_hash) FROM
-               (SELECT DISTINCT c.text_hash FROM chunks c JOIN files f ON f.id = c.file_id
+               (SELECT DISTINCT c.text_hash
+                FROM files f JOIN chunks c INDEXED BY chunks_embed ON c.file_id = f.id
                 WHERE ({filter})) t
              LEFT JOIN embeddings e ON e.model = ?1 AND e.text_hash = t.text_hash"
         );
@@ -218,24 +231,43 @@ impl Database {
         keep: &str,
         policy: &EmbedPolicy,
     ) -> Result<Vec<i64>, StorageError> {
+        let orphans = self.orphan_embeddings(keep, policy)?;
+        self.delete_embeddings(keep, &orphans)?;
+        Ok(orphans)
+    }
+
+    /// Los vectores de `model` que ya no corresponden a ningún fragmento que deba tenerlo.
+    /// Solo lee (se puede hacer con [`Database::open_reader`]): con muchos vectores tarda.
+    pub fn orphan_embeddings(
+        &self,
+        model: &str,
+        policy: &EmbedPolicy,
+    ) -> Result<Vec<i64>, StorageError> {
         let (filter, _) = policy.sql();
-        let tx = self.conn.transaction()?;
-        let orphans: Vec<i64> = tx
+        let orphans = self
+            .conn
             .prepare(&format!(
                 "SELECT e.text_hash FROM embeddings e WHERE e.model = ?1
-                 AND NOT EXISTS (SELECT 1 FROM chunks c JOIN files f ON f.id = c.file_id
+                 AND NOT EXISTS (SELECT 1 FROM chunks c INDEXED BY chunks_hash_embed
+                                 JOIN files f ON f.id = c.file_id
                                  WHERE c.text_hash = e.text_hash AND ({filter}))"
             ))?
-            .query_map([keep], |r| r.get(0))?
+            .query_map([model], |r| r.get(0))?
             .collect::<Result<_, _>>()?;
-        for hash in &orphans {
+        Ok(orphans)
+    }
+
+    /// Borra estos vectores de `model` (en una transacción).
+    pub fn delete_embeddings(&mut self, model: &str, hashes: &[i64]) -> Result<(), StorageError> {
+        let tx = self.conn.transaction()?;
+        for hash in hashes {
             tx.execute(
                 "DELETE FROM embeddings WHERE model = ?1 AND text_hash = ?2",
-                params![keep, hash],
+                params![model, hash],
             )?;
         }
         tx.commit()?;
-        Ok(orphans)
+        Ok(())
     }
 
     /// El vector de un texto, si lo hay (tests y diagnóstico).

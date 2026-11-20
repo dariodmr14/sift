@@ -102,6 +102,7 @@ impl Indexing {
             unsaved_vectors: 0,
             jobs: jobs.clone(),
             download: download::ModelDownload::default(),
+            reader: None,
         };
         let crashed = status.clone();
         let spawned = std::thread::Builder::new()
