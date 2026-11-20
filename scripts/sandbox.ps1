@@ -34,7 +34,7 @@ $inside = "C:\Users\WDAGUtilityAccount\Desktop\Instalador de Sift"
 # añadirlos con «Elegir otra carpeta…». También en solo lectura.
 $demo = Join-Path $root "demo"
 $demoInside = "C:\Users\WDAGUtilityAccount\Desktop\Datos de prueba"
-# Dos Espacios para importar en la prueba de seguridad (ver docs/prueba-instalacion.md).
+# Dos Espacios para importar y un .bat inofensivo, para la prueba de seguridad (ver docs/prueba-instalacion.md).
 $checks = Join-Path $root "scripts\sandbox-pruebas"
 $checksInside = "C:\Users\WDAGUtilityAccount\Desktop\Pruebas de seguridad"
 $wsb = @"

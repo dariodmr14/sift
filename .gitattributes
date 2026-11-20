@@ -6,3 +6,6 @@
 *.png binary
 *.ico binary
 *.icns binary
+
+# cmd.exe lee mejor los .bat con CRLF.
+*.bat text eol=crlf
