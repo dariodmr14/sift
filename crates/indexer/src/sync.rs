@@ -220,8 +220,14 @@ fn walk(
         if ctx.cancelled() {
             return Err(SyncError::Cancelled);
         }
-        // Una carpeta sin permiso no para el indexado del resto.
-        let Ok(entry) = entry else { continue };
+        // Una carpeta sin permiso no para el indexado del resto (pero queda en el registro).
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e) => {
+                tracing::warn!(path = ?e.path(), error = %e, "no se puede leer; se salta");
+                continue;
+            }
+        };
         // Solo formatos útiles para buscar: ni binarios ni compilados.
         if !entry.file_type().is_file() || !ctx.rules.indexes(entry.path()) {
             continue;
