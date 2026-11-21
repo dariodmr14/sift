@@ -78,3 +78,14 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 ### 13. Todo en un PR en vez de tres — aviso
 - **Contexto:** pediste un PR por grupo (seguridad, robustez e interfaz). La sesión anterior lo juntó todo en un único commit (`f21c572`) antes de cortarse, y separarlo ahora es reescribir el historial local.
 - **Hecho:** va en un solo PR, con los commits de esta sesión separados por tema y la descripción dividida en los tres grupos.
+
+## Preparar la publicación (2026-11-21, trabajando solo)
+
+### 14. Limpieza antes de hacerlo público — decidido (2026-11-21)
+- **Contexto:** informe completo en [`docs/publicacion/limpieza.md`](../publicacion/limpieza.md). No hay secretos ni tu correo en ningún sitio; solo queda tu ruta de usuario (`C:\Users\Darío`) en un documento actual y en el historial.
+- **Opciones y recomendación:**
+  1. Cambiar la ruta en `docs/proceso/publicar-revision.md` por `C:\Users\<tu usuario>`: **sí** (un PR de cinco líneas).
+  2. Borrar la rama remota `feat/instalador`, ya fusionada: **sí**.
+  3. Instalar y pasar gitleaks: **opcional**. Al publicar, el escaneo de secretos de GitHub cubre lo mismo hacia adelante.
+  4. Reescribir el historial: **no**. Obliga a un force push a `main` y rompe los enlaces de los 61 PR, por algo de gravedad baja.
+- **Decidido (2026-11-21):** como la recomendación. Ruta cambiada; sin gitleaks; sin reescribir el historial. La rama `feat/instalador` la borra Darío (`git push origin --delete feat/instalador`): los permisos del proyecto no dejan a Claude borrar ramas remotas.

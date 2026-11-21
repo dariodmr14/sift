@@ -10,7 +10,7 @@
 |---|---|---|---|
 | 1 | Secretos (tokens, claves, contraseñas) | — | No hay ninguno. Nada que hacer |
 | 2 | Tu correo | — | No aparece. Nada que hacer |
-| 3 | Tu ruta de usuario (`C:\Users\Darío\…`) en capturas | Media | Rehacer las capturas con datos de demostración |
+| 3 | Tu ruta de usuario (`C:\Users\<tu usuario>\…`) en capturas | Media | Rehacer las capturas con datos de demostración |
 | 4 | Tu ruta de usuario en tests y comentarios | Baja | Cambiarla por una ruta inventada |
 | 5 | Datos de tu carrera (Uniovi, asignaturas, nombres de apuntes) | Baja | Quitar «Uniovi» y las webs del campus; dejar las consultas de `eval/` |
 | 6 | Archivos internos del proceso | Ninguna | Dejarlos y ordenarlos |
@@ -31,7 +31,7 @@ Los 269 commits usan `329515735+dariodmr14@users.noreply.github.com`, el correo 
 
 ## 3. Tu ruta de usuario en capturas — rehacerlas
 
-La ruta `C:\Users\Darío\Documents\GitHub\Sift` se ve en el editor de Espacios porque el Espacio de prueba de la versión de desarrollo abre la carpeta del repo:
+La ruta `C:\Users\<tu usuario>\Documents\GitHub\Sift` se ve en el editor de Espacios porque el Espacio de prueba de la versión de desarrollo abre la carpeta del repo:
 
 - `docs/capturas/final/ajustes-espacio.jpg`, que es la que usa el borrador del README público.
 - `docs/capturas/0-antes-ajustes-espacio.jpg`, `1-spacing-…`, `2-color-…`, `3-icons-…`, `4-copy-…` y `5-type-ajustes-espacio.jpg` (el antes y después de unslop).
@@ -46,9 +46,9 @@ Las capturas de la barra, Carpetas e introducción solo enseñan `C:\…\GitHub\
 
 | Archivo | Qué |
 |---|---|
-| `apps/desktop/src/launcher/files.test.ts:11` | `C:\Users\Darío\Documents\Uni\BD\Teoría\tema4.pdf` |
-| `apps/desktop/src/settings/pathSuggest.test.ts:12` | `C:\Users\Darío\tema4.pdf` |
-| `crates/search/src/vectors.rs:67, 197` | `C:\Users\Darío` como ejemplo de carpeta con tilde |
+| `apps/desktop/src/launcher/files.test.ts:11` | `C:\Users\<tu usuario>\Documents\Uni\BD\Teoría\tema4.pdf` |
+| `apps/desktop/src/settings/pathSuggest.test.ts:12` | `C:\Users\<tu usuario>\tema4.pdf` |
+| `crates/search/src/vectors.rs:67, 197` | `C:\Users\<tu usuario>` como ejemplo de carpeta con tilde |
 | `docs/aprendido.md:39` | Lo mismo |
 
 **Propuesta:** usar `C:\Users\Núria\…`. Sigue llevando tilde, que es justo lo que prueban esos tests (el fallo de usearch con rutas con tildes).
