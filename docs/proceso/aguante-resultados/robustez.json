@@ -1,0 +1,26 @@
+{
+  "startedAt": "2026-11-20T16:14:24.807Z",
+  "crash": {
+    "crashes": [
+      {
+        "killedAfterMs": 25000,
+        "done": 600,
+        "total": 100000,
+        "phase": "paused"
+      },
+      {
+        "killedAfterMs": 60000,
+        "done": 1533,
+        "total": 99398,
+        "phase": "reading"
+      }
+    ],
+    "recoveredSeconds": 2989,
+    "files": 97862,
+    "error": null,
+    "searchHits": 12
+  },
+  "devDataRestored": true,
+  "error": "Error: la app se ha cerrado\n    at ws.onclose (file:///C:/Users/<usuario>/Documents/GitHub/Sift/scripts/devapp.mjs:111:14)\n    at file:///C:/Users/<usuario>/Documents/GitHub/Sift/scripts/devapp.mjs:123:55\n    at new Promise (<anonymous>)\n    at send (file:///C:/Users/<usuario>/Documents/GitHub/Sift/scripts/devapp.mjs:116:5)\n    at Object.evaluate (file:///C:/Users/<usuario>/Documents/GitHub/Sift/scripts/devapp.mjs:128:21)\n    at invoke (file:///C:/Users/<usuario>/Documents/GitHub/Sift/scripts/aguante/comun.mjs:72:8)\n    at waitIndexed (file:///C:/Users/<usuario>/Documents/GitHub/Sift/scripts/aguante/comun.mjs:122:21)\n    at async file:///C:/Users/<usuario>/Documents/GitHub/Sift/scripts/aguante/robustez.mjs:100:18",
+  "finishedAt": "2026-11-20T19:34:44.136Z"
+}

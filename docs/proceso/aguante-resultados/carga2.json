@@ -1,0 +1,5884 @@
+{
+  "folder": "<scratchpad>\\aguante\\carga",
+  "startedAt": "2026-11-20T14:52:12.633Z",
+  "indexing": {
+    "seconds": 3054,
+    "peakMemory": {
+      "siftWorkingMb": 136,
+      "webviewMb": 343
+    },
+    "samples": [
+      {
+        "t": 3,
+        "done": 81,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 87,
+        "webviewMb": 323
+      },
+      {
+        "t": 9,
+        "done": 229,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 323
+      },
+      {
+        "t": 14,
+        "done": 414,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 91,
+        "webviewMb": 321
+      },
+      {
+        "t": 20,
+        "done": 631,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 90,
+        "webviewMb": 326
+      },
+      {
+        "t": 25,
+        "done": 831,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 326
+      },
+      {
+        "t": 31,
+        "done": 1041,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 91,
+        "webviewMb": 334
+      },
+      {
+        "t": 36,
+        "done": 1251,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 92,
+        "webviewMb": 334
+      },
+      {
+        "t": 42,
+        "done": 1453,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 91,
+        "webviewMb": 334
+      },
+      {
+        "t": 47,
+        "done": 1669,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 92,
+        "webviewMb": 334
+      },
+      {
+        "t": 52,
+        "done": 1836,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 93,
+        "siftPrivateMb": 94,
+        "webviewMb": 334
+      },
+      {
+        "t": 58,
+        "done": 2011,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 93,
+        "webviewMb": 334
+      },
+      {
+        "t": 63,
+        "done": 2214,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 69,
+        "done": 2407,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 95,
+        "siftPrivateMb": 94,
+        "webviewMb": 327
+      },
+      {
+        "t": 74,
+        "done": 2632,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 93,
+        "webviewMb": 327
+      },
+      {
+        "t": 80,
+        "done": 2836,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 327
+      },
+      {
+        "t": 85,
+        "done": 3050,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 95,
+        "siftPrivateMb": 92,
+        "webviewMb": 327
+      },
+      {
+        "t": 91,
+        "done": 3264,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 93,
+        "webviewMb": 327
+      },
+      {
+        "t": 96,
+        "done": 3457,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 93,
+        "webviewMb": 327
+      },
+      {
+        "t": 101,
+        "done": 3673,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 96,
+        "siftPrivateMb": 92,
+        "webviewMb": 327
+      },
+      {
+        "t": 107,
+        "done": 3882,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 93,
+        "webviewMb": 327
+      },
+      {
+        "t": 112,
+        "done": 4079,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 118,
+        "done": 4250,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 97,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 123,
+        "done": 4461,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 129,
+        "done": 4671,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 93,
+        "webviewMb": 328
+      },
+      {
+        "t": 134,
+        "done": 4881,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 98,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 139,
+        "done": 5081,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 145,
+        "done": 5293,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 93,
+        "webviewMb": 328
+      },
+      {
+        "t": 150,
+        "done": 5402,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 94,
+        "siftPrivateMb": 91,
+        "webviewMb": 328
+      },
+      {
+        "t": 156,
+        "done": 5608,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 91,
+        "webviewMb": 328
+      },
+      {
+        "t": 161,
+        "done": 5834,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 93,
+        "webviewMb": 328
+      },
+      {
+        "t": 167,
+        "done": 6049,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 172,
+        "done": 6273,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 328
+      },
+      {
+        "t": 178,
+        "done": 6464,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 328
+      },
+      {
+        "t": 183,
+        "done": 6675,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 189,
+        "done": 6884,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 328
+      },
+      {
+        "t": 194,
+        "done": 7080,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 199,
+        "done": 7282,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 205,
+        "done": 7500,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 210,
+        "done": 7698,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 216,
+        "done": 7891,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 93,
+        "webviewMb": 328
+      },
+      {
+        "t": 221,
+        "done": 8102,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 328
+      },
+      {
+        "t": 227,
+        "done": 8299,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 232,
+        "done": 8501,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 238,
+        "done": 8691,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 328
+      },
+      {
+        "t": 243,
+        "done": 8900,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 330
+      },
+      {
+        "t": 248,
+        "done": 9100,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 254,
+        "done": 9294,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 93,
+        "webviewMb": 329
+      },
+      {
+        "t": 259,
+        "done": 9488,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 265,
+        "done": 9687,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 270,
+        "done": 9893,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 329
+      },
+      {
+        "t": 276,
+        "done": 10087,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 281,
+        "done": 10301,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 93,
+        "webviewMb": 329
+      },
+      {
+        "t": 286,
+        "done": 10501,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 292,
+        "done": 10688,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 297,
+        "done": 10852,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 91,
+        "webviewMb": 329
+      },
+      {
+        "t": 303,
+        "done": 11041,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 330
+      },
+      {
+        "t": 308,
+        "done": 11217,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 329
+      },
+      {
+        "t": 314,
+        "done": 11411,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 91,
+        "webviewMb": 329
+      },
+      {
+        "t": 319,
+        "done": 11606,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 325,
+        "done": 11785,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 329
+      },
+      {
+        "t": 330,
+        "done": 11953,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 329
+      },
+      {
+        "t": 336,
+        "done": 12153,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 94,
+        "webviewMb": 329
+      },
+      {
+        "t": 341,
+        "done": 12322,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 329
+      },
+      {
+        "t": 346,
+        "done": 12515,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 329
+      },
+      {
+        "t": 352,
+        "done": 12700,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 95,
+        "webviewMb": 329
+      },
+      {
+        "t": 357,
+        "done": 12898,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 330
+      },
+      {
+        "t": 363,
+        "done": 13081,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 330
+      },
+      {
+        "t": 368,
+        "done": 13271,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 92,
+        "webviewMb": 330
+      },
+      {
+        "t": 374,
+        "done": 13454,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 330
+      },
+      {
+        "t": 379,
+        "done": 13620,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 330
+      },
+      {
+        "t": 385,
+        "done": 13807,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 93,
+        "webviewMb": 330
+      },
+      {
+        "t": 390,
+        "done": 13993,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 69,
+        "siftPrivateMb": 51,
+        "webviewMb": 330
+      },
+      {
+        "t": 395,
+        "done": 14153,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 330
+      },
+      {
+        "t": 401,
+        "done": 14318,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 330
+      },
+      {
+        "t": 406,
+        "done": 14499,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 94,
+        "webviewMb": 330
+      },
+      {
+        "t": 412,
+        "done": 14676,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 92,
+        "webviewMb": 330
+      },
+      {
+        "t": 417,
+        "done": 14873,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 330
+      },
+      {
+        "t": 423,
+        "done": 15063,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 94,
+        "webviewMb": 330
+      },
+      {
+        "t": 428,
+        "done": 15256,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 330
+      },
+      {
+        "t": 433,
+        "done": 15450,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 330
+      },
+      {
+        "t": 439,
+        "done": 15636,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 92,
+        "webviewMb": 330
+      },
+      {
+        "t": 444,
+        "done": 15818,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 330
+      },
+      {
+        "t": 450,
+        "done": 16003,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 330
+      },
+      {
+        "t": 455,
+        "done": 16176,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 330
+      },
+      {
+        "t": 461,
+        "done": 16351,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 94,
+        "webviewMb": 330
+      },
+      {
+        "t": 466,
+        "done": 16549,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 330
+      },
+      {
+        "t": 472,
+        "done": 16751,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 330
+      },
+      {
+        "t": 477,
+        "done": 16930,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 95,
+        "webviewMb": 330
+      },
+      {
+        "t": 483,
+        "done": 17113,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 330
+      },
+      {
+        "t": 488,
+        "done": 17281,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 91,
+        "webviewMb": 330
+      },
+      {
+        "t": 493,
+        "done": 17461,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 95,
+        "webviewMb": 330
+      },
+      {
+        "t": 499,
+        "done": 17650,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 330
+      },
+      {
+        "t": 504,
+        "done": 17802,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 330
+      },
+      {
+        "t": 510,
+        "done": 17990,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 73,
+        "siftPrivateMb": 62,
+        "webviewMb": 330
+      },
+      {
+        "t": 515,
+        "done": 18173,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 93,
+        "webviewMb": 330
+      },
+      {
+        "t": 521,
+        "done": 18350,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 330
+      },
+      {
+        "t": 526,
+        "done": 18529,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 330
+      },
+      {
+        "t": 532,
+        "done": 18690,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 537,
+        "done": 18870,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 542,
+        "done": 19057,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 548,
+        "done": 19232,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 93,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 553,
+        "done": 19408,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 559,
+        "done": 19600,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 331
+      },
+      {
+        "t": 564,
+        "done": 19787,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 331
+      },
+      {
+        "t": 570,
+        "done": 19923,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 575,
+        "done": 19923,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 581,
+        "done": 20006,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 331
+      },
+      {
+        "t": 586,
+        "done": 20169,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 331
+      },
+      {
+        "t": 592,
+        "done": 20361,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 331
+      },
+      {
+        "t": 597,
+        "done": 20532,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 603,
+        "done": 20708,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 608,
+        "done": 20895,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 613,
+        "done": 21080,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 619,
+        "done": 21250,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 624,
+        "done": 21423,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 332
+      },
+      {
+        "t": 630,
+        "done": 21614,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 635,
+        "done": 21794,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 641,
+        "done": 21975,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 331
+      },
+      {
+        "t": 646,
+        "done": 22137,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 331
+      },
+      {
+        "t": 652,
+        "done": 22303,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 657,
+        "done": 22479,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 663,
+        "done": 22660,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 668,
+        "done": 22827,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 673,
+        "done": 22996,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 679,
+        "done": 23181,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 684,
+        "done": 23366,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 690,
+        "done": 23545,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 93,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 695,
+        "done": 23752,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 701,
+        "done": 23941,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 706,
+        "done": 24127,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 712,
+        "done": 24301,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 717,
+        "done": 24496,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 722,
+        "done": 24665,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 92,
+        "webviewMb": 331
+      },
+      {
+        "t": 728,
+        "done": 24853,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 91,
+        "webviewMb": 331
+      },
+      {
+        "t": 733,
+        "done": 25020,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 331
+      },
+      {
+        "t": 739,
+        "done": 25130,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 744,
+        "done": 25209,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 750,
+        "done": 25300,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 755,
+        "done": 25390,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 761,
+        "done": 25468,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 766,
+        "done": 25550,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 771,
+        "done": 25636,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 777,
+        "done": 25723,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 782,
+        "done": 25810,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 90,
+        "webviewMb": 332
+      },
+      {
+        "t": 788,
+        "done": 25877,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 90,
+        "webviewMb": 332
+      },
+      {
+        "t": 793,
+        "done": 25962,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 91,
+        "webviewMb": 332
+      },
+      {
+        "t": 799,
+        "done": 26042,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 804,
+        "done": 26138,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 810,
+        "done": 26296,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 332
+      },
+      {
+        "t": 815,
+        "done": 26466,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 820,
+        "done": 26659,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 332
+      },
+      {
+        "t": 826,
+        "done": 26854,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 332
+      },
+      {
+        "t": 831,
+        "done": 27022,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 95,
+        "webviewMb": 332
+      },
+      {
+        "t": 837,
+        "done": 27200,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 95,
+        "webviewMb": 332
+      },
+      {
+        "t": 842,
+        "done": 27398,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 89,
+        "webviewMb": 332
+      },
+      {
+        "t": 848,
+        "done": 27574,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 332
+      },
+      {
+        "t": 853,
+        "done": 27732,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 859,
+        "done": 27911,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 864,
+        "done": 28105,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 869,
+        "done": 28304,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 95,
+        "webviewMb": 332
+      },
+      {
+        "t": 875,
+        "done": 28463,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 332
+      },
+      {
+        "t": 880,
+        "done": 28638,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 332
+      },
+      {
+        "t": 886,
+        "done": 28835,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 96,
+        "webviewMb": 332
+      },
+      {
+        "t": 891,
+        "done": 29019,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 333
+      },
+      {
+        "t": 897,
+        "done": 29189,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 333
+      },
+      {
+        "t": 902,
+        "done": 29366,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 331
+      },
+      {
+        "t": 908,
+        "done": 29547,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 913,
+        "done": 29740,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 919,
+        "done": 29929,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 89,
+        "webviewMb": 331
+      },
+      {
+        "t": 924,
+        "done": 30096,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 929,
+        "done": 30275,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 935,
+        "done": 30465,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 940,
+        "done": 30629,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 136,
+        "siftPrivateMb": 89,
+        "webviewMb": 331
+      },
+      {
+        "t": 946,
+        "done": 30823,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 331
+      },
+      {
+        "t": 951,
+        "done": 31017,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 957,
+        "done": 31204,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 962,
+        "done": 31403,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 968,
+        "done": 31580,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 95,
+        "webviewMb": 331
+      },
+      {
+        "t": 973,
+        "done": 31752,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 331
+      },
+      {
+        "t": 978,
+        "done": 31927,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 92,
+        "webviewMb": 331
+      },
+      {
+        "t": 984,
+        "done": 32101,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 989,
+        "done": 32275,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 995,
+        "done": 32453,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 1000,
+        "done": 32638,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 1006,
+        "done": 32821,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 96,
+        "webviewMb": 331
+      },
+      {
+        "t": 1011,
+        "done": 32994,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 74,
+        "siftPrivateMb": 52,
+        "webviewMb": 331
+      },
+      {
+        "t": 1017,
+        "done": 33172,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 92,
+        "webviewMb": 331
+      },
+      {
+        "t": 1022,
+        "done": 33332,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 1027,
+        "done": 33505,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 331
+      },
+      {
+        "t": 1033,
+        "done": 33686,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 90,
+        "webviewMb": 331
+      },
+      {
+        "t": 1038,
+        "done": 33878,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 331
+      },
+      {
+        "t": 1044,
+        "done": 34059,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 331
+      },
+      {
+        "t": 1049,
+        "done": 34218,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 93,
+        "webviewMb": 332
+      },
+      {
+        "t": 1055,
+        "done": 34412,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1060,
+        "done": 34597,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1066,
+        "done": 34764,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1071,
+        "done": 34940,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 93,
+        "webviewMb": 332
+      },
+      {
+        "t": 1077,
+        "done": 35147,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 332
+      },
+      {
+        "t": 1082,
+        "done": 35334,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 332
+      },
+      {
+        "t": 1087,
+        "done": 35519,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 92,
+        "webviewMb": 332
+      },
+      {
+        "t": 1093,
+        "done": 35720,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1098,
+        "done": 35901,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 88,
+        "webviewMb": 332
+      },
+      {
+        "t": 1104,
+        "done": 36070,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 95,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1109,
+        "done": 36253,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1115,
+        "done": 36441,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1120,
+        "done": 36638,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1125,
+        "done": 36829,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1131,
+        "done": 37028,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1136,
+        "done": 37238,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 91,
+        "webviewMb": 332
+      },
+      {
+        "t": 1142,
+        "done": 37431,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 88,
+        "webviewMb": 332
+      },
+      {
+        "t": 1147,
+        "done": 37633,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 332
+      },
+      {
+        "t": 1153,
+        "done": 37829,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 93,
+        "webviewMb": 332
+      },
+      {
+        "t": 1158,
+        "done": 38043,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1164,
+        "done": 38236,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 88,
+        "webviewMb": 332
+      },
+      {
+        "t": 1169,
+        "done": 38426,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 88,
+        "webviewMb": 332
+      },
+      {
+        "t": 1174,
+        "done": 38627,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 332
+      },
+      {
+        "t": 1180,
+        "done": 38835,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 89,
+        "webviewMb": 332
+      },
+      {
+        "t": 1185,
+        "done": 39025,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 93,
+        "webviewMb": 332
+      },
+      {
+        "t": 1191,
+        "done": 39220,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1196,
+        "done": 39422,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1202,
+        "done": 39614,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1207,
+        "done": 39818,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 332
+      },
+      {
+        "t": 1212,
+        "done": 40018,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1218,
+        "done": 40216,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1223,
+        "done": 40431,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 332
+      },
+      {
+        "t": 1229,
+        "done": 40620,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 94,
+        "webviewMb": 333
+      },
+      {
+        "t": 1234,
+        "done": 40818,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 94,
+        "webviewMb": 333
+      },
+      {
+        "t": 1240,
+        "done": 41025,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 94,
+        "webviewMb": 333
+      },
+      {
+        "t": 1245,
+        "done": 41217,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 333
+      },
+      {
+        "t": 1250,
+        "done": 41428,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1256,
+        "done": 41633,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1261,
+        "done": 41825,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1267,
+        "done": 42025,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 91,
+        "webviewMb": 333
+      },
+      {
+        "t": 1272,
+        "done": 42220,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 333
+      },
+      {
+        "t": 1278,
+        "done": 42428,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 333
+      },
+      {
+        "t": 1283,
+        "done": 42635,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1289,
+        "done": 42846,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1294,
+        "done": 43056,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1299,
+        "done": 43257,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1305,
+        "done": 43472,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1310,
+        "done": 43645,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1316,
+        "done": 43833,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1321,
+        "done": 44024,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 333
+      },
+      {
+        "t": 1327,
+        "done": 44215,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 87,
+        "webviewMb": 333
+      },
+      {
+        "t": 1332,
+        "done": 44400,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 91,
+        "webviewMb": 334
+      },
+      {
+        "t": 1337,
+        "done": 44600,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 334
+      },
+      {
+        "t": 1343,
+        "done": 44777,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 334
+      },
+      {
+        "t": 1348,
+        "done": 44979,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 89,
+        "webviewMb": 334
+      },
+      {
+        "t": 1354,
+        "done": 45152,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 93,
+        "webviewMb": 334
+      },
+      {
+        "t": 1359,
+        "done": 45323,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 334
+      },
+      {
+        "t": 1365,
+        "done": 45484,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 89,
+        "webviewMb": 334
+      },
+      {
+        "t": 1370,
+        "done": 45666,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 88,
+        "webviewMb": 334
+      },
+      {
+        "t": 1376,
+        "done": 45852,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 334
+      },
+      {
+        "t": 1381,
+        "done": 46016,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 87,
+        "webviewMb": 335
+      },
+      {
+        "t": 1386,
+        "done": 46200,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 93,
+        "webviewMb": 335
+      },
+      {
+        "t": 1392,
+        "done": 46390,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 93,
+        "webviewMb": 335
+      },
+      {
+        "t": 1397,
+        "done": 46559,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 93,
+        "webviewMb": 335
+      },
+      {
+        "t": 1403,
+        "done": 46751,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 87,
+        "webviewMb": 335
+      },
+      {
+        "t": 1408,
+        "done": 46918,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 93,
+        "webviewMb": 335
+      },
+      {
+        "t": 1414,
+        "done": 47104,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 93,
+        "webviewMb": 335
+      },
+      {
+        "t": 1419,
+        "done": 47271,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1425,
+        "done": 47439,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 89,
+        "webviewMb": 335
+      },
+      {
+        "t": 1430,
+        "done": 47599,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1435,
+        "done": 47786,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1441,
+        "done": 47958,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1446,
+        "done": 48128,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1452,
+        "done": 48337,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1457,
+        "done": 48505,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1463,
+        "done": 48686,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1468,
+        "done": 48886,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1474,
+        "done": 48999,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 66,
+        "siftPrivateMb": 47,
+        "webviewMb": 336
+      },
+      {
+        "t": 1479,
+        "done": 49097,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 88,
+        "webviewMb": 336
+      },
+      {
+        "t": 1485,
+        "done": 49174,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 88,
+        "webviewMb": 335
+      },
+      {
+        "t": 1490,
+        "done": 49203,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1496,
+        "done": 49203,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1502,
+        "done": 49233,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1507,
+        "done": 49253,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1513,
+        "done": 49264,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1518,
+        "done": 49304,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1524,
+        "done": 49326,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1530,
+        "done": 49326,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1535,
+        "done": 49326,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1541,
+        "done": 49327,
+        "total": 100000,
+        "phase": "paused",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1546,
+        "done": 49342,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1552,
+        "done": 49497,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1557,
+        "done": 49679,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1563,
+        "done": 49852,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1568,
+        "done": 50031,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1573,
+        "done": 50200,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1579,
+        "done": 50383,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 86,
+        "webviewMb": 335
+      },
+      {
+        "t": 1584,
+        "done": 50559,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1590,
+        "done": 50743,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1595,
+        "done": 50920,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1601,
+        "done": 51091,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 89,
+        "webviewMb": 335
+      },
+      {
+        "t": 1606,
+        "done": 51271,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 335
+      },
+      {
+        "t": 1612,
+        "done": 51481,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1617,
+        "done": 51678,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 89,
+        "webviewMb": 335
+      },
+      {
+        "t": 1622,
+        "done": 51853,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1628,
+        "done": 52043,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1633,
+        "done": 52212,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 92,
+        "webviewMb": 335
+      },
+      {
+        "t": 1639,
+        "done": 52398,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 92,
+        "webviewMb": 336
+      },
+      {
+        "t": 1644,
+        "done": 52566,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 336
+      },
+      {
+        "t": 1650,
+        "done": 52753,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 336
+      },
+      {
+        "t": 1655,
+        "done": 52932,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 92,
+        "webviewMb": 336
+      },
+      {
+        "t": 1661,
+        "done": 53139,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 92,
+        "webviewMb": 336
+      },
+      {
+        "t": 1666,
+        "done": 53321,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 87,
+        "webviewMb": 336
+      },
+      {
+        "t": 1672,
+        "done": 53470,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 92,
+        "webviewMb": 336
+      },
+      {
+        "t": 1677,
+        "done": 53668,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1682,
+        "done": 53846,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1688,
+        "done": 54004,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1693,
+        "done": 54199,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 86,
+        "webviewMb": 336
+      },
+      {
+        "t": 1699,
+        "done": 54371,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 87,
+        "webviewMb": 336
+      },
+      {
+        "t": 1704,
+        "done": 54553,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1710,
+        "done": 54733,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 88,
+        "webviewMb": 336
+      },
+      {
+        "t": 1715,
+        "done": 54909,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1721,
+        "done": 55086,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1726,
+        "done": 55264,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 336
+      },
+      {
+        "t": 1731,
+        "done": 55457,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 86,
+        "webviewMb": 336
+      },
+      {
+        "t": 1737,
+        "done": 55654,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 336
+      },
+      {
+        "t": 1742,
+        "done": 55842,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1748,
+        "done": 56020,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1753,
+        "done": 56204,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1759,
+        "done": 56399,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1764,
+        "done": 56585,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 72,
+        "siftPrivateMb": 49,
+        "webviewMb": 336
+      },
+      {
+        "t": 1770,
+        "done": 56689,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 336
+      },
+      {
+        "t": 1775,
+        "done": 56879,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 86,
+        "webviewMb": 336
+      },
+      {
+        "t": 1780,
+        "done": 57087,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1786,
+        "done": 57268,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1791,
+        "done": 57472,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1797,
+        "done": 57669,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1802,
+        "done": 57856,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 336
+      },
+      {
+        "t": 1807,
+        "done": 58050,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 86,
+        "webviewMb": 336
+      },
+      {
+        "t": 1813,
+        "done": 58237,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1818,
+        "done": 58450,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 336
+      },
+      {
+        "t": 1824,
+        "done": 58640,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1829,
+        "done": 58844,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1835,
+        "done": 59046,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1840,
+        "done": 59237,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1846,
+        "done": 59446,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 337
+      },
+      {
+        "t": 1851,
+        "done": 59654,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1856,
+        "done": 59859,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 86,
+        "webviewMb": 337
+      },
+      {
+        "t": 1862,
+        "done": 60042,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 90,
+        "webviewMb": 337
+      },
+      {
+        "t": 1867,
+        "done": 60243,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1873,
+        "done": 60449,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1878,
+        "done": 60655,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 90,
+        "webviewMb": 337
+      },
+      {
+        "t": 1884,
+        "done": 60861,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1889,
+        "done": 61061,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1894,
+        "done": 61246,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 132,
+        "siftPrivateMb": 87,
+        "webviewMb": 337
+      },
+      {
+        "t": 1900,
+        "done": 61454,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 76,
+        "siftPrivateMb": 84,
+        "webviewMb": 337
+      },
+      {
+        "t": 1905,
+        "done": 61648,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 90,
+        "webviewMb": 337
+      },
+      {
+        "t": 1911,
+        "done": 61849,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 92,
+        "webviewMb": 337
+      },
+      {
+        "t": 1916,
+        "done": 62052,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 87,
+        "webviewMb": 337
+      },
+      {
+        "t": 1922,
+        "done": 62248,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 76,
+        "siftPrivateMb": 85,
+        "webviewMb": 337
+      },
+      {
+        "t": 1927,
+        "done": 62450,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 87,
+        "webviewMb": 337
+      },
+      {
+        "t": 1932,
+        "done": 62654,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 85,
+        "webviewMb": 337
+      },
+      {
+        "t": 1938,
+        "done": 62866,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 337
+      },
+      {
+        "t": 1943,
+        "done": 63069,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 337
+      },
+      {
+        "t": 1949,
+        "done": 63281,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 337
+      },
+      {
+        "t": 1954,
+        "done": 63483,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 337
+      },
+      {
+        "t": 1960,
+        "done": 63653,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 337
+      },
+      {
+        "t": 1965,
+        "done": 63865,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1971,
+        "done": 64070,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1976,
+        "done": 64280,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1981,
+        "done": 64485,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1987,
+        "done": 64684,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 1992,
+        "done": 64865,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 89,
+        "webviewMb": 337
+      },
+      {
+        "t": 1998,
+        "done": 65030,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 2003,
+        "done": 65250,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 91,
+        "webviewMb": 337
+      },
+      {
+        "t": 2009,
+        "done": 65443,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 85,
+        "webviewMb": 338
+      },
+      {
+        "t": 2014,
+        "done": 65637,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2019,
+        "done": 65815,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2025,
+        "done": 66002,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 91,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2030,
+        "done": 66187,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2036,
+        "done": 66366,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2041,
+        "done": 66539,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2047,
+        "done": 66723,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 86,
+        "webviewMb": 338
+      },
+      {
+        "t": 2052,
+        "done": 66902,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2058,
+        "done": 67078,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 85,
+        "webviewMb": 338
+      },
+      {
+        "t": 2063,
+        "done": 67254,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 89,
+        "webviewMb": 338
+      },
+      {
+        "t": 2069,
+        "done": 67427,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 338
+      },
+      {
+        "t": 2074,
+        "done": 67604,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 89,
+        "webviewMb": 338
+      },
+      {
+        "t": 2079,
+        "done": 67799,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2085,
+        "done": 67997,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 85,
+        "webviewMb": 338
+      },
+      {
+        "t": 2090,
+        "done": 68178,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 85,
+        "webviewMb": 338
+      },
+      {
+        "t": 2096,
+        "done": 68356,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 88,
+        "webviewMb": 338
+      },
+      {
+        "t": 2101,
+        "done": 68523,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 338
+      },
+      {
+        "t": 2107,
+        "done": 68700,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 84,
+        "webviewMb": 338
+      },
+      {
+        "t": 2112,
+        "done": 68884,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 88,
+        "webviewMb": 338
+      },
+      {
+        "t": 2118,
+        "done": 69073,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 90,
+        "webviewMb": 338
+      },
+      {
+        "t": 2123,
+        "done": 69231,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2128,
+        "done": 69407,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2134,
+        "done": 69596,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2139,
+        "done": 69780,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2145,
+        "done": 69953,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2150,
+        "done": 70141,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2156,
+        "done": 70336,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2161,
+        "done": 70522,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2166,
+        "done": 70723,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2172,
+        "done": 70896,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2177,
+        "done": 71081,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2183,
+        "done": 71244,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2188,
+        "done": 71430,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 86,
+        "webviewMb": 339
+      },
+      {
+        "t": 2194,
+        "done": 71628,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 89,
+        "webviewMb": 339
+      },
+      {
+        "t": 2199,
+        "done": 71811,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 89,
+        "webviewMb": 339
+      },
+      {
+        "t": 2204,
+        "done": 71967,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2210,
+        "done": 72148,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 88,
+        "webviewMb": 339
+      },
+      {
+        "t": 2215,
+        "done": 72329,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2221,
+        "done": 72481,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2226,
+        "done": 72659,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2232,
+        "done": 72854,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2237,
+        "done": 73038,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 339
+      },
+      {
+        "t": 2243,
+        "done": 73215,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 87,
+        "webviewMb": 339
+      },
+      {
+        "t": 2248,
+        "done": 73397,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 76,
+        "siftPrivateMb": 83,
+        "webviewMb": 339
+      },
+      {
+        "t": 2253,
+        "done": 73567,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 84,
+        "webviewMb": 339
+      },
+      {
+        "t": 2259,
+        "done": 73741,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 88,
+        "webviewMb": 340
+      },
+      {
+        "t": 2264,
+        "done": 73923,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 90,
+        "webviewMb": 340
+      },
+      {
+        "t": 2270,
+        "done": 74105,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 90,
+        "webviewMb": 340
+      },
+      {
+        "t": 2275,
+        "done": 74305,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 84,
+        "webviewMb": 340
+      },
+      {
+        "t": 2281,
+        "done": 74502,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2286,
+        "done": 74664,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2292,
+        "done": 74857,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 86,
+        "webviewMb": 340
+      },
+      {
+        "t": 2297,
+        "done": 75023,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2303,
+        "done": 75200,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2308,
+        "done": 75383,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2314,
+        "done": 75574,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 83,
+        "webviewMb": 340
+      },
+      {
+        "t": 2319,
+        "done": 75733,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 86,
+        "webviewMb": 340
+      },
+      {
+        "t": 2324,
+        "done": 75903,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 85,
+        "webviewMb": 340
+      },
+      {
+        "t": 2330,
+        "done": 76090,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 340
+      },
+      {
+        "t": 2335,
+        "done": 76252,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 87,
+        "webviewMb": 340
+      },
+      {
+        "t": 2341,
+        "done": 76457,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2346,
+        "done": 76644,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 83,
+        "webviewMb": 340
+      },
+      {
+        "t": 2352,
+        "done": 76831,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2357,
+        "done": 77009,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 90,
+        "webviewMb": 340
+      },
+      {
+        "t": 2363,
+        "done": 77197,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 65,
+        "siftPrivateMb": 44,
+        "webviewMb": 340
+      },
+      {
+        "t": 2368,
+        "done": 77358,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 84,
+        "webviewMb": 340
+      },
+      {
+        "t": 2373,
+        "done": 77551,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 85,
+        "webviewMb": 340
+      },
+      {
+        "t": 2379,
+        "done": 77737,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 340
+      },
+      {
+        "t": 2384,
+        "done": 77914,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 340
+      },
+      {
+        "t": 2390,
+        "done": 78116,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2395,
+        "done": 78291,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 83,
+        "webviewMb": 340
+      },
+      {
+        "t": 2401,
+        "done": 78469,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 86,
+        "webviewMb": 340
+      },
+      {
+        "t": 2406,
+        "done": 78668,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2412,
+        "done": 78855,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2417,
+        "done": 79033,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2423,
+        "done": 79217,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2428,
+        "done": 79388,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 91,
+        "webviewMb": 340
+      },
+      {
+        "t": 2433,
+        "done": 79558,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2439,
+        "done": 79743,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2444,
+        "done": 79923,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2450,
+        "done": 80100,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 340
+      },
+      {
+        "t": 2455,
+        "done": 80279,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2461,
+        "done": 80448,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 86,
+        "webviewMb": 341
+      },
+      {
+        "t": 2466,
+        "done": 80626,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 84,
+        "webviewMb": 341
+      },
+      {
+        "t": 2472,
+        "done": 80810,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 341
+      },
+      {
+        "t": 2477,
+        "done": 80973,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 341
+      },
+      {
+        "t": 2482,
+        "done": 81180,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2488,
+        "done": 81357,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2493,
+        "done": 81556,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2499,
+        "done": 81740,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2504,
+        "done": 81914,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2510,
+        "done": 82094,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 82,
+        "webviewMb": 341
+      },
+      {
+        "t": 2515,
+        "done": 82276,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 83,
+        "webviewMb": 341
+      },
+      {
+        "t": 2521,
+        "done": 82449,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 341
+      },
+      {
+        "t": 2526,
+        "done": 82640,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 88,
+        "webviewMb": 341
+      },
+      {
+        "t": 2531,
+        "done": 82811,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2537,
+        "done": 82957,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2542,
+        "done": 83136,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2548,
+        "done": 83311,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 80,
+        "siftPrivateMb": 85,
+        "webviewMb": 341
+      },
+      {
+        "t": 2553,
+        "done": 83490,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 84,
+        "webviewMb": 341
+      },
+      {
+        "t": 2559,
+        "done": 83665,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 82,
+        "webviewMb": 341
+      },
+      {
+        "t": 2564,
+        "done": 83853,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 85,
+        "webviewMb": 341
+      },
+      {
+        "t": 2570,
+        "done": 84016,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 87,
+        "webviewMb": 341
+      },
+      {
+        "t": 2575,
+        "done": 84204,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 82,
+        "webviewMb": 341
+      },
+      {
+        "t": 2581,
+        "done": 84379,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 84,
+        "webviewMb": 341
+      },
+      {
+        "t": 2586,
+        "done": 84579,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 87,
+        "webviewMb": 341
+      },
+      {
+        "t": 2591,
+        "done": 84749,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 86,
+        "webviewMb": 341
+      },
+      {
+        "t": 2597,
+        "done": 84932,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 88,
+        "webviewMb": 341
+      },
+      {
+        "t": 2602,
+        "done": 85106,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2608,
+        "done": 85289,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2613,
+        "done": 85457,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 341
+      },
+      {
+        "t": 2619,
+        "done": 85645,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 83,
+        "webviewMb": 341
+      },
+      {
+        "t": 2624,
+        "done": 85826,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 83,
+        "webviewMb": 341
+      },
+      {
+        "t": 2630,
+        "done": 86016,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 86,
+        "webviewMb": 341
+      },
+      {
+        "t": 2635,
+        "done": 86196,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 82,
+        "webviewMb": 341
+      },
+      {
+        "t": 2640,
+        "done": 86376,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 83,
+        "webviewMb": 342
+      },
+      {
+        "t": 2646,
+        "done": 86544,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 87,
+        "webviewMb": 341
+      },
+      {
+        "t": 2651,
+        "done": 86728,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 83,
+        "webviewMb": 342
+      },
+      {
+        "t": 2657,
+        "done": 86906,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2662,
+        "done": 87064,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2668,
+        "done": 87248,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 82,
+        "webviewMb": 342
+      },
+      {
+        "t": 2673,
+        "done": 87416,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2679,
+        "done": 87592,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 67,
+        "siftPrivateMb": 45,
+        "webviewMb": 342
+      },
+      {
+        "t": 2684,
+        "done": 87750,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2690,
+        "done": 87927,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 83,
+        "webviewMb": 342
+      },
+      {
+        "t": 2695,
+        "done": 88101,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2700,
+        "done": 88268,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2706,
+        "done": 88452,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2711,
+        "done": 88626,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2717,
+        "done": 88806,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2722,
+        "done": 88992,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 73,
+        "siftPrivateMb": 50,
+        "webviewMb": 342
+      },
+      {
+        "t": 2728,
+        "done": 89166,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 342
+      },
+      {
+        "t": 2733,
+        "done": 89355,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 89,
+        "webviewMb": 343
+      },
+      {
+        "t": 2739,
+        "done": 89531,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 86,
+        "webviewMb": 343
+      },
+      {
+        "t": 2744,
+        "done": 89712,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 83,
+        "webviewMb": 342
+      },
+      {
+        "t": 2750,
+        "done": 89885,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2755,
+        "done": 90064,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2760,
+        "done": 90247,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 82,
+        "webviewMb": 342
+      },
+      {
+        "t": 2766,
+        "done": 90423,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2771,
+        "done": 90617,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2777,
+        "done": 90793,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2782,
+        "done": 90966,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2788,
+        "done": 91139,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 89,
+        "webviewMb": 342
+      },
+      {
+        "t": 2793,
+        "done": 91329,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 89,
+        "webviewMb": 342
+      },
+      {
+        "t": 2799,
+        "done": 91516,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 2804,
+        "done": 91713,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 82,
+        "webviewMb": 342
+      },
+      {
+        "t": 2809,
+        "done": 91864,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 133,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 2815,
+        "done": 92060,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2820,
+        "done": 92224,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2826,
+        "done": 92400,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2831,
+        "done": 92578,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2837,
+        "done": 92727,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 2842,
+        "done": 92896,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2847,
+        "done": 93111,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 84,
+        "webviewMb": 342
+      },
+      {
+        "t": 2853,
+        "done": 93311,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2858,
+        "done": 93495,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2864,
+        "done": 93699,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 87,
+        "siftPrivateMb": 89,
+        "webviewMb": 342
+      },
+      {
+        "t": 2869,
+        "done": 93894,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 82,
+        "webviewMb": 342
+      },
+      {
+        "t": 2875,
+        "done": 94093,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2880,
+        "done": 94285,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2886,
+        "done": 94481,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 82,
+        "webviewMb": 342
+      },
+      {
+        "t": 2891,
+        "done": 94688,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2896,
+        "done": 94889,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 89,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2902,
+        "done": 95071,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2907,
+        "done": 95256,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2913,
+        "done": 95443,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 92,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2918,
+        "done": 95605,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 88,
+        "webviewMb": 342
+      },
+      {
+        "t": 2924,
+        "done": 95767,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 2929,
+        "done": 95942,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2935,
+        "done": 96099,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2940,
+        "done": 96262,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 2945,
+        "done": 96446,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 2951,
+        "done": 96635,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 90,
+        "siftPrivateMb": 84,
+        "webviewMb": 342
+      },
+      {
+        "t": 2956,
+        "done": 96826,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 83,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2962,
+        "done": 96994,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 59,
+        "webviewMb": 342
+      },
+      {
+        "t": 2967,
+        "done": 97161,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 2973,
+        "done": 97330,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 94,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2978,
+        "done": 97505,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 86,
+        "webviewMb": 342
+      },
+      {
+        "t": 2984,
+        "done": 97679,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2989,
+        "done": 97846,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 85,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 2994,
+        "done": 98047,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 77,
+        "siftPrivateMb": 80,
+        "webviewMb": 342
+      },
+      {
+        "t": 3000,
+        "done": 98245,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 3005,
+        "done": 98399,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 83,
+        "webviewMb": 342
+      },
+      {
+        "t": 3011,
+        "done": 98583,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 81,
+        "siftPrivateMb": 80,
+        "webviewMb": 342
+      },
+      {
+        "t": 3016,
+        "done": 98766,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 82,
+        "siftPrivateMb": 84,
+        "webviewMb": 342
+      },
+      {
+        "t": 3022,
+        "done": 98951,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 78,
+        "siftPrivateMb": 80,
+        "webviewMb": 342
+      },
+      {
+        "t": 3027,
+        "done": 99124,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 86,
+        "siftPrivateMb": 85,
+        "webviewMb": 342
+      },
+      {
+        "t": 3033,
+        "done": 99298,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 3038,
+        "done": 99493,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 79,
+        "siftPrivateMb": 81,
+        "webviewMb": 342
+      },
+      {
+        "t": 3043,
+        "done": 99667,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 88,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 3049,
+        "done": 99858,
+        "total": 100000,
+        "phase": "reading",
+        "siftWorkingMb": 84,
+        "siftPrivateMb": 87,
+        "webviewMb": 342
+      },
+      {
+        "t": 3054,
+        "done": 100000,
+        "total": 100000,
+        "phase": "idle",
+        "siftWorkingMb": 55,
+        "siftPrivateMb": 27,
+        "webviewMb": 342
+      }
+    ],
+    "files": 100000
+  },
+  "idleMemory": {
+    "siftWorkingMb": 55,
+    "siftPrivateMb": 27,
+    "webviewMb": 342
+  },
+  "search": {
+    "all": {
+      "p50": 7.4,
+      "p95": 14.9,
+      "n": 250
+    },
+    "byKind": {
+      "1 letra": {
+        "p50": 14.2,
+        "p95": 15.9,
+        "max": 25.7,
+        "hits": 12
+      },
+      "2 letras": {
+        "p50": 10.8,
+        "p95": 12.5,
+        "max": 14.7,
+        "hits": 12
+      },
+      "3 letras": {
+        "p50": 8.6,
+        "p95": 9.1,
+        "max": 9.8,
+        "hits": 12
+      },
+      "8 letras": {
+        "p50": 7.3,
+        "p95": 9.2,
+        "max": 9.3,
+        "hits": 12
+      },
+      "palabra común": {
+        "p50": 7.4,
+        "p95": 8.6,
+        "max": 8.9,
+        "hits": 12
+      },
+      "palabra rara": {
+        "p50": 2.5,
+        "p95": 2.9,
+        "max": 3.2,
+        "hits": 0
+      },
+      "con errata": {
+        "p50": 2.5,
+        "p95": 3,
+        "max": 3.4,
+        "hits": 0
+      },
+      "frase": {
+        "p50": 14.8,
+        "p95": 16.9,
+        "max": 22.6,
+        "hits": 12
+      },
+      "filtro pdf": {
+        "p50": 6.7,
+        "p95": 9.1,
+        "max": 9.8,
+        "hits": 12
+      },
+      "código": {
+        "p50": 6.1,
+        "p95": 7.5,
+        "max": 7.7,
+        "hits": 12
+      }
+    },
+    "rust": {
+      "lastMs": 2.4,
+      "p50Ms": 3.9,
+      "p95Ms": 11.3,
+      "samples": 100
+    }
+  },
+  "disk": {
+    "totalMb": 619,
+    "index": 179.4,
+    "settings.json": 0,
+    "sift.db": 435.5,
+    "sift.db-shm": 0,
+    "sift.db-wal": 4.1
+  },
+  "vectors": {
+    "samples": [
+      {
+        "t": 31,
+        "done": 272,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 583,
+        "siftPrivateMb": 559,
+        "webviewMb": 346
+      },
+      {
+        "t": 61,
+        "done": 584,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 608,
+        "siftPrivateMb": 578,
+        "webviewMb": 347
+      },
+      {
+        "t": 92,
+        "done": 912,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 598,
+        "siftPrivateMb": 565,
+        "webviewMb": 347
+      },
+      {
+        "t": 123,
+        "done": 1232,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 602,
+        "siftPrivateMb": 569,
+        "webviewMb": 346
+      },
+      {
+        "t": 153,
+        "done": 1536,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 569,
+        "siftPrivateMb": 571,
+        "webviewMb": 347
+      },
+      {
+        "t": 184,
+        "done": 1928,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 473,
+        "siftPrivateMb": 570,
+        "webviewMb": 348
+      },
+      {
+        "t": 215,
+        "done": 2080,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 406,
+        "siftPrivateMb": 571,
+        "webviewMb": 344
+      },
+      {
+        "t": 246,
+        "done": 2112,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 311,
+        "siftPrivateMb": 571,
+        "webviewMb": 344
+      },
+      {
+        "t": 277,
+        "done": 2344,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 263,
+        "siftPrivateMb": 577,
+        "webviewMb": 345
+      },
+      {
+        "t": 307,
+        "done": 2696,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 242,
+        "siftPrivateMb": 584,
+        "webviewMb": 344
+      },
+      {
+        "t": 338,
+        "done": 3048,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 193,
+        "siftPrivateMb": 572,
+        "webviewMb": 346
+      },
+      {
+        "t": 369,
+        "done": 3448,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 207,
+        "siftPrivateMb": 611,
+        "webviewMb": 347
+      },
+      {
+        "t": 399,
+        "done": 3832,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 161,
+        "siftPrivateMb": 572,
+        "webviewMb": 347
+      },
+      {
+        "t": 430,
+        "done": 4176,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 155,
+        "siftPrivateMb": 572,
+        "webviewMb": 347
+      },
+      {
+        "t": 461,
+        "done": 4560,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 154,
+        "siftPrivateMb": 572,
+        "webviewMb": 348
+      },
+      {
+        "t": 491,
+        "done": 4960,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 185,
+        "siftPrivateMb": 607,
+        "webviewMb": 347
+      },
+      {
+        "t": 522,
+        "done": 5344,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 180,
+        "siftPrivateMb": 603,
+        "webviewMb": 347
+      },
+      {
+        "t": 553,
+        "done": 5688,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 151,
+        "siftPrivateMb": 573,
+        "webviewMb": 344
+      },
+      {
+        "t": 584,
+        "done": 6080,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 197,
+        "siftPrivateMb": 618,
+        "webviewMb": 344
+      },
+      {
+        "t": 614,
+        "done": 6464,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 152,
+        "siftPrivateMb": 573,
+        "webviewMb": 344
+      },
+      {
+        "t": 645,
+        "done": 6832,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 153,
+        "siftPrivateMb": 573,
+        "webviewMb": 345
+      },
+      {
+        "t": 676,
+        "done": 7168,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 155,
+        "siftPrivateMb": 575,
+        "webviewMb": 345
+      },
+      {
+        "t": 706,
+        "done": 7576,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 153,
+        "siftPrivateMb": 573,
+        "webviewMb": 346
+      },
+      {
+        "t": 737,
+        "done": 7952,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 154,
+        "siftPrivateMb": 573,
+        "webviewMb": 345
+      },
+      {
+        "t": 768,
+        "done": 8296,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 155,
+        "siftPrivateMb": 574,
+        "webviewMb": 346
+      },
+      {
+        "t": 799,
+        "done": 8680,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 197,
+        "siftPrivateMb": 616,
+        "webviewMb": 347
+      },
+      {
+        "t": 829,
+        "done": 9064,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 197,
+        "siftPrivateMb": 616,
+        "webviewMb": 348
+      },
+      {
+        "t": 860,
+        "done": 9416,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 156,
+        "siftPrivateMb": 574,
+        "webviewMb": 343
+      },
+      {
+        "t": 891,
+        "done": 9736,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 156,
+        "siftPrivateMb": 574,
+        "webviewMb": 344
+      },
+      {
+        "t": 921,
+        "done": 10144,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 157,
+        "siftPrivateMb": 574,
+        "webviewMb": 345
+      },
+      {
+        "t": 952,
+        "done": 10512,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 190,
+        "siftPrivateMb": 610,
+        "webviewMb": 345
+      },
+      {
+        "t": 983,
+        "done": 10856,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 157,
+        "siftPrivateMb": 574,
+        "webviewMb": 345
+      },
+      {
+        "t": 1013,
+        "done": 11224,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 158,
+        "siftPrivateMb": 590,
+        "webviewMb": 346
+      },
+      {
+        "t": 1044,
+        "done": 11608,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 194,
+        "siftPrivateMb": 626,
+        "webviewMb": 347
+      },
+      {
+        "t": 1075,
+        "done": 11976,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 158,
+        "siftPrivateMb": 590,
+        "webviewMb": 346
+      },
+      {
+        "t": 1106,
+        "done": 12288,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 161,
+        "siftPrivateMb": 592,
+        "webviewMb": 347
+      },
+      {
+        "t": 1136,
+        "done": 12704,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 198,
+        "siftPrivateMb": 629,
+        "webviewMb": 347
+      },
+      {
+        "t": 1167,
+        "done": 13080,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 160,
+        "siftPrivateMb": 590,
+        "webviewMb": 344
+      },
+      {
+        "t": 1198,
+        "done": 13416,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 183,
+        "siftPrivateMb": 614,
+        "webviewMb": 345
+      },
+      {
+        "t": 1228,
+        "done": 13792,
+        "total": 322639,
+        "ready": true,
+        "mb": 122,
+        "siftWorkingMb": 203,
+        "siftPrivateMb": 634,
+        "webviewMb": 345
+      }
+    ],
+    "searchDuring": [
+      {
+        "t": 31,
+        "p50": 11.2,
+        "p95": 18.1,
+        "n": 20
+      },
+      {
+        "t": 61,
+        "p50": 10.3,
+        "p95": 18.6,
+        "n": 20
+      },
+      {
+        "t": 92,
+        "p50": 11.6,
+        "p95": 16.1,
+        "n": 20
+      },
+      {
+        "t": 123,
+        "p50": 11.6,
+        "p95": 16.6,
+        "n": 20
+      },
+      {
+        "t": 153,
+        "p50": 10.6,
+        "p95": 15.5,
+        "n": 20
+      },
+      {
+        "t": 184,
+        "p50": 12.1,
+        "p95": 19.1,
+        "n": 20
+      },
+      {
+        "t": 215,
+        "p50": 16.3,
+        "p95": 37.4,
+        "n": 20
+      },
+      {
+        "t": 246,
+        "p50": 13.2,
+        "p95": 21.2,
+        "n": 20
+      },
+      {
+        "t": 277,
+        "p50": 10.7,
+        "p95": 22.6,
+        "n": 20
+      },
+      {
+        "t": 308,
+        "p50": 10.8,
+        "p95": 15.5,
+        "n": 20
+      },
+      {
+        "t": 338,
+        "p50": 13.4,
+        "p95": 22.4,
+        "n": 20
+      },
+      {
+        "t": 369,
+        "p50": 10.6,
+        "p95": 17.2,
+        "n": 20
+      },
+      {
+        "t": 400,
+        "p50": 11.9,
+        "p95": 18.8,
+        "n": 20
+      },
+      {
+        "t": 430,
+        "p50": 11.5,
+        "p95": 16,
+        "n": 20
+      },
+      {
+        "t": 461,
+        "p50": 12.2,
+        "p95": 26.2,
+        "n": 20
+      },
+      {
+        "t": 492,
+        "p50": 10.8,
+        "p95": 15.5,
+        "n": 20
+      },
+      {
+        "t": 522,
+        "p50": 11,
+        "p95": 15.4,
+        "n": 20
+      },
+      {
+        "t": 553,
+        "p50": 10.7,
+        "p95": 17.8,
+        "n": 20
+      },
+      {
+        "t": 584,
+        "p50": 11.7,
+        "p95": 15.9,
+        "n": 20
+      },
+      {
+        "t": 615,
+        "p50": 11.1,
+        "p95": 18.5,
+        "n": 20
+      },
+      {
+        "t": 645,
+        "p50": 11.8,
+        "p95": 21.1,
+        "n": 20
+      },
+      {
+        "t": 676,
+        "p50": 11.1,
+        "p95": 17.9,
+        "n": 20
+      },
+      {
+        "t": 707,
+        "p50": 12.8,
+        "p95": 18.3,
+        "n": 20
+      },
+      {
+        "t": 737,
+        "p50": 13.1,
+        "p95": 23.4,
+        "n": 20
+      },
+      {
+        "t": 768,
+        "p50": 13.3,
+        "p95": 19.1,
+        "n": 20
+      },
+      {
+        "t": 799,
+        "p50": 12,
+        "p95": 17.4,
+        "n": 20
+      },
+      {
+        "t": 829,
+        "p50": 10.8,
+        "p95": 18.5,
+        "n": 20
+      },
+      {
+        "t": 860,
+        "p50": 12.9,
+        "p95": 17.9,
+        "n": 20
+      },
+      {
+        "t": 891,
+        "p50": 11.7,
+        "p95": 17.6,
+        "n": 20
+      },
+      {
+        "t": 922,
+        "p50": 12.1,
+        "p95": 19.6,
+        "n": 20
+      },
+      {
+        "t": 952,
+        "p50": 13.5,
+        "p95": 23.3,
+        "n": 20
+      },
+      {
+        "t": 983,
+        "p50": 12.5,
+        "p95": 18.1,
+        "n": 20
+      },
+      {
+        "t": 1014,
+        "p50": 13.3,
+        "p95": 20,
+        "n": 20
+      },
+      {
+        "t": 1044,
+        "p50": 11.1,
+        "p95": 18.8,
+        "n": 20
+      },
+      {
+        "t": 1075,
+        "p50": 12.3,
+        "p95": 18.1,
+        "n": 20
+      },
+      {
+        "t": 1106,
+        "p50": 12.8,
+        "p95": 21.3,
+        "n": 20
+      },
+      {
+        "t": 1136,
+        "p50": 11.5,
+        "p95": 15.3,
+        "n": 20
+      },
+      {
+        "t": 1167,
+        "p50": 11.1,
+        "p95": 15.7,
+        "n": 20
+      },
+      {
+        "t": 1198,
+        "p50": 11.3,
+        "p95": 17.7,
+        "n": 20
+      },
+      {
+        "t": 1229,
+        "p50": 11.3,
+        "p95": 17.8,
+        "n": 20
+      }
+    ]
+  },
+  "restart": {
+    "secondsToBar": 1.5,
+    "firstSearchMs": 10,
+    "probe": {
+      "n": 225,
+      "p50": 11.3,
+      "p95": 30.5,
+      "max": 56.6,
+      "over100ms": 0
+    },
+    "after15s": {
+      "all": {
+        "p50": 12.9,
+        "p95": 17.9,
+        "n": 50
+      },
+      "byKind": {
+        "1 letra": {
+          "p50": 14.8,
+          "p95": 15.6,
+          "max": 15.6,
+          "hits": 12
+        },
+        "2 letras": {
+          "p50": 11,
+          "p95": 11.6,
+          "max": 11.6,
+          "hits": 12
+        },
+        "3 letras": {
+          "p50": 12.7,
+          "p95": 13.8,
+          "max": 13.8,
+          "hits": 12
+        },
+        "8 letras": {
+          "p50": 14.3,
+          "p95": 15.2,
+          "max": 15.2,
+          "hits": 12
+        },
+        "palabra común": {
+          "p50": 12.9,
+          "p95": 14.4,
+          "max": 14.4,
+          "hits": 12
+        },
+        "palabra rara": {
+          "p50": 13.1,
+          "p95": 16.4,
+          "max": 16.4,
+          "hits": 12
+        },
+        "con errata": {
+          "p50": 11,
+          "p95": 14.5,
+          "max": 14.5,
+          "hits": 12
+        },
+        "frase": {
+          "p50": 17.9,
+          "p95": 22.8,
+          "max": 22.8,
+          "hits": 12
+        },
+        "filtro pdf": {
+          "p50": 11.9,
+          "p95": 14.7,
+          "max": 14.7,
+          "hits": 12
+        },
+        "código": {
+          "p50": 6.2,
+          "p95": 6.6,
+          "max": 6.6,
+          "hits": 12
+        }
+      }
+    },
+    "memory": {
+      "siftWorkingMb": 602,
+      "siftPrivateMb": 578,
+      "webviewMb": 337
+    }
+  },
+  "devDataRestored": true,
+  "finishedAt": "2026-11-20T16:05:10.218Z"
+}
