@@ -320,13 +320,17 @@ mod tests {
             for draft in spaces {
                 let space = sift_spaces::validate(draft).unwrap();
                 for action in &space.actions {
-                    if let Action::OpenFolder { path, .. } | Action::OpenFile { path, .. } = action {
+                    if let Action::OpenFolder { path, .. } | Action::OpenFile { path, .. } = action
+                    {
                         assert!(path.exists(), "no existe: {}", path.display());
                     }
                 }
             }
         }
-        assert_eq!(demo_spaces(Path::new("x"), DemoLang::En)[0].name, "Lucy's shop");
+        assert_eq!(
+            demo_spaces(Path::new("x"), DemoLang::En)[0].name,
+            "Lucy's shop"
+        );
     }
 
     #[test]
