@@ -162,11 +162,17 @@ async function walk(page) {
   await sleep(400);
   await grab(page, "5-espacio-hecho.jpg");
 
-  // Final: «Pulsa… para empezar» y se abre la barra.
-  await click(page, "Empezar");
-  await sleep(300);
-  await grab(page, "6-final.jpg");
   check("Sin errores de JavaScript en la introducción", page.errors.length === 0, page.errors.join(" ; ").slice(0, 200));
+
+  // Final: «Empezar» cierra la introducción (la ventana se cierra) y abre la barra.
+  const finished = await click(page, "Empezar")
+    .then(() => sleep(2000))
+    .then(() => page.evaluate("1"))
+    .then(
+      () => false,
+      () => true,
+    );
+  check("«Empezar» cierra la introducción", finished);
 }
 
 async function main() {
