@@ -125,9 +125,9 @@ No hay secretos ni correo. Lo único que queda en el historial es la ruta `C:\Us
 
 El coste es alto para algo de gravedad baja. **Recomiendo no hacerlo.** Si aun así lo quieres, preparo los comandos y no los ejecuto sin tu permiso expreso.
 
-## Qué tienes que decidir
+## Decidido (2026-11-21)
 
-1. Cambiar la ruta en `docs/proceso/publicar-revision.md` (§3): **recomiendo sí**.
-2. Borrar la rama `feat/instalador` (§7): **recomiendo sí**.
-3. Pasar gitleaks (§1), que hay que instalar: **opcional**. El escaneo de GitHub al publicar cubre lo mismo hacia adelante.
-4. Reescribir el historial (§9): **recomiendo no**.
+1. Cambiar la ruta en `docs/proceso/publicar-revision.md` (§3): **sí, hecho** (`C:\Users\<tu usuario>`).
+2. Borrar la rama remota `feat/instalador` (§7): **sí**. Queda para ti, porque los permisos del proyecto no dejan a Claude borrar ramas remotas: `git push origin --delete feat/instalador`.
+3. gitleaks (§1): **no**.
+4. Reescribir el historial (§9): **no**.
