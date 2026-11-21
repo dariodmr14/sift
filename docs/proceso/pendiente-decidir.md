@@ -89,3 +89,10 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
   3. Instalar y pasar gitleaks: **opcional**. Al publicar, el escaneo de secretos de GitHub cubre lo mismo hacia adelante.
   4. Reescribir el historial: **no**. Obliga a un force push a `main` y rompe los enlaces de los 61 PR, por algo de gravedad baja.
 - **Decidido (2026-11-21):** como la recomendación. Ruta cambiada; sin gitleaks; sin reescribir el historial. La rama `feat/instalador` la borra Darío (`git push origin --delete feat/instalador`): los permisos del proyecto no dejan a Claude borrar ramas remotas.
+
+### 15. Actualizaciones: ¿encendidas o apagadas por defecto? — decidido (2026-11-21)
+- **Contexto:** el ADR 0018 proponía «Buscar actualizaciones al arrancar» apagado por defecto (es una conexión a internet).
+- **Decidido por Darío:** **encendido por defecto**, pidiendo siempre permiso antes de descargar e instalar, y con la opción de desactivarlo en Ajustes. Aplicado en `crates/core/src/settings.rs` (test `update_checks_are_on_unless_turned_off`), el ADR 0018, `CLAUDE.md`, el README y las notas de la versión.
+
+### 16. Licencia: «sin garantías» y nombre completo — decidido (2026-11-21)
+- **Decidido por Darío:** añadir la cláusula de «sin garantías» y firmar como Darío Morales Riega. Va en el PR del README (pendiente de su revisión), con `authors` de `Cargo.toml`.

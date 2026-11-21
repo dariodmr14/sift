@@ -8,7 +8,7 @@ Sift es un lanzador y buscador semántico de escritorio para Windows (Tauri 2 + 
 - busca en los archivos del usuario por nombre, por contenido y por significado;
 - lanza **Espacios**: conjuntos de acciones (abrir carpetas, archivos, webs y apps, ejecutar comandos, esperar a que algo esté listo y colocar ventanas en zonas de la pantalla).
 
-Todo es local: lo único que sale del PC son descargas puntuales (modelo de embeddings, PDFium), con el hash fijado y con permiso del usuario.
+Todo es local: lo único que sale del PC son descargas puntuales (modelo de embeddings, PDFium), con el hash fijado y con permiso del usuario. La única excepción es mirar al arrancar si hay una versión nueva (encendido por defecto, se apaga en Ajustes; descargarla e instalarla siempre se pregunta, ADR 0018).
 
 **Stack:** Tauri 2 (núcleo en Rust y UI en React + TypeScript + Vite + Tailwind 4). SQLite es la fuente de verdad; Tantivy se encarga de la búsqueda por palabras y usearch (HNSW) de los vectores. Embeddings `multilingual-e5-small` sobre ONNX Runtime; búsqueda híbrida (RRF + frecencia); PDFium para leer PDF.
 

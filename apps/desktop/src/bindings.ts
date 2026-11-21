@@ -714,7 +714,7 @@ export type SettingsView = {
 	 *  demás, Ajustes no enseña la opción.
 	 */
 	updatesAvailable: boolean,
-	/**  «Buscar actualizaciones al arrancar» (apagado por defecto: ADR 0018). */
+	/**  «Buscar actualizaciones al arrancar» (encendido por defecto: ADR 0018). */
 	checkUpdates: boolean,
 };
 

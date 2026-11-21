@@ -4,11 +4,11 @@ Tanda de la noche del 2026-11-21. Se vuelve a leer después de cada tarea.
 
 **Reglas:** no cerrar el turno mientras queden tareas · decisiones a `docs/proceso/pendiente-decidir.md` (lo pequeño y reversible, «decidido sin mí») · parar solo ante algo irreversible (datos reales, Sift instalado, force push, configuración global, instalar fuera del proyecto) · nada de ventanas ni pruebas en pantalla, salvo grabar el vídeo (tarea 5, permitido expresamente) · cada bloque con CI local, PR y merge (salvo el README, que espera revisión).
 
-## 1. Limpieza para hacerlo público (solo análisis)
-- [ ] Buscar en el repo y en **todo** el historial: secretos y tokens, rutas y nombres personales, el correo, capturas con datos personales y archivos internos.
-- [ ] Informe `docs/publicacion/limpieza.md`: qué hay, dónde y la propuesta para cada cosa (borrar, mover, dejar o reescribir el historial).
-- [ ] **No** aplicar nada que reescriba el historial.
-- [ ] CI, PR y merge.
+## 1. Limpieza para hacerlo público (solo análisis) — hecho, PR #62; decisión 14 aplicada
+- [x] Buscar en el repo y en **todo** el historial: secretos y tokens, rutas y nombres personales, el correo, capturas con datos personales y archivos internos.
+- [x] Informe `docs/publicacion/limpieza.md`: qué hay, dónde y la propuesta para cada cosa (borrar, mover, dejar o reescribir el historial).
+- [x] **No** aplicar nada que reescriba el historial.
+- [x] CI, PR y merge.
 
 ## 2. README en dos idiomas (PR **sin fusionar**)
 - [ ] `README.md` en español (principal) y `README.en.md` en inglés, con «Español | English» arriba.

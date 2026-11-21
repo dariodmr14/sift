@@ -47,13 +47,21 @@ pub struct IndexingSettings {
     pub model_download_allowed: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct UpdateSettings {
-    /// Mirar al arrancar si hay una versión nueva en GitHub. Es una conexión a internet,
-    /// así que va apagado hasta que el usuario lo activa (ADR 0018). Instalarla siempre se
-    /// pregunta aparte.
+    /// Mirar al arrancar si hay una versión nueva en GitHub. Encendido por defecto
+    /// (ADR 0018): solo se pide el número de la última versión, y descargarla e instalarla
+    /// siempre se pregunta aparte. Se apaga en Ajustes → General.
     pub check_on_startup: bool,
+}
+
+impl Default for UpdateSettings {
+    fn default() -> Self {
+        Self {
+            check_on_startup: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -133,11 +141,15 @@ mod tests {
     }
 
     #[test]
-    fn update_checks_are_off_unless_asked_for() {
-        // Un fichero de antes (sin el bloque) y uno nuevo: no se conecta a nada sin permiso.
+    fn update_checks_are_on_unless_turned_off() {
+        // Un fichero de antes (sin el bloque) y uno nuevo: se mira si hay versión nueva.
         let old: Settings = serde_json::from_str(r#"{"hotkey":"Alt+Space"}"#).unwrap();
-        assert!(!old.updates.check_on_startup);
-        assert!(!Settings::default().updates.check_on_startup);
+        assert!(old.updates.check_on_startup);
+        assert!(Settings::default().updates.check_on_startup);
+        // Quien lo apagó lo sigue teniendo apagado.
+        let off: Settings =
+            serde_json::from_str(r#"{"updates":{"checkOnStartup":false}}"#).unwrap();
+        assert!(!off.updates.check_on_startup);
     }
 
     #[test]
