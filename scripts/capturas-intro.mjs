@@ -3,7 +3,9 @@
 // hay que tocar nada mientras tanto.
 //
 // Uso (desde la raíz del repo):
-//   node scripts/capturas-intro.mjs
+//   node scripts/capturas-intro.mjs        (docs/capturas/introduccion/)
+//   node scripts/capturas-intro.mjs --en   (con los datos de demostración en inglés, demo-en/,
+//                                           para el vídeo en inglés: target/capturas/introduccion-en/)
 //
 // Igual que la bienvenida de scripts/capturas-final.mjs: aparta la carpeta de datos de
 // desarrollo (%APPDATA%\dev.sift.app-dev), arranca sin datos de prueba
@@ -17,7 +19,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { connect, root, sleep, startDevApp, waitFor } from "./devapp.mjs";
 
-const out = path.join(root, "docs", "capturas", "introduccion");
+const EN = process.argv.includes("--en");
+// Lo que se escribe en los pasos 3 y 5, según el idioma de los datos de demostración.
+const DATA = EN ? { search: "payment", space: "Lucy's shop" } : { search: "pago", space: "Tienda de Lucía" };
+const out = EN
+  ? path.join(root, "target", "capturas", "introduccion-en")
+  : path.join(root, "docs", "capturas", "introduccion");
 fs.mkdirSync(out, { recursive: true });
 const devData = path.join(process.env.APPDATA, "dev.sift.app-dev");
 
@@ -125,7 +132,7 @@ async function walk(page) {
   // 3. Prueba a buscar: resultados de verdad del índice.
   await click(page, "Siguiente");
   await sleep(500);
-  await type(page, "Buscar", "pago");
+  await type(page, "Buscar", DATA.search);
   const found = await waitFor(
     () => page.evaluate("document.querySelectorAll('[aria-label=Resultados] button').length"),
     15_000,
@@ -145,7 +152,7 @@ async function walk(page) {
   // 5. Tu primer Espacio.
   await click(page, "Siguiente");
   await sleep(500);
-  await type(page, "Nombre", "Tienda de Lucía");
+  await type(page, "Nombre", DATA.space);
   await type(page, "Una web que abre (opcional)", "example.com");
   await sleep(300);
   await grab(page, "5-espacio.jpg");
@@ -167,7 +174,7 @@ async function main() {
   if (fs.existsSync(backup)) throw new Error(`ya existe ${backup}: revísalo a mano antes de seguir`);
   const had = fs.existsSync(devData);
   if (had) fs.renameSync(devData, backup);
-  const app = startDevApp({ SIFT_DEV_NO_SEED: "1", SIFT_DEV_DEMO: "1" });
+  const app = startDevApp({ SIFT_DEV_NO_SEED: "1", SIFT_DEV_DEMO: EN ? "en" : "1" });
   try {
     console.log("Arrancando la versión de desarrollo sin datos…");
     const page = await connect("settings.html");

@@ -294,7 +294,7 @@ function GlassToggle({ initial }: { initial: boolean }) {
 
 /**
  * «Buscar actualizaciones al arrancar» (ADR 0018). Solo en las compilaciones de las
- * Releases, que llevan el actualizador. Apagado por defecto: es una conexión a internet.
+ * Releases, que llevan el actualizador. Encendido por defecto; instalar siempre se pregunta.
  */
 function UpdatesToggle({ initial }: { initial: boolean }) {
   const [enabled, setEnabled] = useState(initial);

@@ -47,7 +47,7 @@ pub struct SettingsView {
     /// Hay actualizaciones automáticas en esta compilación (la de las Releases). En las
     /// demás, Ajustes no enseña la opción.
     pub updates_available: bool,
-    /// «Buscar actualizaciones al arrancar» (apagado por defecto: ADR 0018).
+    /// «Buscar actualizaciones al arrancar» (encendido por defecto: ADR 0018).
     pub check_updates: bool,
 }
 
