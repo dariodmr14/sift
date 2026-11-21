@@ -14,15 +14,15 @@ Press `Alt+Space` from any app, type what you are looking for and Enter does the
 
 - **Searches by name, by content and by meaning.** "databases" also brings up related files even if they never use that word. It reads text and notes, code, PDF, Word and PowerPoint; images, videos and spreadsheets are found by name. Accents and typos don't matter.
 
-  ![The Sift bar with results](docs/capturas/final/barra-busqueda.jpg)
+  ![The Sift bar with results](docs/capturas/final-en/barra-busqueda.jpg)
 
 - **Tells you why each result shows up.** Press Tab to see the matching passage, with your search underlined, without leaving the bar.
 
-  ![The preview of a result](docs/capturas/final/vista-previa.jpg)
+  ![The preview of a result](docs/capturas/final-en/vista-previa.jpg)
 
 - **Spaces: one name and everything opens.** A Space groups folders, files, websites, apps and commands, and can wait for something to be ready (a local website, a service) before going on. Each window can go to a half, a third or a quarter of the screen you choose.
 
-  ![A Space in Settings](docs/capturas/final/ajustes-espacio.jpg)
+  ![A Space in Settings](docs/capturas/final-en/ajustes-espacio.jpg)
 
 - **PDFs open on the matching page.** If what you are looking for is on page 37, the PDF opens on page 37.
 - **Quick filters.** "pdf budget" searches only your PDFs. Backspace removes the filter.
