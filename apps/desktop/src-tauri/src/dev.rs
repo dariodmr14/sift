@@ -17,7 +17,9 @@
 //! para no chocar con el de la versión diaria (Alt+Space) si están abiertas las dos.
 //!
 //! Con `SIFT_DEV_DEMO=1`, en vez de eso, los **datos de demostración** (`demo/` del repo,
-//! inventados) y unos Espacios de ejemplo: para capturas y vídeos sin nada personal.
+//! inventados) y unos Espacios de ejemplo: para capturas y vídeos sin nada personal. Con
+//! `SIFT_DEV_DEMO=en`, los mismos en inglés (`demo-en/`), para el vídeo y las capturas en
+//! inglés (la interfaz sigue en español).
 
 use std::path::{Path, PathBuf};
 
@@ -35,30 +37,62 @@ const DEMO_ENV: &str = "SIFT_DEV_DEMO";
 /// Arrancar la versión de desarrollo leyendo solo esta carpeta (las pruebas de aguante,
 /// `scripts/aguante/`, con sus archivos generados). Solo en desarrollo.
 const ROOT_ENV: &str = "SIFT_DEV_ROOT";
-/// Nombre de la copia de `demo/` en Documentos públicos.
-const DEMO_FOLDER: &str = "Sift (demostración)";
+
+/// Los datos de demostración: en español (`SIFT_DEV_DEMO=1`) o en inglés (`SIFT_DEV_DEMO=en`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DemoLang {
+    Es,
+    En,
+}
+
+impl DemoLang {
+    fn from_env() -> Option<Self> {
+        match std::env::var(DEMO_ENV).as_deref() {
+            Ok("1") => Some(Self::Es),
+            Ok("en") => Some(Self::En),
+            _ => None,
+        }
+    }
+
+    /// La carpeta del repo con los archivos.
+    fn source(self) -> &'static str {
+        match self {
+            Self::Es => "demo",
+            Self::En => "demo-en",
+        }
+    }
+
+    /// El nombre de su copia en Documentos públicos.
+    fn folder(self) -> &'static str {
+        match self {
+            Self::Es => "Sift (demostración)",
+            Self::En => "Sift (demo)",
+        }
+    }
+}
 
 fn env_on(name: &str) -> bool {
     std::env::var(name).is_ok_and(|v| v == "1")
 }
 
-/// Los datos de demostración, copiados de `demo/` del repo a
-/// `C:\Users\Public\Documents\Sift (demostración)`: una ruta sin nombre de usuario, para que
-/// en capturas y vídeos no salga nada personal. Con `fresh`, la copia se rehace desde cero
-/// (los datos vuelven a estar como en el repo). Solo en desarrollo con `SIFT_DEV_DEMO=1`;
-/// si no, `None`.
+/// Los datos de demostración, copiados de `demo/` (o `demo-en/`) del repo a
+/// `C:\Users\Public\Documents\Sift (demostración)` (o `Sift (demo)`): una ruta sin nombre de
+/// usuario, para que en capturas y vídeos no salga nada personal. Con `fresh`, la copia se
+/// rehace desde cero (los datos vuelven a estar como en el repo). Solo en desarrollo con
+/// `SIFT_DEV_DEMO=1` o `SIFT_DEV_DEMO=en`; si no, `None`.
 pub fn demo_folder(fresh: bool) -> Option<PathBuf> {
-    if !is_dev() || !env_on(DEMO_ENV) {
+    if !is_dev() {
         return None;
     }
+    let lang = DemoLang::from_env()?;
     let target = PathBuf::from(std::env::var_os("PUBLIC")?)
         .join("Documents")
-        .join(DEMO_FOLDER);
+        .join(lang.folder());
     if fresh && target.exists() {
         std::fs::remove_dir_all(&target).ok()?;
     }
     if !target.exists() {
-        copy_dir(&repo_root().join("demo"), &target).ok()?;
+        copy_dir(&repo_root().join(lang.source()), &target).ok()?;
     }
     Some(target)
 }
@@ -79,7 +113,7 @@ fn copy_dir(from: &Path, to: &Path) -> std::io::Result<()> {
 
 /// Los Espacios de ejemplo de los datos de demostración: uno con ventanas colocadas y una
 /// espera (para enseñar sus pasos) y otro sencillo.
-fn demo_spaces(demo: &Path) -> Vec<SpaceDraft> {
+fn demo_spaces(demo: &Path, lang: DemoLang) -> Vec<SpaceDraft> {
     let place = |zone| {
         Some(Placement {
             zone: Some(zone),
@@ -87,12 +121,23 @@ fn demo_spaces(demo: &Path) -> Vec<SpaceDraft> {
             reuse_window: true,
         })
     };
-    let shop = demo.join("Proyectos").join("Web de la tienda");
-    let db = demo.join("Estudios").join("Bases de datos");
+    let en = lang == DemoLang::En;
+    let pick = |es: &str, en_text: &str| if en { en_text } else { es }.to_owned();
+    let (shop, db) = if en {
+        (
+            demo.join("Projects").join("Shop website"),
+            demo.join("Studies").join("Databases"),
+        )
+    } else {
+        (
+            demo.join("Proyectos").join("Web de la tienda"),
+            demo.join("Estudios").join("Bases de datos"),
+        )
+    };
     vec![
         SpaceDraft {
-            name: "Tienda de Lucía".into(),
-            aliases: vec!["tienda".into(), "cerámica".into()],
+            name: pick("Tienda de Lucía", "Lucy's shop"),
+            aliases: vec![pick("tienda", "shop"), pick("cerámica", "ceramics")],
             icon: Icon::Auto,
             actions: vec![
                 // Solo el Explorador y el Bloc de notas (un `.txt`): se puede abrir en una
@@ -107,14 +152,14 @@ fn demo_spaces(demo: &Path) -> Vec<SpaceDraft> {
                     on_timeout: OnTimeout::Stop,
                 }),
                 Action::OpenFile {
-                    path: shop.join("presupuesto.txt"),
+                    path: shop.join(pick("presupuesto.txt", "quote.txt")),
                     place: place(Zone::RightHalf),
                 },
             ],
         },
         SpaceDraft {
-            name: "Estudiar bases de datos".into(),
-            aliases: vec!["bd".into()],
+            name: pick("Estudiar bases de datos", "Study databases"),
+            aliases: vec![pick("bd", "db")],
             icon: Icon::Auto,
             actions: vec![
                 Action::OpenFolder {
@@ -122,7 +167,7 @@ fn demo_spaces(demo: &Path) -> Vec<SpaceDraft> {
                     place: place(Zone::LeftHalf),
                 },
                 Action::OpenFile {
-                    path: db.join("apuntes-transacciones.pdf"),
+                    path: db.join(pick("apuntes-transacciones.pdf", "transactions-notes.pdf")),
                     place: place(Zone::RightHalf),
                 },
             ],
@@ -133,13 +178,13 @@ fn demo_spaces(demo: &Path) -> Vec<SpaceDraft> {
 /// Con `SIFT_DEV_DEMO=1` (y sin `SIFT_DEV_NO_SEED`): los datos de demostración, recién
 /// copiados, y sus Espacios. Devuelve `false` si no tocaba.
 fn seed_demo(db: &mut sift_storage::Database) -> bool {
-    let Some(demo) = demo_folder(true) else {
+    let (Some(lang), Some(demo)) = (DemoLang::from_env(), demo_folder(true)) else {
         return false;
     };
     if let Err(e) = db.add_root(&demo) {
         tracing::warn!("datos de demostración: no se pudo añadir la carpeta: {e}");
     }
-    for draft in demo_spaces(&demo) {
+    for draft in demo_spaces(&demo, lang) {
         if let Err(e) = db.create_space(draft) {
             tracing::warn!("datos de demostración: no se pudo crear un Espacio: {e}");
         }
@@ -189,7 +234,7 @@ pub fn suggested_folder(documents: bool) -> Option<Option<PathBuf>> {
         return None;
     }
     // Con los datos de demostración, la carpeta sugerida es su copia.
-    if env_on(DEMO_ENV) {
+    if DemoLang::from_env().is_some() {
         return Some(documents.then(|| demo_folder(false)).flatten());
     }
     Some(documents.then(|| repo_root().join("docs")).and_then(|p| {
@@ -268,17 +313,20 @@ mod tests {
 
     #[test]
     fn demo_spaces_are_valid_and_open_files_that_exist() {
-        let demo = repo_root().join("demo");
-        let spaces = demo_spaces(&demo);
-        assert_eq!(spaces.len(), 2);
-        for draft in spaces {
-            let space = sift_spaces::validate(draft).unwrap();
-            for action in &space.actions {
-                if let Action::OpenFolder { path, .. } | Action::OpenFile { path, .. } = action {
-                    assert!(path.exists(), "no existe en demo/: {}", path.display());
+        for lang in [DemoLang::Es, DemoLang::En] {
+            let demo = repo_root().join(lang.source());
+            let spaces = demo_spaces(&demo, lang);
+            assert_eq!(spaces.len(), 2);
+            for draft in spaces {
+                let space = sift_spaces::validate(draft).unwrap();
+                for action in &space.actions {
+                    if let Action::OpenFolder { path, .. } | Action::OpenFile { path, .. } = action {
+                        assert!(path.exists(), "no existe: {}", path.display());
+                    }
                 }
             }
         }
+        assert_eq!(demo_spaces(Path::new("x"), DemoLang::En)[0].name, "Lucy's shop");
     }
 
     #[test]

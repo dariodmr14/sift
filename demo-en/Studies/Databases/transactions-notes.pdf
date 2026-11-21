@@ -1,0 +1,69 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Length 313 >>
+stream
+BT 72 760 Td 18 TL
+/F1 18 Tf (Unit 5. Transactions) Tj T*
+/F1 12 Tf (A transaction groups several operations that happen all together or not at all.) Tj T*
+/F1 12 Tf (If something fails halfway, what was done is undone \(rollback\) and the database) Tj T*
+/F1 12 Tf (is left as it was before it started.) Tj T*
+ET
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 3 0 R >>
+endobj
+5 0 obj
+<< /Length 346 >>
+stream
+BT 72 760 Td 18 TL
+/F1 18 Tf (ACID properties) Tj T*
+/F1 12 Tf (Atomicity: all or nothing.) Tj T*
+/F1 12 Tf (Consistency: from one valid state to another valid state.) Tj T*
+/F1 12 Tf (Isolation: two transactions running at once don't step on each other.) Tj T*
+/F1 12 Tf (Durability: what is committed is not lost, even in a power cut.) Tj T*
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 236 >>
+stream
+BT 72 760 Td 18 TL
+/F1 18 Tf (Isolation levels) Tj T*
+/F1 12 Tf (Read uncommitted, read committed, repeatable read and serializable.) Tj T*
+/F1 12 Tf (More isolation means fewer surprises and more waiting between transactions.) Tj T*
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 7 0 R >>
+endobj
+9 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000106 00000 n 
+0000000175 00000 n 
+0000000539 00000 n 
+0000000665 00000 n 
+0000001062 00000 n 
+0000001188 00000 n 
+0000001475 00000 n 
+0000001601 00000 n 
+trailer
+<< /Size 10 /Root 9 0 R >>
+startxref
+1650
+%%EOF
