@@ -4,7 +4,7 @@
 //! `--config src-tauri/tauri.updater.conf.json`. La compilación de todos los días no la
 //! lleva: el plugin ni se registra y Ajustes no enseña la opción.
 //!
-//! Con la opción activada (apagada por defecto, porque es una conexión a internet), al
+//! Con la opción activada (encendida por defecto; se apaga en Ajustes → General), al
 //! arrancar se mira si hay una versión nueva. Si la hay, un diálogo de Windows pregunta
 //! antes de descargarla. La actualización va firmada: el plugin comprueba la firma con la
 //! clave pública antes de instalar nada.
