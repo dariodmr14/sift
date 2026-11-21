@@ -5,6 +5,7 @@
 # Binarios
 *.png binary
 *.ico binary
+*.pdf binary
 *.icns binary
 
 # cmd.exe lee mejor los .bat con CRLF.

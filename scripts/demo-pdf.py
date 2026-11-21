@@ -1,5 +1,7 @@
-# Genera los dos PDF inventados de demo/ (texto en Helvetica, varias páginas), sin
-# dependencias. Uso, desde la raíz del repo:  python scripts/demo-pdf.py demo
+# Genera los dos PDF inventados de los datos de demostración (texto en Helvetica, varias
+# páginas), sin dependencias. Uso, desde la raíz del repo:
+#   python scripts/demo-pdf.py demo          (en español)
+#   python scripts/demo-pdf.py demo-en en    (en inglés)
 import sys
 
 BS = chr(92)
@@ -49,42 +51,85 @@ def pdf(path, pages):
 
 
 D = sys.argv[1]
-pdf(
-    D + "/Estudios/Bases de datos/apuntes-transacciones.pdf",
-    [
+LANG = sys.argv[2] if len(sys.argv) > 2 else "es"
+
+if LANG == "en":
+    pdf(
+        D + "/Studies/Databases/transactions-notes.pdf",
         [
-            "Tema 5. Transacciones",
-            "Una transacción agrupa varias operaciones que se hacen todas o ninguna.",
-            "Si algo falla a mitad, se deshace lo hecho (rollback) y la base de datos",
-            "queda como estaba antes de empezar.",
+            [
+                "Unit 5. Transactions",
+                "A transaction groups several operations that happen all together or not at all.",
+                "If something fails halfway, what was done is undone (rollback) and the database",
+                "is left as it was before it started.",
+            ],
+            [
+                "ACID properties",
+                "Atomicity: all or nothing.",
+                "Consistency: from one valid state to another valid state.",
+                "Isolation: two transactions running at once don't step on each other.",
+                "Durability: what is committed is not lost, even in a power cut.",
+            ],
+            [
+                "Isolation levels",
+                "Read uncommitted, read committed, repeatable read and serializable.",
+                "More isolation means fewer surprises and more waiting between transactions.",
+            ],
         ],
+    )
+    pdf(
+        D + "/Projects/Shop website/services-contract.pdf",
         [
-            "Propiedades ACID",
-            "Atomicidad: todo o nada.",
-            "Consistencia: de un estado válido a otro estado válido.",
-            "Aislamiento: dos transacciones a la vez no se pisan.",
-            "Durabilidad: lo confirmado (commit) no se pierde aunque se vaya la luz.",
+            [
+                "Services contract: online shop",
+                "Between Lucy Fern (ceramics) and the person who builds the shop.",
+                "Purpose: design and launch of an online shop with a payment gateway.",
+            ],
+            [
+                "Deadlines and payments",
+                "Delivery before 15 December.",
+                "Payment in two parts: 50% on accepting the quote and 50% on delivery.",
+                "Changes after delivery are invoiced separately.",
+            ],
         ],
+    )
+else:
+    pdf(
+        D + "/Estudios/Bases de datos/apuntes-transacciones.pdf",
         [
-            "Niveles de aislamiento",
-            "Lectura no confirmada, lectura confirmada, lectura repetible y serializable.",
-            "Cuanto más aislamiento, menos sorpresas y más esperas entre transacciones.",
+            [
+                "Tema 5. Transacciones",
+                "Una transacción agrupa varias operaciones que se hacen todas o ninguna.",
+                "Si algo falla a mitad, se deshace lo hecho (rollback) y la base de datos",
+                "queda como estaba antes de empezar.",
+            ],
+            [
+                "Propiedades ACID",
+                "Atomicidad: todo o nada.",
+                "Consistencia: de un estado válido a otro estado válido.",
+                "Aislamiento: dos transacciones a la vez no se pisan.",
+                "Durabilidad: lo confirmado (commit) no se pierde aunque se vaya la luz.",
+            ],
+            [
+                "Niveles de aislamiento",
+                "Lectura no confirmada, lectura confirmada, lectura repetible y serializable.",
+                "Cuanto más aislamiento, menos sorpresas y más esperas entre transacciones.",
+            ],
         ],
-    ],
-)
-pdf(
-    D + "/Proyectos/Web de la tienda/contrato-servicios.pdf",
-    [
+    )
+    pdf(
+        D + "/Proyectos/Web de la tienda/contrato-servicios.pdf",
         [
-            "Contrato de servicios: tienda online",
-            "Entre Lucía Ferrer (cerámica) y la persona que desarrolla la tienda.",
-            "Objeto: diseño y puesta en marcha de una tienda online con pasarela de pago.",
+            [
+                "Contrato de servicios: tienda online",
+                "Entre Lucía Ferrer (cerámica) y la persona que desarrolla la tienda.",
+                "Objeto: diseño y puesta en marcha de una tienda online con pasarela de pago.",
+            ],
+            [
+                "Plazos y pagos",
+                "Entrega antes del 15 de diciembre.",
+                "Pago en dos partes: 50 % al aceptar el presupuesto y 50 % a la entrega.",
+                "Las revisiones después de la entrega se facturan aparte.",
+            ],
         ],
-        [
-            "Plazos y pagos",
-            "Entrega antes del 15 de diciembre.",
-            "Pago en dos partes: 50 % al aceptar el presupuesto y 50 % a la entrega.",
-            "Las revisiones después de la entrega se facturan aparte.",
-        ],
-    ],
-)
+    )

@@ -1,0 +1,17 @@
+/* Styles for the product page of the ceramics shop. */
+.piece {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.piece__photo {
+  border-radius: 8px;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.piece--unique::after {
+  content: "One of a kind";
+  font-weight: 600;
+}

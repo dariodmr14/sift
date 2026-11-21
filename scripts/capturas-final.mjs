@@ -2,7 +2,10 @@
 // (docs/capturas/final/). Abre ventanas: no hay que tocar nada mientras tanto.
 //
 // Uso (desde la raíz del repo):
-//   node scripts/capturas-final.mjs [--sin-bienvenida]
+//   node scripts/capturas-final.mjs [--sin-bienvenida] [--en]
+//
+// Con --en, los datos de demostración en inglés (demo-en/, SIFT_DEV_DEMO=en) y las capturas
+// en docs/capturas/final-en/ (para el README en inglés; la interfaz sigue en español).
 //
 // Usa SOLO la versión de DESARROLLO (sus datos en %APPDATA%\dev.sift.app-dev,
 // nunca los de la versión diaria). Dos arranques:
@@ -21,7 +24,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { connect, root, searchUntil, sleep, startDevApp, typeInBar, waitFor } from "./devapp.mjs";
 
-const out = path.join(root, "docs", "capturas", "final");
+const EN = process.argv.includes("--en");
+const DEMO = EN ? "en" : "1";
+// Lo que se busca, según el idioma de los datos de demostración.
+const DATA = EN
+  ? { alias: "shop", space: "Lucy's shop", search: "payment", hit: "services-contract" }
+  : { alias: "tienda", space: "Tienda de Lucía", search: "pago", hit: "contrato-servicios" };
+const out = path.join(root, "docs", "capturas", EN ? "final-en" : "final");
 fs.mkdirSync(out, { recursive: true });
 const appData = process.env.APPDATA;
 const devData = path.join(appData, "dev.sift.app-dev");
@@ -92,7 +101,7 @@ async function withFreshData(env, run) {
 
 // ---------- 1. Bienvenida (la introducción, paso 1) ----------
 async function welcome() {
-  await withFreshData({ SIFT_DEV_NO_SEED: "1", SIFT_DEV_DEMO: "1" }, async () => {
+  await withFreshData({ SIFT_DEV_NO_SEED: "1", SIFT_DEV_DEMO: DEMO }, async () => {
     const page = await connect("settings.html");
     const heading = await waitFor(
       () => text(page, "h1, h2"),
@@ -110,7 +119,7 @@ async function welcome() {
 
 // ---------- 2. Barra, vista previa, Ajustes y diálogos ----------
 async function main() {
-  await withFreshData({ SIFT_DEV_DEMO: "1" }, shoot);
+  await withFreshData({ SIFT_DEV_DEMO: DEMO }, shoot);
 }
 
 async function shoot(app) {
@@ -134,8 +143,8 @@ async function shoot(app) {
 
     // La vista previa de un Espacio: sus acciones en orden.
     await showBar(bar);
-    const space = await searchUntil(bar, "tienda", (r) => r.includes("Tienda de Lucía"), 60_000);
-    check("Buscar «tienda» trae el Espacio", space.includes("Tienda de Lucía"), space.slice(0, 120));
+    const space = await searchUntil(bar, DATA.alias, (r) => r.includes(DATA.space), 60_000);
+    check(`Buscar «${DATA.alias}» trae el Espacio`, space.includes(DATA.space), space.slice(0, 120));
     await bar.press("Tab");
     const steps = await waitFor(
       () => bar.evaluate("document.querySelector('ol[aria-label]')?.innerText ?? ''"),
@@ -151,8 +160,8 @@ async function shoot(app) {
     // Búsqueda: esperar a que el índice de los datos de demostración esté listo.
     await showBar(bar);
     // Sift se pausa si el PC está ocupado: hay margen de sobra.
-    const found = await searchUntil(bar, "pago", (r) => r.includes("contrato-servicios"), 300_000);
-    check("Buscar «pago» trae resultados", found.includes("contrato-servicios"), found.slice(0, 120));
+    const found = await searchUntil(bar, DATA.search, (r) => r.includes(DATA.hit), 300_000);
+    check(`Buscar «${DATA.search}» trae resultados`, found.includes(DATA.hit), found.slice(0, 120));
     await sleep(500);
     await showBar(bar);
     await grab(bar, "barra-busqueda.jpg");
