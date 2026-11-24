@@ -182,3 +182,6 @@ Al terminar: instalador 1.0.0-rc.3 y cómo actualizar el instalado.
 
 ### 1. Sift no arranca en un Windows limpio (bloquea la 1.0)
 - [x] ✅ **Resuelto** (`fix/vc-runtime`, ADR 0020: las cuatro DLL del runtime de Visual C++ van junto al ejecutable, y `scripts/comprobar-instalador.ps1` hace fallar la CI local y el workflow de Release si falta alguna o es demasiado antigua). Al abrir Sift: «La ejecución de código no puede continuar porque no se encontró MSVCP140.dll». En el PC de Darío no pasa porque Visual Studio instala ese runtime. Lo pide ONNX Runtime.
+
+### 2. «Could not find the WebView2 Runtime» en un Windows limpio
+- [x] ✅ **Resuelto** (`fix/webview2`, ADR 0021: el instalador lleva el bootstrapper de Microsoft, comprueba de verdad que WebView2 queda instalado y, si no puede, avisa en español con el enlace oficial y no instala Sift; `scripts/sandbox.ps1` comparte solo el instalador más reciente y tiene `-SinRed` para probar el aviso). Con el runtime de Visual C++ ya arreglado, Sift fallaba al abrir en el Sandbox, que no trae WebView2 (algunos Windows 10 reales tampoco).

@@ -37,7 +37,7 @@ Press `Alt+Space` from any app, type what you are looking for and Enter does the
 4. A welcome screen opens at the end: choose the folders you want to search and create your first Space. Before downloading the model for searching by meaning (about 135 MB, once), it asks for your permission.
 5. From then on, `Alt+Space` opens the bar. You can change the shortcut in Ajustes (Settings).
 
-**Requirements:** Windows 10 or 11, 64-bit. Sift uses WebView2, which both already include.
+**Requirements:** Windows 10 or 11, 64-bit. Sift uses WebView2, which comes with Windows 11 and almost always with Windows 10. If it is missing, the installer installs it (this needs an internet connection at that moment).
 
 **Updates:** on startup, Sift checks whether there is a new version. If there is, it **always asks** before downloading and installing it, and only installs it if it carries Sift's signature. You can turn it off in Ajustes (Settings) → General, «Buscar actualizaciones al arrancar» (check for updates on startup).
 

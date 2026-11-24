@@ -7,7 +7,9 @@
 #   - una de las que lleva es más antigua de lo necesario (anterior a la 14.40 o sin alguna
 #     de las funciones que se usan);
 #   - se usa una DLL que no lleva el instalador ni trae Windows;
-#   - falta pdfium\pdfium.dll.
+#   - falta pdfium\pdfium.dll;
+#   - falta el instalador de WebView2 (MicrosoftEdgeWebview2Setup.exe) o no lleva una firma
+#     válida de Microsoft (ADR 0021).
 # Ver docs/adr/0020-runtime-de-visual-cpp.md.
 #
 # Uso (desde la raíz del repo):   pwsh scripts/comprobar-instalador.ps1 [-Installer <ruta>]
@@ -97,6 +99,18 @@ try {
     $pdfium = Join-Path $Tmp "pdfium\pdfium.dll"
     if (-not (Test-Path $pdfium)) { $errors += "Falta pdfium\pdfium.dll (scripts/fetch-pdfium.ps1)." }
 
+    # El bootstrapper de WebView2 (webviewInstallMode: embedBootstrapper). NSIS lo guarda con
+    # destino $TEMP: solo se usa si WebView2 falta.
+    $webview2 = Join-Path $Tmp '$TEMP\MicrosoftEdgeWebview2Setup.exe'
+    if (-not (Test-Path -LiteralPath $webview2)) {
+        $errors += "Falta el instalador de WebView2: en un Windows sin WebView2 Sift no se abriría (webviewInstallMode tiene que ser embedBootstrapper, ADR 0021)."
+    } else {
+        $sig = Get-AuthenticodeSignature -LiteralPath $webview2
+        if ($sig.Status -ne "Valid" -or $sig.SignerCertificate.Subject -notmatch '^CN=Microsoft Corporation,') {
+            $errors += "El instalador de WebView2 no lleva una firma válida de Microsoft ($($sig.Status), $($sig.SignerCertificate.Subject))."
+        }
+    }
+
     # Recorre las dependencias: el ejecutable, PDFium y las DLL que lleve el instalador.
     $queue = [System.Collections.Generic.Queue[string]]::new()
     $queue.Enqueue($exe)
@@ -143,5 +157,5 @@ if ($errors) {
     $errors | Select-Object -Unique | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
     exit 1
 }
-Write-Host "Instalador correcto: lleva pdfium.dll y el runtime de Visual C++ ($($found -join ', '))." -ForegroundColor Green
+Write-Host "Instalador correcto: lleva pdfium.dll, el instalador de WebView2 (firmado por Microsoft) y el runtime de Visual C++ ($($found -join ', '))." -ForegroundColor Green
 exit 0
