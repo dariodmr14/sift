@@ -4,7 +4,8 @@
 #
 # Qué hace:
 #   1. Comprueba que estás en `main` sin cambios a medias y trae lo último (`git pull`).
-#   2. Baja PDFium (versión y hash fijados) e instala las dependencias de la UI.
+#   2. Baja PDFium (versión y hash fijados), copia el runtime de Visual C++ e instala las
+#      dependencias de la UI.
 #   3. Compila en modo release y genera el instalador NSIS
 #      (target\release\bundle\nsis\Sift_<versión>_x64-setup.exe).
 #   4. Abre el instalador. Si Sift ya está instalado, lo actualiza en el sitio: tus datos
@@ -39,6 +40,9 @@ try {
 
     Step "PDFium (para leer los PDF)"
     Run powershell @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\fetch-pdfium.ps1"))
+
+    Step "Runtime de Visual C++ (va en el instalador)"
+    Run powershell @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\vc-runtime.ps1"))
 
     Step "Dependencias de la interfaz"
     Push-Location $Desktop
