@@ -127,7 +127,7 @@ export const commands = {
 	addSuggestedFolder: (kind: SuggestedKind) => typedError<null, AppError>(__TAURI_INVOKE("add_suggested_folder", { kind })),
 	/**  Termina la bienvenida. Con `open_launcher`, cierra Ajustes y muestra la barra. */
 	finishWelcome: (openLauncher: boolean) => typedError<null, AppError>(__TAURI_INVOKE("finish_welcome", { openLauncher })),
-	/**  El usuario acepta descargar el modelo de búsqueda inteligente (unos 120 MB). */
+	/**  El usuario acepta descargar el modelo de búsqueda inteligente (unos 135 MB). */
 	allowModelDownload: () => typedError<null, AppError>(__TAURI_INVOKE("allow_model_download")),
 	/**  Deja de indexar una carpeta y borra del índice todo lo suyo (los archivos no se tocan). */
 	removeRoot: (id: number) => typedError<null, AppError>(__TAURI_INVOKE("remove_root", { id })),
