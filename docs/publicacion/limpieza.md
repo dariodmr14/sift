@@ -105,9 +105,9 @@ Nada de eso identifica a nadie: no hay universidad, nombres de personas ni rutas
 
 ## 8. Tu nombre: dejarlo
 
-«Darío» sale en:
-- `LICENSE` («Copyright (c) 2026 Darío»);
-- `Cargo.toml` (`authors`);
+Tu nombre sale en:
+- `LICENSE` («Copyright (c) 2026 Darío Morales Riega», en español e inglés);
+- `Cargo.toml` (`authors = ["Darío Morales Riega"]`);
 - los documentos de proceso;
 - 27 archivos en total, sobre todo ADR y `CLAUDE.md`.
 

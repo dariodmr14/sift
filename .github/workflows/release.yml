@@ -7,7 +7,7 @@ name: Release
 #   - el `latest.json` que lee el actualizador,
 #   - `SHA256SUMS.txt` con la huella del instalador,
 #   - las notas de `docs/publicacion/notas/v<versión>.md`.
-# La Release se queda en borrador hasta que Darío la revisa y pulsa «Publish release».
+# La Release se queda en borrador hasta que Darío Morales Riega la revisa y pulsa «Publish release».
 #
 # LISTO PERO INACTIVO hasta el día de publicar (pasos en docs/publicacion/pasos.md):
 #   - Nadie ha subido todavía una etiqueta `v*`.
