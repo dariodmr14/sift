@@ -4,7 +4,7 @@
 param([string]$Dir, [string]$Out)
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
-$names = "1-atajo.jpg","1-atajo-hecho.jpg","2-carpetas.jpg","3-buscar.jpg","4-inteligente.jpg","5-espacio.jpg","5-espacio-hecho.jpg","6-final.jpg"
+$names = "1-atajo.jpg","1-atajo-hecho.jpg","2-carpetas.jpg","3-buscar.jpg","4-inteligente.jpg","5-espacio.jpg","5-espacio-hecho.jpg"
 $imgs = $names | ForEach-Object { [System.Drawing.Image]::FromFile((Join-Path $Dir $_)) }
 $cols = 4; $scale = 0.5; $gap = 16
 $w = [int]($imgs[0].Width * $scale); $h = [int]($imgs[0].Height * $scale)
