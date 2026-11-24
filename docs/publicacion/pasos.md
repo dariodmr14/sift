@@ -1,12 +1,14 @@
 # El día de publicar: pasos exactos
 
-Todo lo de publicar está **preparado e inactivo**. Nada sale hasta que hagas estos pasos. Los marcados **(tú)** solo los puedes hacer tú, porque tocan claves, secretos o la visibilidad del repo. Los marcados **(Claude)** los puede preparar Claude en un PR, como siempre.
+Todo lo de publicar está **preparado e inactivo**. Nada sale hasta que hagas estos pasos.
+
+**Estado (2026-11-24):** hechos los pasos 1 a 4 (versión 1.0.0, clave de firma, secretos y clave pública). Quedan el 0, el 5 y del 6 en adelante. Los marcados **(tú)** solo los puedes hacer tú, porque tocan claves, secretos o la visibilidad del repo. Los marcados **(Claude)** los puede preparar Claude en un PR, como siempre.
 
 | Pieza | Dónde | Estado |
 |---|---|---|
-| Workflow de Releases | `.github/workflows/release.yml` | Se lanza al subir una etiqueta `v*`. Antes de compilar comprueba que están la clave, los secretos y las notas, y si falta algo para y lo dice |
-| Actualizador | `apps/desktop/src-tauri/src/updates.rs` ([ADR 0018](../adr/0018-actualizaciones.md)) | Solo va en las compilaciones de las Releases. Falta la clave pública |
-| Configuración del actualizador | `apps/desktop/src-tauri/tauri.updater.conf.json` | Con `PEGA_AQUI_LA_CLAVE_PUBLICA` |
+| Workflow de Releases | `.github/workflows/release.yml` | Listo. Se lanza al subir una etiqueta `v*`. Antes de compilar comprueba que están la clave, los secretos y las notas, y si falta algo para y lo dice |
+| Actualizador | `apps/desktop/src-tauri/src/updates.rs` ([ADR 0018](../adr/0018-actualizaciones.md)) | Solo va en las compilaciones de las Releases. Con la clave pública |
+| Configuración del actualizador | `apps/desktop/src-tauri/tauri.updater.conf.json` | Con la clave pública (`1AE49F71D00F5175`) |
 | Notas de la versión | `docs/publicacion/notas/v1.0.0.md` | Escritas; revísalas |
 
 ## 0. Antes (días antes)
@@ -16,7 +18,7 @@ Todo lo de publicar está **preparado e inactivo**. Nada sale hasta que hagas es
 - [ ] Revisa y fusiona el PR del README.
 - [ ] Haz la prueba en Windows Sandbox y la prueba con una persona ([prueba-instalacion.md](../prueba-instalacion.md)) con la última versión candidata.
 
-## 1. Subir la versión a 1.0.0 (Claude)
+## 1. Subir la versión a 1.0.0 (Claude) — hecho
 
 En una rama y un PR, como siempre: `1.0.0-rc.N` → `1.0.0` en:
 - `Cargo.toml` (workspace) y `Cargo.lock`;
@@ -25,7 +27,7 @@ En una rama y un PR, como siempre: `1.0.0-rc.N` → `1.0.0` en:
 
 La etiqueta del paso 7 tiene que ser `v` + esa versión; si no coinciden, el workflow para. Sin guion (`1.0.0`, no `1.0.0-rc.5`) la Release sale como versión estable y el actualizador la ofrece.
 
-## 2. Generar la clave de firma (tú, una vez en la vida del proyecto)
+## 2. Generar la clave de firma (tú, una vez en la vida del proyecto) — hecho
 
 Las actualizaciones van firmadas: Sift solo instala una versión nueva si la firma encaja con la clave pública que lleva dentro. **La clave privada no la ve nadie más, tampoco Claude.**
 
@@ -51,7 +53,7 @@ Dónde va cada parte:
 
 **Nunca** subas `sift.key` al repo, ni la pegues en un chat, un issue o un PR. `.tauri\` está en tu carpeta de usuario, fuera del repo.
 
-## 3. Guardar la clave en GitHub (tú)
+## 3. Guardar la clave en GitHub (tú) — hecho
 
 En GitHub: **Sift → Settings → Secrets and variables → Actions → New repository secret**. Crea dos:
 
@@ -62,7 +64,7 @@ En GitHub: **Sift → Settings → Secrets and variables → Actions → New rep
 
 Hazlo en la web, con tu cuenta: el token de Claude solo tiene acceso al código y no puede leer ni escribir secretos (está bien que sea así). Después, vacía el portapapeles: `Set-Clipboard -Value $null`.
 
-## 4. Poner la clave pública (Claude)
+## 4. Poner la clave pública (Claude) — hecho
 
 Pásale a Claude el contenido de `sift.key.pub` (es pública) o pégalo tú en `pubkey` de `apps/desktop/src-tauri/tauri.updater.conf.json`, en lugar de `PEGA_AQUI_LA_CLAVE_PUBLICA…`. Va en un PR, con su CI.
 

@@ -9,12 +9,11 @@ name: Release
 #   - las notas de `docs/publicacion/notas/v<versión>.md`.
 # La Release se queda en borrador hasta que Darío Morales Riega la revisa y pulsa «Publish release».
 #
-# LISTO PERO INACTIVO hasta el día de publicar (pasos en docs/publicacion/pasos.md):
-#   - Nadie ha subido todavía una etiqueta `v*`.
-#   - Faltan los secretos TAURI_SIGNING_PRIVATE_KEY y TAURI_SIGNING_PRIVATE_KEY_PASSWORD y la
-#     clave pública en `tauri.updater.conf.json`. Sin ellos, el primer paso para y dice qué
-#     falta, antes de compilar nada.
-#   - Con el repo privado no hay minutos de Actions. Con el repo público, son gratis.
+# LISTO (2026-11-24): versión 1.0.0, clave pública en `tauri.updater.conf.json` y los secretos
+# TAURI_SIGNING_PRIVATE_KEY y TAURI_SIGNING_PRIVATE_KEY_PASSWORD creados en GitHub. Solo falta
+# hacer público el repo (con el repo privado no hay minutos de Actions; con el público, son
+# gratis) y subir la etiqueta `v1.0.0` (pasos en docs/publicacion/pasos.md). Si falta algo, el
+# primer paso para y dice qué, antes de compilar nada.
 on:
   push:
     tags: ["v*"]
