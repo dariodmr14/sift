@@ -20,7 +20,7 @@ Lo demás viene con Windows:
 - Los `api-ms-win-crt-*` son el CRT universal (UCRT), de serie desde Windows 10.
 - El ejecutable no pide `vcruntime140.dll` directamente porque Tauri enlaza esa parte en estático.
 - `DirectML.dll`, `d3d12.dll` y `dxgi.dll`: los binarios de ONNX Runtime para Windows siempre vienen con DirectML (la aceleración por GPU). Estas DLL vienen con Windows 10 desde la 1903 (mayo de 2019), y la `DirectML.dll` del sistema exporta lo que se importa (`DMLCreateDevice1`). Sift no las usa: todo va por la CPU.
-- **WebView2.** Viene con Windows 11. En Windows 10 suele llegar con las actualizaciones de Edge, pero puede faltar. Si falta, el instalador de Tauri (modo `downloadBootstrapper`, el de por defecto) lo descarga e instala para el usuario, sin pedir permisos de administrador. Para eso necesita internet en ese momento.
+- **WebView2.** Viene con Windows 11. En Windows 10 suele llegar con las actualizaciones de Edge, pero puede faltar (el Sandbox no lo trae). Se resuelve aparte, en el [ADR 0021](0021-webview2.md).
 
 ## Decisión
 

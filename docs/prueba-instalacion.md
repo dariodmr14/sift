@@ -42,7 +42,8 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 |---|---|---|
 | A1 | Doble clic en `Sift_…_x64-setup.exe` | SmartScreen avisa de que no está firmado: «Más información» → «Ejecutar de todas formas». **No** pide permisos de administrador |
 | A2 | El asistente | En español, con la imagen del tamiz a la izquierda y «Te damos la bienvenida a Sift». En las páginas de dentro, el tamiz arriba a la derecha |
-| A3 | Terminar con «Abrir Sift» marcado | Sift se abre y sale la **introducción** (paso 1 de 5), con su ilustración. **No** sale «La ejecución de código no puede continuar porque no se encontró MSVCP140.dll» (ni otra DLL): ver la nota de abajo |
+| A2b | La página «Instalando» (pulsa «Ver detalles») | Sale «Instalando WebView2…» y después «WebView2 1xx.x.xxxx.xx». En un PC que ya lo tiene, solo la segunda línea |
+| A3 | Terminar con «Abrir Sift» marcado | Sift se abre y sale la **introducción** (paso 1 de 5), con su ilustración. **No** sale «La ejecución de código no puede continuar porque no se encontró MSVCP140.dll» (ni otra DLL) ni «Could not find the WebView2 Runtime»: ver la nota de abajo |
 | A4 | Inicio | Sift en el menú Inicio con el icono del tamiz. En la bandeja, el tamiz en blanco |
 | A5 | Pulsar **Alt+Espacio** (haz clic antes dentro del Sandbox) | Se abre la barra y la introducción marca ✓ |
 | A6 | «Elegir otra carpeta…» → Escritorio → **Datos de prueba** | Mientras lee, el tamiz se mueve junto a «Leyendo…»; acaba en «Al día · 12 archivos» |
@@ -52,7 +53,7 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 
 **Lo que solo se ve en un Windows limpio (A1 y A3).** En tu PC, Visual Studio deja en `System32` cosas que un Windows recién instalado no tiene:
 - **El runtime de Visual C++** (`msvcp140.dll`, `msvcp140_1.dll`, `vcruntime140.dll` y `vcruntime140_1.dll`). El instalador 1.0.0 no lo llevaba y Sift no arrancaba en el Sandbox. Ahora va junto a `sift-desktop.exe` ([ADR 0020](adr/0020-runtime-de-visual-cpp.md)), y `scripts/comprobar-instalador.ps1` (en la CI local y en el workflow de Release) falla si falta. Si aun así sale un «no se encontró … .dll», apunta el nombre exacto: es una DLL que la comprobación no conoce.
-- **WebView2** (el motor que dibuja la interfaz). Viene con Windows 11, y en Windows 10 casi siempre llega con Edge. Si falta, el instalador lo descarga, así que el Sandbox necesita internet (lo tiene por defecto). Sin internet, Sift se instalaría pero no se abriría.
+- **WebView2** (el motor que dibuja la interfaz). Viene con Windows 11, pero el Sandbox no lo trae, y algunos Windows 10 reales tampoco. El instalador 1.0.0 lo daba por instalado sin estarlo, y Sift fallaba al abrir con «Could not find the WebView2 Runtime». Ahora el instalador lleva el de Microsoft y comprueba que queda instalado ([ADR 0021](adr/0021-webview2.md)). Para eso necesita internet (el Sandbox lo tiene por defecto). Sin internet, avisa en español y no instala Sift: es la prueba E.
 
 ### B. Uso
 
@@ -80,6 +81,16 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 |---|---|---|
 | D1 | Con Sift instalado y con datos, volver a ejecutar el instalador | «Ya está instalado» → Siguiente → termina. Tus carpetas, Espacios y ajustes siguen ahí |
 | D2 | Configuración de Windows → Aplicaciones → Sift → Desinstalar | Se va del menú Inicio y de la bandeja, y la carpeta de instalación (`%LOCALAPPDATA%\Sift`) se queda vacía, también sin las DLL de Visual C++. Sin marcar «Eliminar los datos de aplicación», los datos se quedan en `%APPDATA%\dev.sift.app` |
+
+### E. Sin WebView2 y sin internet
+
+Ábrelo con `powershell -ExecutionPolicy Bypass -File scripts/sandbox.ps1 -SinRed`: un Sandbox sin internet y, por tanto, sin poder descargar WebView2.
+
+| # | Paso | Qué tiene que pasar |
+|---|---|---|
+| E1 | Ejecutar el instalador y pulsar Instalar | Un aviso en español: «Sift necesita WebView2… no se ha podido instalar (¿falta conexión a internet?)», con el enlace oficial de Microsoft y «¿Abrir la página ahora?». Sale **una sola vez** |
+| E2 | Responder «No» | El instalador para con «Falta WebView2: no se ha instalado Sift» o el mensaje de WebView2 de Tauri. Sift **no** aparece en el menú Inicio ni en `%LOCALAPPDATA%\Sift` |
+| E3 | Repetir y responder «Sí» | Se intenta abrir el enlace en el navegador (sin internet no cargará, pero se tiene que intentar) |
 
 ---
 

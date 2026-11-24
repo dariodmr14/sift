@@ -35,7 +35,7 @@ Pulsas `Alt+Espacio` desde cualquier app, escribes lo que buscas y Enter hace el
 4. Al terminar se abre una bienvenida: elige las carpetas donde quieres buscar y crea tu primer Espacio. Antes de descargar el modelo de la búsqueda por significado (unos 135 MB, una sola vez), te pide permiso.
 5. Desde entonces, `Alt+Espacio` abre la barra. El atajo se puede cambiar en Ajustes.
 
-**Requisitos:** Windows 10 u 11 de 64 bits. Sift usa WebView2, que ya viene con los dos.
+**Requisitos:** Windows 10 u 11 de 64 bits. Sift usa WebView2, que viene con Windows 11 y casi siempre con Windows 10. Si falta, el instalador lo instala (necesita internet en ese momento).
 
 **Actualizaciones:** al arrancar, Sift mira si hay una versión nueva. Si la hay, **pregunta siempre** antes de descargarla e instalarla, y solo la instala si su firma es la de Sift. Se puede desactivar en Ajustes → General, «Buscar actualizaciones al arrancar».
 
