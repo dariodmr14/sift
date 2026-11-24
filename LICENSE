@@ -1,4 +1,4 @@
-Copyright (c) 2026 Darío. Todos los derechos reservados.
+Copyright (c) 2026 Darío Morales Riega. Todos los derechos reservados.
 
 Este repositorio es público para que se pueda ver y estudiar, pero no es software
 libre ni de código abierto. Sin permiso escrito del autor no se concede ningún
@@ -15,9 +15,15 @@ Lo que sí se puede hacer:
 Los componentes de terceros que Sift incluye o descarga (dependencias, PDFium, el
 modelo de embeddings y otros) conservan sus propias licencias.
 
+Sin garantías: el software se ofrece «tal cual», sin garantía de ningún tipo, ni
+expresa ni implícita, incluidas las de comerciabilidad, idoneidad para un fin
+concreto y no infracción. En la medida en que lo permita la ley, el autor no será
+responsable de ninguna reclamación, daño u otra responsabilidad que surja del uso
+del software o de no poder usarlo, incluida la pérdida de datos.
+
 ---
 
-Copyright (c) 2026 Darío. All rights reserved.
+Copyright (c) 2026 Darío Morales Riega. All rights reserved.
 
 This repository is public so that it can be read and studied, but it is not free or
 open-source software. No right is granted to copy, modify, distribute, sublicense or
@@ -30,3 +36,9 @@ public repositories (view and fork within GitHub), with no further rights.
 
 Third-party components that Sift includes or downloads (dependencies, PDFium, the
 embedding model and others) keep their own licenses.
+
+No warranty: the software is provided "as is", without warranty of any kind, express
+or implied, including the warranties of merchantability, fitness for a particular
+purpose and non-infringement. To the extent permitted by law, the author shall not be
+liable for any claim, damages or other liability arising from the use of, or the
+inability to use, the software, including loss of data.

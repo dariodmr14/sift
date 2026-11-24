@@ -7,7 +7,7 @@ name: Release
 #   - el `latest.json` que lee el actualizador,
 #   - `SHA256SUMS.txt` con la huella del instalador,
 #   - las notas de `docs/publicacion/notas/v<versión>.md`.
-# La Release se queda en borrador hasta que Darío la revisa y pulsa «Publish release».
+# La Release se queda en borrador hasta que Darío Morales Riega la revisa y pulsa «Publish release».
 #
 # LISTO (2026-11-24): versión 1.0.0, clave pública en `tauri.updater.conf.json` y los secretos
 # TAURI_SIGNING_PRIVATE_KEY y TAURI_SIGNING_PRIVATE_KEY_PASSWORD creados en GitHub. Solo falta

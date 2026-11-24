@@ -11,7 +11,7 @@ rust-version = "1.99"
 # nombrar una licencia que no está en su lista.
 license = "LicenseRef-AllRightsReserved"
 repository = "https://github.com/dariodmr14/Sift"
-authors = ["Darío"]
+authors = ["Darío Morales Riega"]
 
 # Versiones de dependencias en un solo sitio. Los crates las usan con `dep.workspace = true`.
 [workspace.dependencies]
