@@ -53,35 +53,28 @@ Sift funciona entero en tu PC. Tus archivos, el índice y lo que buscas no salen
 
 ## Cifras
 
-Medidas en Windows 10 con la versión de release. El detalle, con cómo se midió cada cosa, está en la [auditoría de la 1.0](docs/auditoria-1.0.md).
+Son las de la [auditoría de la 1.0](docs/auditoria-1.0.md) (noviembre de 2026): Windows 10, una compilación optimizada como la de release y carpetas de archivos inventados. Allí está cómo se midió cada cosa.
 
 | Qué | Objetivo | Resultado |
 |---|---|---|
-| Del atajo a ver la barra (p50 / p95) | < 100 ms | 37 ms / 45 ms |
 | Buscar, con **100 000 archivos** inventados (322 639 fragmentos), p95 | < 50 ms | 14,9 ms |
 | Buscar mientras prepara la búsqueda por significado, peor p95 | < 50 ms | 37 ms |
 | Memoria de Sift en reposo | < 100 MB | 55 MB, más ~340 MB de WebView2, el motor web de Windows que usa la ventana |
 | 3 horas seguidas buscando, abriendo Espacios y cambiando archivos | sin fugas ni errores | 0 errores; la memoria no crece |
 | Cierres bruscos a mitad de indexado | sin perder nada | Sigue donde se quedó |
 
-Calidad, con 34 búsquedas reales sobre una carpeta de 12 871 archivos de una carrera de informática ([`eval/`](eval/README.md)):
-
-| Forma de buscar | Acierto en los 10 primeros (recall@10) | Lo arriba que sale lo primero que vale (MRR) |
-|---|---|---|
-| Solo por palabras | 0,62 | 0,53 |
-| Solo por significado | 0,58 | 0,46 |
-| **Sift (las dos combinadas)** | **0,75** | **0,66** |
+Cuánto acierta cada forma de buscar se mide con [`eval/`](eval/README.md), 34 búsquedas reales con sus resultados esperados.
 
 ## Cómo se ha construido
 
 Sift lo he ideado, diseñado y dirigido yo; la mayor parte del código la ha escrito Claude Code (el asistente de programación de Anthropic) siguiendo mi plan. El reparto ha sido este:
 
 - **Lo que he hecho yo:** la idea y para qué sirve la app; el plan por fases con lo que tenía que cumplir cada una; las prioridades y las decisiones de producto y de diseño, eligiendo entre las opciones que salían; revisar y entender cada cambio antes de aceptarlo; y usar Sift a diario para encontrar lo que fallaba o sobraba ([FEEDBACK.md](FEEDBACK.md)).
-- **En lo que me ha apoyado Claude:** ayudarme con el código y pasar los tests a partir de ese plan, proponer alternativas con sus pros y contras, medir (benchmarks y la evaluación de `eval/`) y dejar por escrito las decisiones en los [ADR](docs/adr/).
+- **Lo que ha hecho Claude:** escribir la mayor parte del código y de los tests a partir de ese plan, proponer alternativas con sus pros y contras, medir (benchmarks y la evaluación de `eval/`) y dejar por escrito las decisiones en los [ADR](docs/adr/).
 
 Cada cambio ha ido en su rama y su PR, con la CI local en verde y con mi visto bueno antes de fusionarse.
 
-Por eso Claude aparece en GitHub entre quienes han contribuido al repositorio: parte del código, los primeros pull requests y la puesta en marcha de GitHub (ramas, PR y CI) los hice con Claude Code, que firmaba los commits como coautor. GitHub conserva esa firma en los PR ya fusionados y no se puede quitar.
+Por eso Claude aparece en GitHub entre quienes han contribuido al repositorio: en los primeros pull requests, Claude Code firmaba los commits como coautor, y GitHub conserva esa firma en los PR ya fusionados.
 
 ### Por dentro
 

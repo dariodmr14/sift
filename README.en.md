@@ -55,35 +55,28 @@ Sift runs entirely on your PC. Your files, the index and what you search for nev
 
 ## Numbers
 
-Measured on Windows 10 with the release build. The details, and how each number was measured, are in the [1.0 audit](docs/auditoria-1.0.md) (in Spanish).
+These come from the [1.0 audit](docs/auditoria-1.0.md) (November 2026, in Spanish): Windows 10, an optimized build like the release one and folders of generated files. It explains how each number was measured.
 
 | What | Target | Result |
 |---|---|---|
-| Shortcut to visible bar (p50 / p95) | < 100 ms | 37 ms / 45 ms |
 | Search with **100,000** generated files (322,639 passages), p95 | < 50 ms | 14.9 ms |
 | Search while preparing search by meaning, worst p95 | < 50 ms | 37 ms |
 | Sift's memory when idle | < 100 MB | 55 MB, plus ~340 MB for WebView2, the Windows web engine behind the window |
 | 3 hours in a row searching, opening Spaces and changing files | no leaks or errors | 0 errors; memory does not grow |
 | Hard kills halfway through indexing | nothing lost | Picks up where it left off |
 
-Quality, with 34 real searches over a folder of 12,871 files from a computer science degree ([`eval/`](eval/README.md)):
-
-| How it searches | Hits in the top 10 (recall@10) | How high the first good result is (MRR) |
-|---|---|---|
-| Words only | 0.62 | 0.53 |
-| Meaning only | 0.58 | 0.46 |
-| **Sift (both combined)** | **0.75** | **0.66** |
+How well each way of searching finds things is measured with [`eval/`](eval/README.md): 34 real searches with their expected results.
 
 ## How it was built
 
 I came up with Sift, designed it and directed it; most of the code was written by Claude Code (Anthropic's coding assistant) following my plan. This is how the work was split:
 
 - **What I did:** the idea and what the app is for; the phased plan with what each phase had to deliver; the priorities and the product and design decisions, choosing among the options that came up; reviewing and understanding every change before accepting it; and using Sift every day to find what was broken or unnecessary ([FEEDBACK.md](FEEDBACK.md)).
-- **Where Claude supported me:** helping me with the code and getting the tests passing from that plan, proposing alternatives with their pros and cons, measuring (benchmarks and the `eval/` evaluation) and writing the decisions down in the [ADRs](docs/adr/).
+- **What Claude did:** writing most of the code and the tests from that plan, proposing alternatives with their pros and cons, measuring (benchmarks and the `eval/` evaluation) and writing the decisions down in the [ADRs](docs/adr/).
 
 Every change went through its own branch and PR, with the local CI green and my approval before merging.
 
-That is why Claude shows up on GitHub among the repository's contributors: part of the code, the first pull requests and setting up GitHub (branches, PRs and CI) were done with Claude Code, which signed the commits as co-author. GitHub keeps that signature on the merged PRs and it cannot be removed.
+That is why Claude shows up on GitHub among the repository's contributors: in the first pull requests, Claude Code signed the commits as co-author, and GitHub keeps that signature on the merged PRs.
 
 ### Under the hood
 
