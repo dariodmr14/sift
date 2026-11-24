@@ -70,7 +70,7 @@ describe("Welcome (Ajustes → Primeros pasos)", () => {
     const user = userEvent.setup();
     render(<Welcome />);
     await user.click(
-      await screen.findByRole("button", { name: "Descargar (120 MB)" }),
+      await screen.findByRole("button", { name: "Descargar (135 MB)" }),
     );
     expect(commands.allowModelDownload).toHaveBeenCalledTimes(1);
 

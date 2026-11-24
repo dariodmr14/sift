@@ -42,7 +42,7 @@ pub struct IndexingSettings {
     /// Sin «búsqueda inteligente» (por significado): ni se descarga el modelo ni se
     /// calculan vectores. Por defecto está activada.
     pub disable_smart_search: bool,
-    /// El usuario ha dicho que sí a descargar el modelo (unos 120 MB). Sin esto nunca se
+    /// El usuario ha dicho que sí a descargar el modelo (unos 135 MB). Sin esto nunca se
     /// descarga; si ya está en disco, se usa igual.
     pub model_download_allowed: bool,
 }

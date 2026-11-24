@@ -135,4 +135,11 @@ mod tests {
         }
         assert_eq!(model("no-existe"), None);
     }
+
+    /// La cifra que se enseña antes de que Rust la diga (`FALLBACK_MB` en
+    /// `apps/desktop/src/settings/useWelcome.ts`) y la de los README tienen que ser esta.
+    #[test]
+    fn the_default_model_is_about_135_mb() {
+        assert_eq!(MODELS[0].download_bytes() / 1_000_000, 135);
+    }
 }
