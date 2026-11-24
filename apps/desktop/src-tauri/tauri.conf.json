@@ -53,6 +53,10 @@
       "vcruntime/vcruntime140_1.dll": "vcruntime140_1.dll"
     },
     "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper",
+        "silent": true
+      },
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "sidebarImage": "installer/sidebar.bmp",
