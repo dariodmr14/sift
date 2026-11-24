@@ -99,6 +99,7 @@ Subir la etiqueta lanza el workflow **Release**.
 GitHub → **Actions → Release**. Tarda unos 20–30 minutos.
 
 - Si para en **«Comprobar que se puede publicar»**, el error dice qué falta: un secreto, la clave pública, las notas o que la etiqueta no coincide con la versión. Arréglalo, borra la etiqueta (paso 10) y vuelve al paso 7.
+- Si para en **«Comprobar el instalador»**, al instalador le falta algo para arrancar en un Windows limpio (el runtime de Visual C++ o PDFium; [ADR 0020](../adr/0020-runtime-de-visual-cpp.md)). La Release se queda en borrador a medias: bórrala (paso 10) y pásale el registro a Claude.
 - Si falla más adelante, pásale el registro a Claude.
 
 ## 9. Comprobar la Release y publicarla (tú)

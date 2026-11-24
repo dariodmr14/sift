@@ -42,13 +42,17 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 |---|---|---|
 | A1 | Doble clic en `Sift_…_x64-setup.exe` | SmartScreen avisa de que no está firmado: «Más información» → «Ejecutar de todas formas». **No** pide permisos de administrador |
 | A2 | El asistente | En español, con la imagen del tamiz a la izquierda y «Te damos la bienvenida a Sift». En las páginas de dentro, el tamiz arriba a la derecha |
-| A3 | Terminar con «Abrir Sift» marcado | Sift se abre y sale la **introducción** (paso 1 de 5), con su ilustración |
+| A3 | Terminar con «Abrir Sift» marcado | Sift se abre y sale la **introducción** (paso 1 de 5), con su ilustración. **No** sale «La ejecución de código no puede continuar porque no se encontró MSVCP140.dll» (ni otra DLL): ver la nota de abajo |
 | A4 | Inicio | Sift en el menú Inicio con el icono del tamiz. En la bandeja, el tamiz en blanco |
 | A5 | Pulsar **Alt+Espacio** (haz clic antes dentro del Sandbox) | Se abre la barra y la introducción marca ✓ |
 | A6 | «Elegir otra carpeta…» → Escritorio → **Datos de prueba** | Mientras lee, el tamiz se mueve junto a «Leyendo…»; acaba en «Al día · 12 archivos» |
 | A7 | En el paso 3, buscar «pago» | Salen `contrato-servicios.pdf` (con «Pág. 1»), `presupuesto.txt` y `notas-reunion-cliente.md` |
 | A8 | Búsqueda inteligente → «Descargar» | El tamiz y «Descargando X de 135 MB»; acaba en «Lista». También vale «Ahora no» |
 | A9 | Crear el primer Espacio y «Empezar» | Se cierra la ventana y sale la barra |
+
+**Lo que solo se ve en un Windows limpio (A1 y A3).** En tu PC, Visual Studio deja en `System32` cosas que un Windows recién instalado no tiene:
+- **El runtime de Visual C++** (`msvcp140.dll`, `msvcp140_1.dll`, `vcruntime140.dll` y `vcruntime140_1.dll`). El instalador 1.0.0 no lo llevaba y Sift no arrancaba en el Sandbox. Ahora va junto a `sift-desktop.exe` ([ADR 0020](adr/0020-runtime-de-visual-cpp.md)), y `scripts/comprobar-instalador.ps1` (en la CI local y en el workflow de Release) falla si falta. Si aun así sale un «no se encontró … .dll», apunta el nombre exacto: es una DLL que la comprobación no conoce.
+- **WebView2** (el motor que dibuja la interfaz). Viene con Windows 11, y en Windows 10 casi siempre llega con Edge. Si falta, el instalador lo descarga, así que el Sandbox necesita internet (lo tiene por defecto). Sin internet, Sift se instalaría pero no se abriría.
 
 ### B. Uso
 
@@ -75,7 +79,7 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 | # | Paso | Qué tiene que pasar |
 |---|---|---|
 | D1 | Con Sift instalado y con datos, volver a ejecutar el instalador | «Ya está instalado» → Siguiente → termina. Tus carpetas, Espacios y ajustes siguen ahí |
-| D2 | Configuración de Windows → Aplicaciones → Sift → Desinstalar | Se va del menú Inicio y de la bandeja. Sin marcar «Eliminar los datos de aplicación», los datos se quedan en `%APPDATA%\dev.sift.app` |
+| D2 | Configuración de Windows → Aplicaciones → Sift → Desinstalar | Se va del menú Inicio y de la bandeja, y la carpeta de instalación (`%LOCALAPPDATA%\Sift`) se queda vacía, también sin las DLL de Visual C++. Sin marcar «Eliminar los datos de aplicación», los datos se quedan en `%APPDATA%\dev.sift.app` |
 
 ---
 
