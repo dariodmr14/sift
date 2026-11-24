@@ -1,0 +1,49 @@
+{
+  "startedAt": "2026-11-20T19:39:16.562Z",
+  "odd": {
+    "seconds": 6,
+    "peakMemory": {
+      "siftWorkingMb": 43,
+      "webviewMb": 318
+    },
+    "files": 9,
+    "error": null,
+    "unread": [
+      {
+        "kind": "damaged",
+        "count": 3,
+        "examples": [
+          "<scratchpad>\\aguante\\raros\\falso.docx",
+          "<scratchpad>\\aguante\\raros\\truncado.pdf",
+          "<scratchpad>\\aguante\\raros\\corrupto.pdf"
+        ]
+      },
+      {
+        "kind": "tooLarge",
+        "count": 1,
+        "examples": [
+          "<scratchpad>\\aguante\\raros\\enorme.txt"
+        ]
+      },
+      {
+        "kind": "unsupported",
+        "count": 1,
+        "examples": [
+          "<scratchpad>\\aguante\\raros\\binario.txt"
+        ]
+      }
+    ],
+    "searchHits": [
+      "nota-profunda.md",
+      "ñandú café — notas (copia) #1 😀.md"
+    ],
+    "deepFound": true,
+    "memoryAfter": {
+      "siftWorkingMb": 43,
+      "siftPrivateMb": 17,
+      "webviewMb": 318
+    }
+  },
+  "devDataRestored": true,
+  "finishedAt": "2026-11-20T19:39:28.508Z"
+}

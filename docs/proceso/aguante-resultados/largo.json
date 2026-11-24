@@ -1,0 +1,1766 @@
+{
+  "folder": "<scratchpad>\\aguante\\largo",
+  "hours": 3,
+  "startedAt": "2026-11-20T19:40:12.285Z",
+  "samples": [
+    {
+      "min": 1,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 28,
+      "webviewMb": 344,
+      "searches": 21,
+      "spaces": 1,
+      "indexing": false,
+      "p95": 3
+    },
+    {
+      "min": 2,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 27,
+      "webviewMb": 349,
+      "searches": 41,
+      "spaces": 2,
+      "indexing": false,
+      "p95": 6.9
+    },
+    {
+      "min": 3,
+      "siftWorkingMb": 59,
+      "siftPrivateMb": 28,
+      "webviewMb": 348,
+      "searches": 61,
+      "spaces": 3,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 4,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 28,
+      "webviewMb": 350,
+      "searches": 81,
+      "spaces": 4,
+      "indexing": false,
+      "p95": 12.3
+    },
+    {
+      "min": 5,
+      "siftWorkingMb": 60,
+      "siftPrivateMb": 28,
+      "webviewMb": 349,
+      "searches": 101,
+      "spaces": 5,
+      "indexing": false,
+      "p95": 12.3
+    },
+    {
+      "min": 6,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 28,
+      "webviewMb": 351,
+      "searches": 121,
+      "spaces": 6,
+      "indexing": false,
+      "p95": 13.1
+    },
+    {
+      "min": 7,
+      "siftWorkingMb": 60,
+      "siftPrivateMb": 28,
+      "webviewMb": 350,
+      "searches": 141,
+      "spaces": 7,
+      "indexing": false,
+      "p95": 13.7
+    },
+    {
+      "min": 8,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 26,
+      "webviewMb": 349,
+      "searches": 161,
+      "spaces": 8,
+      "indexing": false,
+      "p95": 13.1
+    },
+    {
+      "min": 9,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 27,
+      "webviewMb": 350,
+      "searches": 181,
+      "spaces": 9,
+      "indexing": false,
+      "p95": 13.1
+    },
+    {
+      "min": 10,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 28,
+      "webviewMb": 350,
+      "searches": 201,
+      "spaces": 10,
+      "indexing": false,
+      "p95": 13.1
+    },
+    {
+      "min": 11,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 28,
+      "webviewMb": 352,
+      "searches": 221,
+      "spaces": 11,
+      "indexing": false,
+      "p95": 12.9
+    },
+    {
+      "min": 12,
+      "siftWorkingMb": 55,
+      "siftPrivateMb": 25,
+      "webviewMb": 351,
+      "searches": 241,
+      "spaces": 12,
+      "indexing": false,
+      "p95": 12.9
+    },
+    {
+      "min": 13,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 27,
+      "webviewMb": 350,
+      "searches": 261,
+      "spaces": 13,
+      "indexing": false,
+      "p95": 13.3
+    },
+    {
+      "min": 14,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 28,
+      "webviewMb": 349,
+      "searches": 281,
+      "spaces": 14,
+      "indexing": false,
+      "p95": 13.3
+    },
+    {
+      "min": 15,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 28,
+      "webviewMb": 350,
+      "searches": 301,
+      "spaces": 15,
+      "indexing": false,
+      "p95": 12.9
+    },
+    {
+      "min": 16,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 349,
+      "searches": 321,
+      "spaces": 16,
+      "indexing": false,
+      "p95": 11.4
+    },
+    {
+      "min": 17,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 28,
+      "webviewMb": 349,
+      "searches": 341,
+      "spaces": 17,
+      "indexing": false,
+      "p95": 10.4
+    },
+    {
+      "min": 18,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 28,
+      "webviewMb": 350,
+      "searches": 361,
+      "spaces": 18,
+      "indexing": false,
+      "p95": 9.4
+    },
+    {
+      "min": 20,
+      "siftWorkingMb": 55,
+      "siftPrivateMb": 26,
+      "webviewMb": 351,
+      "searches": 381,
+      "spaces": 19,
+      "indexing": false,
+      "p95": 9.4
+    },
+    {
+      "min": 21,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 27,
+      "webviewMb": 351,
+      "searches": 401,
+      "spaces": 20,
+      "indexing": false,
+      "p95": 11.1
+    },
+    {
+      "min": 22,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 421,
+      "spaces": 21,
+      "indexing": false,
+      "p95": 11.7
+    },
+    {
+      "min": 23,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 352,
+      "searches": 441,
+      "spaces": 22,
+      "indexing": false,
+      "p95": 11.7
+    },
+    {
+      "min": 24,
+      "siftWorkingMb": 59,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 461,
+      "spaces": 23,
+      "indexing": false,
+      "p95": 11.7
+    },
+    {
+      "min": 25,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 481,
+      "spaces": 24,
+      "indexing": false,
+      "p95": 11.7
+    },
+    {
+      "min": 26,
+      "siftWorkingMb": 59,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 501,
+      "spaces": 25,
+      "indexing": false,
+      "p95": 11.7
+    },
+    {
+      "min": 27,
+      "siftWorkingMb": 55,
+      "siftPrivateMb": 26,
+      "webviewMb": 350,
+      "searches": 521,
+      "spaces": 26,
+      "indexing": false,
+      "p95": 12.2
+    },
+    {
+      "min": 28,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 541,
+      "spaces": 27,
+      "indexing": false,
+      "p95": 12.2
+    },
+    {
+      "min": 29,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 352,
+      "searches": 561,
+      "spaces": 28,
+      "indexing": false,
+      "p95": 12
+    },
+    {
+      "min": 30,
+      "siftWorkingMb": 59,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 581,
+      "spaces": 29,
+      "indexing": false,
+      "p95": 12
+    },
+    {
+      "min": 31,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 601,
+      "spaces": 30,
+      "indexing": false,
+      "p95": 12
+    },
+    {
+      "min": 32,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 26,
+      "webviewMb": 351,
+      "searches": 621,
+      "spaces": 31,
+      "indexing": false,
+      "p95": 10.9
+    },
+    {
+      "min": 33,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 28,
+      "webviewMb": 350,
+      "searches": 641,
+      "spaces": 32,
+      "indexing": false,
+      "p95": 8.1
+    },
+    {
+      "min": 34,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 27,
+      "webviewMb": 351,
+      "searches": 661,
+      "spaces": 33,
+      "indexing": false,
+      "p95": 9.2
+    },
+    {
+      "min": 35,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 681,
+      "spaces": 34,
+      "indexing": false,
+      "p95": 8.5
+    },
+    {
+      "min": 36,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 701,
+      "spaces": 35,
+      "indexing": false,
+      "p95": 10.4
+    },
+    {
+      "min": 37,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 26,
+      "webviewMb": 351,
+      "searches": 721,
+      "spaces": 36,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 38,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 28,
+      "webviewMb": 352,
+      "searches": 741,
+      "spaces": 37,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 39,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 27,
+      "webviewMb": 350,
+      "searches": 761,
+      "spaces": 38,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 40,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 28,
+      "webviewMb": 351,
+      "searches": 781,
+      "spaces": 39,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 41,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 27,
+      "webviewMb": 352,
+      "searches": 801,
+      "spaces": 40,
+      "indexing": false,
+      "p95": 6.8
+    },
+    {
+      "min": 42,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 821,
+      "spaces": 41,
+      "indexing": false,
+      "p95": 5.1
+    },
+    {
+      "min": 43,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 841,
+      "spaces": 42,
+      "indexing": false,
+      "p95": 4.1
+    },
+    {
+      "min": 44,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 28,
+      "webviewMb": 351,
+      "searches": 861,
+      "spaces": 43,
+      "indexing": false,
+      "p95": 3.9
+    },
+    {
+      "min": 45,
+      "siftWorkingMb": 55,
+      "siftPrivateMb": 26,
+      "webviewMb": 351,
+      "searches": 881,
+      "spaces": 44,
+      "indexing": false,
+      "p95": 3.4
+    },
+    {
+      "min": 46,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 901,
+      "spaces": 45,
+      "indexing": false,
+      "p95": 3.2
+    },
+    {
+      "min": 47,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 29,
+      "webviewMb": 352,
+      "searches": 921,
+      "spaces": 46,
+      "indexing": false,
+      "p95": 4.4
+    },
+    {
+      "min": 48,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 28,
+      "webviewMb": 351,
+      "searches": 941,
+      "spaces": 47,
+      "indexing": false,
+      "p95": 6.2
+    },
+    {
+      "min": 49,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 961,
+      "spaces": 48,
+      "indexing": false,
+      "p95": 6.8
+    },
+    {
+      "min": 50,
+      "siftWorkingMb": 54,
+      "siftPrivateMb": 27,
+      "webviewMb": 350,
+      "searches": 981,
+      "spaces": 49,
+      "indexing": false,
+      "p95": 6.8
+    },
+    {
+      "min": 51,
+      "siftWorkingMb": 54,
+      "siftPrivateMb": 27,
+      "webviewMb": 351,
+      "searches": 1001,
+      "spaces": 50,
+      "indexing": false,
+      "p95": 6.8
+    },
+    {
+      "min": 52,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 1021,
+      "spaces": 51,
+      "indexing": false,
+      "p95": 5.9
+    },
+    {
+      "min": 53,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 1041,
+      "spaces": 52,
+      "indexing": false,
+      "p95": 7.6
+    },
+    {
+      "min": 54,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 1061,
+      "spaces": 53,
+      "indexing": false,
+      "p95": 7.6
+    },
+    {
+      "min": 56,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 29,
+      "webviewMb": 350,
+      "searches": 1081,
+      "spaces": 54,
+      "indexing": false,
+      "p95": 8.2
+    },
+    {
+      "min": 57,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 29,
+      "webviewMb": 351,
+      "searches": 1101,
+      "spaces": 55,
+      "indexing": false,
+      "p95": 8.2
+    },
+    {
+      "min": 58,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 29,
+      "webviewMb": 349,
+      "searches": 1121,
+      "spaces": 56,
+      "indexing": false,
+      "p95": 9.9
+    },
+    {
+      "min": 59,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 30,
+      "webviewMb": 352,
+      "searches": 1141,
+      "spaces": 57,
+      "indexing": false,
+      "p95": 8.8
+    },
+    {
+      "min": 60,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 29,
+      "webviewMb": 354,
+      "searches": 1161,
+      "spaces": 58,
+      "indexing": false,
+      "p95": 8.8
+    },
+    {
+      "min": 61,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 29,
+      "webviewMb": 353,
+      "searches": 1181,
+      "spaces": 59,
+      "indexing": false,
+      "p95": 9.9
+    },
+    {
+      "min": 62,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 30,
+      "webviewMb": 354,
+      "searches": 1201,
+      "spaces": 60,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 63,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 30,
+      "webviewMb": 352,
+      "searches": 1221,
+      "spaces": 61,
+      "indexing": false,
+      "p95": 9.2
+    },
+    {
+      "min": 64,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 30,
+      "webviewMb": 352,
+      "searches": 1241,
+      "spaces": 62,
+      "indexing": false,
+      "p95": 9.2
+    },
+    {
+      "min": 65,
+      "siftWorkingMb": 54,
+      "siftPrivateMb": 27,
+      "webviewMb": 354,
+      "searches": 1261,
+      "spaces": 63,
+      "indexing": false,
+      "p95": 9.3
+    },
+    {
+      "min": 66,
+      "siftWorkingMb": 58,
+      "siftPrivateMb": 30,
+      "webviewMb": 353,
+      "searches": 1281,
+      "spaces": 64,
+      "indexing": false,
+      "p95": 7.5
+    },
+    {
+      "min": 67,
+      "siftWorkingMb": 56,
+      "siftPrivateMb": 29,
+      "webviewMb": 352,
+      "searches": 1301,
+      "spaces": 65,
+      "indexing": false,
+      "p95": 7.3
+    },
+    {
+      "min": 68,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 30,
+      "webviewMb": 352,
+      "searches": 1321,
+      "spaces": 66,
+      "indexing": false,
+      "p95": 7.3
+    },
+    {
+      "min": 69,
+      "siftWorkingMb": 57,
+      "siftPrivateMb": 30,
+      "webviewMb": 354,
+      "searches": 1341,
+      "spaces": 67,
+      "indexing": false,
+      "p95": 6.4
+    },
+    {
+      "min": 70,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 1361,
+      "spaces": 68,
+      "indexing": false,
+      "p95": 6
+    },
+    {
+      "min": 71,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 320,
+      "searches": 1381,
+      "spaces": 69,
+      "indexing": false,
+      "p95": 5.5
+    },
+    {
+      "min": 72,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1401,
+      "spaces": 70,
+      "indexing": false,
+      "p95": 4.7
+    },
+    {
+      "min": 73,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 1421,
+      "spaces": 71,
+      "indexing": false,
+      "p95": 5.2
+    },
+    {
+      "min": 74,
+      "siftWorkingMb": 47,
+      "siftPrivateMb": 27,
+      "webviewMb": 320,
+      "searches": 1441,
+      "spaces": 72,
+      "indexing": false,
+      "p95": 5.4
+    },
+    {
+      "min": 75,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 320,
+      "searches": 1461,
+      "spaces": 73,
+      "indexing": false,
+      "p95": 5.7
+    },
+    {
+      "min": 76,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 319,
+      "searches": 1481,
+      "spaces": 74,
+      "indexing": false,
+      "p95": 5.7
+    },
+    {
+      "min": 77,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 319,
+      "searches": 1501,
+      "spaces": 75,
+      "indexing": false,
+      "p95": 5.6
+    },
+    {
+      "min": 78,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 320,
+      "searches": 1521,
+      "spaces": 76,
+      "indexing": false,
+      "p95": 5.6
+    },
+    {
+      "min": 79,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 1541,
+      "spaces": 77,
+      "indexing": false,
+      "p95": 5.2
+    },
+    {
+      "min": 80,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 1561,
+      "spaces": 78,
+      "indexing": false,
+      "p95": 5
+    },
+    {
+      "min": 81,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1581,
+      "spaces": 79,
+      "indexing": false,
+      "p95": 5.7
+    },
+    {
+      "min": 82,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 1601,
+      "spaces": 80,
+      "indexing": false,
+      "p95": 10.7
+    },
+    {
+      "min": 83,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1621,
+      "spaces": 81,
+      "indexing": false,
+      "p95": 10.7
+    },
+    {
+      "min": 84,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1641,
+      "spaces": 82,
+      "indexing": false,
+      "p95": 11.1
+    },
+    {
+      "min": 85,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 1661,
+      "spaces": 83,
+      "indexing": false,
+      "p95": 11.1
+    },
+    {
+      "min": 86,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 1681,
+      "spaces": 84,
+      "indexing": false,
+      "p95": 10.7
+    },
+    {
+      "min": 87,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1701,
+      "spaces": 85,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 88,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 1721,
+      "spaces": 86,
+      "indexing": false,
+      "p95": 9.1
+    },
+    {
+      "min": 89,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 319,
+      "searches": 1741,
+      "spaces": 87,
+      "indexing": false,
+      "p95": 9
+    },
+    {
+      "min": 91,
+      "siftWorkingMb": 48,
+      "siftPrivateMb": 29,
+      "webviewMb": 320,
+      "searches": 1761,
+      "spaces": 88,
+      "indexing": false,
+      "p95": 9
+    },
+    {
+      "min": 92,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 30,
+      "webviewMb": 321,
+      "searches": 1781,
+      "spaces": 89,
+      "indexing": false,
+      "p95": 7.9
+    },
+    {
+      "min": 93,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 320,
+      "searches": 1801,
+      "spaces": 90,
+      "indexing": false,
+      "p95": 7.9
+    },
+    {
+      "min": 94,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1821,
+      "spaces": 91,
+      "indexing": false,
+      "p95": 7.9
+    },
+    {
+      "min": 95,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 1841,
+      "spaces": 92,
+      "indexing": false,
+      "p95": 9.7
+    },
+    {
+      "min": 96,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 1861,
+      "spaces": 93,
+      "indexing": false,
+      "p95": 10.1
+    },
+    {
+      "min": 97,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 1881,
+      "spaces": 94,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 98,
+      "siftWorkingMb": 48,
+      "siftPrivateMb": 29,
+      "webviewMb": 319,
+      "searches": 1901,
+      "spaces": 95,
+      "indexing": false,
+      "p95": 11.8
+    },
+    {
+      "min": 99,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1921,
+      "spaces": 96,
+      "indexing": false,
+      "p95": 11.8
+    },
+    {
+      "min": 100,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 1941,
+      "spaces": 97,
+      "indexing": false,
+      "p95": 11.9
+    },
+    {
+      "min": 101,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 1961,
+      "spaces": 98,
+      "indexing": false,
+      "p95": 12
+    },
+    {
+      "min": 102,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 321,
+      "searches": 1981,
+      "spaces": 99,
+      "indexing": false,
+      "p95": 11.9
+    },
+    {
+      "min": 103,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 2001,
+      "spaces": 100,
+      "indexing": false,
+      "p95": 12
+    },
+    {
+      "min": 104,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 2021,
+      "spaces": 101,
+      "indexing": false,
+      "p95": 11.5
+    },
+    {
+      "min": 105,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 2041,
+      "spaces": 102,
+      "indexing": false,
+      "p95": 12
+    },
+    {
+      "min": 106,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2061,
+      "spaces": 103,
+      "indexing": false,
+      "p95": 9.1
+    },
+    {
+      "min": 107,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 320,
+      "searches": 2081,
+      "spaces": 104,
+      "indexing": false,
+      "p95": 11.2
+    },
+    {
+      "min": 108,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2101,
+      "spaces": 105,
+      "indexing": false,
+      "p95": 11
+    },
+    {
+      "min": 109,
+      "siftWorkingMb": 48,
+      "siftPrivateMb": 27,
+      "webviewMb": 322,
+      "searches": 2121,
+      "spaces": 106,
+      "indexing": false,
+      "p95": 11
+    },
+    {
+      "min": 110,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 321,
+      "searches": 2141,
+      "spaces": 107,
+      "indexing": false,
+      "p95": 9.5
+    },
+    {
+      "min": 111,
+      "siftWorkingMb": 48,
+      "siftPrivateMb": 28,
+      "webviewMb": 321,
+      "searches": 2161,
+      "spaces": 108,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 112,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2181,
+      "spaces": 109,
+      "indexing": false,
+      "p95": 9
+    },
+    {
+      "min": 113,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 321,
+      "searches": 2201,
+      "spaces": 110,
+      "indexing": false,
+      "p95": 9.1
+    },
+    {
+      "min": 114,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 321,
+      "searches": 2221,
+      "spaces": 111,
+      "indexing": false,
+      "p95": 10.4
+    },
+    {
+      "min": 115,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2241,
+      "spaces": 112,
+      "indexing": false,
+      "p95": 11
+    },
+    {
+      "min": 116,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2261,
+      "spaces": 113,
+      "indexing": false,
+      "p95": 11
+    },
+    {
+      "min": 117,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2281,
+      "spaces": 114,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 118,
+      "siftWorkingMb": 47,
+      "siftPrivateMb": 28,
+      "webviewMb": 322,
+      "searches": 2301,
+      "spaces": 115,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 119,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2321,
+      "spaces": 116,
+      "indexing": false,
+      "p95": 10.2
+    },
+    {
+      "min": 120,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 322,
+      "searches": 2341,
+      "spaces": 117,
+      "indexing": false,
+      "p95": 9.2
+    },
+    {
+      "min": 121,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2361,
+      "spaces": 118,
+      "indexing": false,
+      "p95": 9.6
+    },
+    {
+      "min": 122,
+      "siftWorkingMb": 48,
+      "siftPrivateMb": 27,
+      "webviewMb": 322,
+      "searches": 2381,
+      "spaces": 119,
+      "indexing": false,
+      "p95": 10.2
+    },
+    {
+      "min": 123,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2401,
+      "spaces": 120,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 124,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2421,
+      "spaces": 121,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 125,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2441,
+      "spaces": 122,
+      "indexing": false,
+      "p95": 10.8
+    },
+    {
+      "min": 126,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2461,
+      "spaces": 123,
+      "indexing": false,
+      "p95": 9.9
+    },
+    {
+      "min": 128,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2481,
+      "spaces": 124,
+      "indexing": false,
+      "p95": 9.2
+    },
+    {
+      "min": 129,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2501,
+      "spaces": 125,
+      "indexing": false,
+      "p95": 8.4
+    },
+    {
+      "min": 130,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2521,
+      "spaces": 126,
+      "indexing": false,
+      "p95": 9.1
+    },
+    {
+      "min": 131,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2541,
+      "spaces": 127,
+      "indexing": false,
+      "p95": 9.2
+    },
+    {
+      "min": 132,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2561,
+      "spaces": 128,
+      "indexing": false,
+      "p95": 10.5
+    },
+    {
+      "min": 133,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 28,
+      "webviewMb": 322,
+      "searches": 2581,
+      "spaces": 129,
+      "indexing": false,
+      "p95": 10.5
+    },
+    {
+      "min": 134,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 321,
+      "searches": 2601,
+      "spaces": 130,
+      "indexing": false,
+      "p95": 12.1
+    },
+    {
+      "min": 135,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 2621,
+      "spaces": 131,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 136,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 322,
+      "searches": 2641,
+      "spaces": 132,
+      "indexing": false,
+      "p95": 12.2
+    },
+    {
+      "min": 137,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2661,
+      "spaces": 133,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 138,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2681,
+      "spaces": 134,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 139,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2701,
+      "spaces": 135,
+      "indexing": false,
+      "p95": 8.6
+    },
+    {
+      "min": 140,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 321,
+      "searches": 2721,
+      "spaces": 136,
+      "indexing": false,
+      "p95": 8.6
+    },
+    {
+      "min": 141,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2741,
+      "spaces": 137,
+      "indexing": false,
+      "p95": 8.6
+    },
+    {
+      "min": 142,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2761,
+      "spaces": 138,
+      "indexing": false,
+      "p95": 9.7
+    },
+    {
+      "min": 143,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 2781,
+      "spaces": 139,
+      "indexing": false,
+      "p95": 10.3
+    },
+    {
+      "min": 144,
+      "siftWorkingMb": 48,
+      "siftPrivateMb": 28,
+      "webviewMb": 321,
+      "searches": 2801,
+      "spaces": 140,
+      "indexing": false,
+      "p95": 11.8
+    },
+    {
+      "min": 145,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 322,
+      "searches": 2821,
+      "spaces": 141,
+      "indexing": false,
+      "p95": 11.8
+    },
+    {
+      "min": 146,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 2841,
+      "spaces": 142,
+      "indexing": false,
+      "p95": 11.5
+    },
+    {
+      "min": 147,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 2861,
+      "spaces": 143,
+      "indexing": false,
+      "p95": 11.1
+    },
+    {
+      "min": 148,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 2881,
+      "spaces": 144,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 149,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 320,
+      "searches": 2901,
+      "spaces": 145,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 150,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 2921,
+      "spaces": 146,
+      "indexing": false,
+      "p95": 11.8
+    },
+    {
+      "min": 151,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 2941,
+      "spaces": 147,
+      "indexing": false,
+      "p95": 11.5
+    },
+    {
+      "min": 152,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 29,
+      "webviewMb": 319,
+      "searches": 2961,
+      "spaces": 148,
+      "indexing": false,
+      "p95": 11.5
+    },
+    {
+      "min": 153,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 2981,
+      "spaces": 149,
+      "indexing": false,
+      "p95": 11.8
+    },
+    {
+      "min": 154,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 3001,
+      "spaces": 150,
+      "indexing": false,
+      "p95": 11.3
+    },
+    {
+      "min": 155,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3021,
+      "spaces": 151,
+      "indexing": false,
+      "p95": 10.5
+    },
+    {
+      "min": 156,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 3041,
+      "spaces": 152,
+      "indexing": false,
+      "p95": 10.5
+    },
+    {
+      "min": 157,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 321,
+      "searches": 3061,
+      "spaces": 153,
+      "indexing": false,
+      "p95": 11.3
+    },
+    {
+      "min": 158,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 321,
+      "searches": 3081,
+      "spaces": 154,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 159,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 319,
+      "searches": 3101,
+      "spaces": 155,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 160,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3121,
+      "spaces": 156,
+      "indexing": false,
+      "p95": 9.2
+    },
+    {
+      "min": 161,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 3141,
+      "spaces": 157,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 162,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 3161,
+      "spaces": 158,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 163,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3181,
+      "spaces": 159,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 165,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3201,
+      "spaces": 160,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 166,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3221,
+      "spaces": 161,
+      "indexing": false,
+      "p95": 11.5
+    },
+    {
+      "min": 167,
+      "siftWorkingMb": 48,
+      "siftPrivateMb": 28,
+      "webviewMb": 321,
+      "searches": 3241,
+      "spaces": 162,
+      "indexing": false,
+      "p95": 11.5
+    },
+    {
+      "min": 168,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3261,
+      "spaces": 163,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 169,
+      "siftWorkingMb": 49,
+      "siftPrivateMb": 28,
+      "webviewMb": 319,
+      "searches": 3281,
+      "spaces": 164,
+      "indexing": false,
+      "p95": 10.4
+    },
+    {
+      "min": 170,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3301,
+      "spaces": 165,
+      "indexing": false,
+      "p95": 10.2
+    },
+    {
+      "min": 171,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3321,
+      "spaces": 166,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 172,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 3341,
+      "spaces": 167,
+      "indexing": false,
+      "p95": 9.8
+    },
+    {
+      "min": 173,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 3361,
+      "spaces": 168,
+      "indexing": false,
+      "p95": 10.3
+    },
+    {
+      "min": 174,
+      "siftWorkingMb": 52,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3381,
+      "spaces": 169,
+      "indexing": false,
+      "p95": 10.3
+    },
+    {
+      "min": 175,
+      "siftWorkingMb": 52,
+      "siftPrivateMb": 31,
+      "webviewMb": 320,
+      "searches": 3401,
+      "spaces": 170,
+      "indexing": false,
+      "p95": 9.8
+    },
+    {
+      "min": 176,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 3421,
+      "spaces": 171,
+      "indexing": false,
+      "p95": 10.6
+    },
+    {
+      "min": 177,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 3441,
+      "spaces": 172,
+      "indexing": false,
+      "p95": 10.7
+    },
+    {
+      "min": 178,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 31,
+      "webviewMb": 319,
+      "searches": 3461,
+      "spaces": 173,
+      "indexing": false,
+      "p95": 10.1
+    },
+    {
+      "min": 179,
+      "siftWorkingMb": 51,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 3481,
+      "spaces": 174,
+      "indexing": false,
+      "p95": 10
+    },
+    {
+      "min": 180,
+      "siftWorkingMb": 50,
+      "siftPrivateMb": 30,
+      "webviewMb": 320,
+      "searches": 3501,
+      "spaces": 175,
+      "indexing": false,
+      "p95": 10
+    }
+  ],
+  "errors": [],
+  "indexing": 489,
+  "slopeMbPerHour": {
+    "sift": -3.1,
+    "siftPrivate": 1.1,
+    "webview": -14.6
+  },
+  "devDataRestored": true,
+  "finishedAt": "2026-11-20T22:48:28.791Z"
+}
