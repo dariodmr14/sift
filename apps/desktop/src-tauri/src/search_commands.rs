@@ -412,7 +412,7 @@ pub fn finish_welcome(app: AppHandle, open_launcher: bool) -> Result<(), AppErro
     Ok(())
 }
 
-/// El usuario acepta descargar el modelo de búsqueda inteligente (unos 120 MB).
+/// El usuario acepta descargar el modelo de búsqueda inteligente (unos 135 MB).
 #[tauri::command(async)]
 #[specta::specta]
 pub fn allow_model_download(app: AppHandle) -> Result<(), AppError> {

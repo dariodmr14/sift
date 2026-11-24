@@ -7,8 +7,8 @@ import {
   type WelcomeView,
 } from "../bindings";
 
-/** Tamaño aproximado del modelo si Rust aún no lo ha dicho. */
-const FALLBACK_MB = 120;
+/** Tamaño del modelo si Rust aún no lo ha dicho (lo comprueba un test de `sift-embeddings`: `card.rs`). */
+const FALLBACK_MB = 135;
 
 /** Lo que enseña la bienvenida: atajo, carpetas sugeridas y estado del modelo. */
 export function useWelcome() {
