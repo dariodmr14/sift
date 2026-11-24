@@ -4,11 +4,18 @@
 # Uso, desde la raíz del repo, después de generar el instalador (scripts/instalar.ps1 o
 # `npm run tauri build` en apps/desktop):
 #   powershell -ExecutionPolicy Bypass -File scripts/sandbox.ps1
+#   powershell -ExecutionPolicy Bypass -File scripts/sandbox.ps1 -SinRed
+#
+# -SinRed arranca el Sandbox sin internet: así se prueba qué pasa si no se puede instalar
+# WebView2 (el instalador tiene que avisar en español, con el enlace; ADR 0021).
 #
 # Genera la configuración (.wsb) con la ruta de ESTE equipo al vuelo, en la carpeta temporal:
 # así el repo no guarda ninguna ruta personal. La carpeta del instalador entra en el Sandbox
 # en solo lectura, y al arrancar se abre en el Explorador. Al cerrar el Sandbox se borra todo
-# lo que se hizo dentro.
+# lo que se hizo dentro. Solo entra el instalador más reciente (copiado a una carpeta
+# temporal), para no probar sin querer uno antiguo.
+
+param([switch]$SinRed)
 
 $ErrorActionPreference = "Stop"
 
@@ -28,6 +35,10 @@ if (-not $setup) {
     exit 1
 }
 Write-Host "Instalador: $($setup.Name)"
+$only = Join-Path $env:TEMP "sift-sandbox-instalador"
+if (Test-Path $only) { Remove-Item $only -Recurse -Force }
+New-Item -ItemType Directory $only | Out-Null
+Copy-Item $setup.FullName $only
 
 $inside = "C:\Users\WDAGUtilityAccount\Desktop\Instalador de Sift"
 # Los datos de demostración (inventados), para tener algo que buscar: en el Escritorio, para
@@ -39,9 +50,10 @@ $checks = Join-Path $root "scripts\sandbox-pruebas"
 $checksInside = "C:\Users\WDAGUtilityAccount\Desktop\Pruebas de seguridad"
 $wsb = @"
 <Configuration>
+  <Networking>$(if ($SinRed) { "Disable" } else { "Default" })</Networking>
   <MappedFolders>
     <MappedFolder>
-      <HostFolder>$bundle</HostFolder>
+      <HostFolder>$only</HostFolder>
       <SandboxFolder>$inside</SandboxFolder>
       <ReadOnly>true</ReadOnly>
     </MappedFolder>
@@ -65,3 +77,4 @@ $file = Join-Path $env:TEMP "sift-prueba.wsb"
 Set-Content -Path $file -Value $wsb -Encoding UTF8
 Start-Process $file
 Write-Host "Abriendo Windows Sandbox (tarda unos segundos)…"
+if ($SinRed) { Write-Host "Sin internet: el instalador no podrá descargar WebView2 si falta." }
