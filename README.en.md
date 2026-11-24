@@ -4,7 +4,7 @@
 
 **Sift is a launcher and search bar for Windows that finds your files by what they are about, not just by their names, and nothing ever leaves your PC.**
 
-![Sift searching by meaning: "duplicated information" finds the normalization notes](docs/media/sift-en.gif)
+![Sift searching by meaning: "avoid repeating data" finds the normalization notes](docs/media/sift-en.gif)
 
 Press `Alt+Space` from any app, type what you are looking for and Enter does the rest. With a **Space**, a single word opens everything you use for a task: folders, files, websites, apps and commands, each one in its place on the screen.
 
