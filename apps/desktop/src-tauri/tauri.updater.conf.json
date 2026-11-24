@@ -5,7 +5,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "PEGA_AQUI_LA_CLAVE_PUBLICA (ver docs/publicacion/pasos.md, paso 4)",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFBRTQ5RjcxRDAwRjUxNzUKUldSMVVRL1FjWi9rR3NTSzhXYWxQb212Vkd0Umt3d09qM2RvaVZsODJGVEk1SXNhSmMwc1AzNjkK",
       "endpoints": [
         "https://github.com/dariodmr14/Sift/releases/latest/download/latest.json"
       ],
