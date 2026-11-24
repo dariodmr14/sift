@@ -10,6 +10,12 @@ Una vez, para que Sift lea los PDF (baja `pdfium.dll` en una versión fijada y c
 pwsh scripts/fetch-pdfium.ps1
 ```
 
+Y, también una vez, el runtime de Visual C++ que va dentro del instalador (lo copia de tu Visual Studio, sin descargar nada; ver ADR 0020):
+
+```bash
+pwsh scripts/vc-runtime.ps1
+```
+
 ```bash
 cd apps/desktop
 npm install

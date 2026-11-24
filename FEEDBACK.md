@@ -177,3 +177,8 @@ Al terminar: instalador 1.0.0-rc.2 y cómo actualizar el instalado.
 - [x] ✅ **Resuelto** (`fix/rc3`: al arrancar, las referencias antiguas pasan a la pantalla de su mismo sitio o, si no, a la única con ese nombre; el editor aplica la misma regla; tests en Rust y en la UI con este caso: tres acciones guardadas como «Pantalla 1» en x = 1920 pasan a «22EN33»). Sale «Pantalla 1 — 22EN33», «Pantalla 2 — ZOWIE XL LCD (principal)», «Donde esté el ratón» y además «Pantalla 1 (no conectada: se usará la principal)». Es un Espacio guardado antes del cambio de nombres de las pantallas. Al cargar, convertir las referencias antiguas a la pantalla correcta cuando se pueda identificar; «no conectada» solo cuando de verdad no esté. Con test.
 
 Al terminar: instalador 1.0.0-rc.3 y cómo actualizar el instalado.
+
+## 2026-11-24 — Probando el instalador 1.0.0 en Windows Sandbox
+
+### 1. Sift no arranca en un Windows limpio (bloquea la 1.0)
+- [x] ✅ **Resuelto** (`fix/vc-runtime`, ADR 0020: las cuatro DLL del runtime de Visual C++ van junto al ejecutable, y `scripts/comprobar-instalador.ps1` hace fallar la CI local y el workflow de Release si falta alguna o es demasiado antigua). Al abrir Sift: «La ejecución de código no puede continuar porque no se encontró MSVCP140.dll». En el PC de Darío no pasa porque Visual Studio instala ese runtime. Lo pide ONNX Runtime.

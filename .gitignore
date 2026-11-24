@@ -20,6 +20,10 @@ Thumbs.db
 apps/desktop/src-tauri/pdfium/*
 !apps/desktop/src-tauri/pdfium/README.md
 
+# Runtime de Visual C++: se copia con scripts/vc-runtime.ps1 (ver ADR 0020)
+apps/desktop/src-tauri/vcruntime/*
+!apps/desktop/src-tauri/vcruntime/README.md
+
 # Informes de cobertura (npm run coverage)
 coverage/
 

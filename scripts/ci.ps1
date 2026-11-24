@@ -7,7 +7,7 @@
 #
 # Opciones (solo para ir más rápido mientras se trabaja; antes de un merge, sin ninguna):
 #   -SkipInstall   no ejecuta `npm ci` (usa node_modules tal como esté)
-#   -SkipBuild     no compila la app en release (el paso más lento)
+#   -SkipBuild     no compila la app en release ni genera el instalador (el paso más lento)
 #   -E2E           añade la prueba de humo de extremo a extremo (scripts/e2e.mjs): arranca la
 #                  versión de desarrollo y ABRE VENTANAS en la pantalla, así que no va por
 #                  defecto (pruebas en pantalla, con permiso de Darío).
@@ -27,6 +27,8 @@ $env:CARGO_TERM_COLOR = "always"
 $Steps = @(
     @{ Name = "Rust: formato";           Dir = $Root;    Cmd = "cargo"; Args = @("fmt", "--all", "--check") },
     @{ Name = "PDFium (version fijada)"; Dir = $Root;    Cmd = "powershell"; Args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\fetch-pdfium.ps1")) },
+    # Las DLL del runtime de Visual C++ que van en el instalador (ADR 0020).
+    @{ Name = "Runtime de Visual C++";   Dir = $Root;    Cmd = "powershell"; Args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\vc-runtime.ps1")) },
     @{ Name = "Rust: clippy";            Dir = $Root;    Cmd = "cargo"; Args = @("clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings") },
     @{ Name = "Rust: tests";             Dir = $Root;    Cmd = "cargo"; Args = @("test", "--workspace", "--locked") },
     # Fallos de seguridad conocidos en las dependencias (base de RustSec). Falla si hay
@@ -38,7 +40,9 @@ $Steps = @(
     @{ Name = "UI: eslint";              Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "lint") },
     @{ Name = "UI: tsc";                 Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "typecheck") },
     @{ Name = "UI: vitest";              Dir = $Desktop; Cmd = "npm.cmd"; Args = @("test") },
-    @{ Name = "Build de la app";         Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "tauri", "build", "--", "--no-bundle"); Skip = $SkipBuild },
+    # Con el instalador: así se comprueba que lleva todo lo que necesita un Windows limpio.
+    @{ Name = "Build e instalador";      Dir = $Desktop; Cmd = "npm.cmd"; Args = @("run", "tauri", "build"); Skip = $SkipBuild },
+    @{ Name = "Instalador: DLL";         Dir = $Root;    Cmd = "powershell"; Args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\comprobar-instalador.ps1")); Skip = $SkipBuild },
     @{ Name = "E2E (abre ventanas)";     Dir = $Root;    Cmd = "node"; Args = @((Join-Path $Root "scripts\e2e.mjs")); Skip = -not $E2E }
 )
 
