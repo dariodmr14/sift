@@ -29,7 +29,7 @@ $Steps = @(
     @{ Name = "PDFium (version fijada)"; Dir = $Root;    Cmd = "powershell"; Args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\fetch-pdfium.ps1")) },
     # Las DLL del runtime de Visual C++ que van en el instalador (ADR 0020).
     @{ Name = "Runtime de Visual C++";   Dir = $Root;    Cmd = "powershell"; Args = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", (Join-Path $Root "scripts\vc-runtime.ps1")) },
-    @{ Name = "Rust: clippy";           Dir = $Root;    Cmd = "cargo"; Args = @("clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings") },
+    @{ Name = "Rust: clippy";            Dir = $Root;    Cmd = "cargo"; Args = @("clippy", "--workspace", "--all-targets", "--locked", "--", "-D", "warnings") },
     @{ Name = "Rust: tests";             Dir = $Root;    Cmd = "cargo"; Args = @("test", "--workspace", "--locked") },
     # Fallos de seguridad conocidos en las dependencias (base de RustSec). Falla si hay
     # alguna vulnerabilidad; los avisos de «sin mantener» se enseñan, pero no paran.
