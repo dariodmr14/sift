@@ -3,6 +3,7 @@
 mod appearance;
 mod commands;
 mod dev;
+mod glass_support;
 mod hotkey;
 mod indexing;
 mod latency;
@@ -223,6 +224,10 @@ pub fn run() {
             // `pdfium.dll` viaja con la app como recurso (ver ADR 0008).
             let pdfium_dir = app.path().resource_dir().ok().map(|d| d.join("pdfium"));
             app.manage(indexing::Indexing::start(handle, index, pdfium_dir));
+            // El tema y el vidrio elegidos en Ajustes, antes de poner el primer vidrio.
+            let appearance = load_settings(handle).appearance;
+            appearance::set_preference(appearance.theme);
+            materials::set_wanted(!appearance.disable_glass);
             launcher::init_glass(handle);
             tray::create(handle)?;
             updates::init(handle);
@@ -266,6 +271,15 @@ pub fn run() {
                     && let Some(w) = window.app_handle().get_webview_window(window.label())
                 {
                     materials::on_moved(window.app_handle(), &w);
+                }
+                // Al volver a Ajustes: si Windows ya puede (o ya no puede) pintar el vidrio
+                // (ahorro de batería, escritorio remoto…), se cambia y la UI se entera.
+                if let tauri::WindowEvent::Focused(true) = event
+                    && let Some(w) = window.app_handle().get_webview_window(window.label())
+                    && materials::sync(window.app_handle(), &w)
+                {
+                    use tauri_specta::Event;
+                    let _ = commands::AppearanceChanged.emit_to(window.app_handle(), window.label());
                 }
                 // Cerrados los ajustes: si se abrieron desde la barra, la barra vuelve.
                 if let tauri::WindowEvent::Destroyed = event {

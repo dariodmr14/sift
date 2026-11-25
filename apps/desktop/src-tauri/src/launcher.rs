@@ -53,8 +53,10 @@ pub fn window(app: &AppHandle) -> Option<WebviewWindow> {
 /// guarda si funcionó. Si no está disponible, la UI pinta un fondo opaco.
 pub fn init_glass(app: &AppHandle) {
     let theme = appearance::theme();
-    let enabled = !crate::load_settings(app).appearance.disable_glass;
-    let material = window(app).map_or(Material::None, |w| materials::set_glass(app, &w, enabled));
+    let material = window(app).map_or(Material::None, |w| {
+        materials::sync(app, &w);
+        app.state::<Materials>().get(LABEL)
+    });
     let state = app.state::<LauncherState>();
     *state
         .acrylic_theme
@@ -65,11 +67,21 @@ pub fn init_glass(app: &AppHandle) {
         .store(material != Material::None, Ordering::Relaxed);
 }
 
-/// Si el tema de Windows cambió desde la última vez, reaplica el material con el tinte
-/// nuevo. Leer el tema del registro cuesta microsegundos; reaplicar, algo más, por eso
-/// solo se hace cuando cambia.
+/// El tema se acaba de aplicar a mano (`set_theme`): se apunta para no reaplicarlo al
+/// mostrar la barra.
+pub fn theme_applied(app: &AppHandle) {
+    *app.state::<LauncherState>()
+        .acrylic_theme
+        .lock()
+        .unwrap_or_else(|p| p.into_inner()) = Some(appearance::theme());
+}
+
+/// Antes de mostrar la barra: pone o quita el vidrio si Windows ya puede (o ya no puede)
+/// pintarlo, y si el tema cambió desde la última vez, reaplica el material con el tinte
+/// nuevo. Todo cuesta microsegundos salvo reaplicar, que solo se hace cuando cambia.
 fn refresh_acrylic(app: &AppHandle, window: &WebviewWindow) {
     let state = app.state::<LauncherState>();
+    materials::sync(app, window);
     // Se mira el material actual (no el del arranque): «Desactivar vidrio» lo cambia.
     let material = app.state::<Materials>().get(LABEL);
     state

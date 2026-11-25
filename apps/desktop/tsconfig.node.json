@@ -7,5 +7,9 @@
     "allowSyntheticDefaultImports": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "src/design-tokens.test.ts"]
+  "include": [
+    "vite.config.ts",
+    "src/design-tokens.test.ts",
+    "src/glass-contrast.test.ts"
+  ]
 }

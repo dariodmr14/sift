@@ -2,7 +2,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import Settings from "./Settings";
 import "../index.css";
-import { applyAppearance, applyWindowMaterial } from "../appearance";
+import {
+  applyAppearance,
+  applyWindowMaterial,
+  followAppearanceChanges,
+} from "../appearance";
 import { commands, events } from "../bindings";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
@@ -20,6 +24,9 @@ void Promise.allSettled([applyAppearance(), applyWindowMaterial()]).then(() => {
   requestAnimationFrame(() => requestAnimationFrame(ready));
   setTimeout(ready, 60);
 });
+
+// Tema y vidrio al momento, también en la introducción (ver appearance.ts).
+void followAppearanceChanges();
 
 // Mientras la ventana se mueve, un velo tapa el cambio de material (ver index.css).
 void events.glassMoving.listen((e) => {

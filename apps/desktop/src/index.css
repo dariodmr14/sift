@@ -51,7 +51,7 @@
 :root {
   --surface: rgb(32 32 36); /* fondo opaco (ajustes, o sin Acrylic) */
   --fg: rgb(243 244 246);
-  --muted: rgb(166 173 187);
+  --muted: rgb(186 192 204);
   --line: rgb(255 255 255 / 0.08);
   /* Trazo inferior de los campos: 3:1 sobre --surface opaco (WCAG 1.4.11); en oscuro
      ≈ rgb(107) sobre rgb(32), en claro ≈ rgb(141) sobre rgb(243). */
@@ -59,8 +59,8 @@
   --hover: rgb(255 255 255 / 0.05);
   --selected: rgb(255 255 255 / 0.08);
   --field: rgb(255 255 255 / 0.06);
-  --danger: rgb(255 153 164);
-  --success: rgb(108 203 95);
+  --danger: rgb(255 168 178);
+  --success: rgb(124 214 110);
   /* Acento por defecto (azul de Windows). Se sustituye por el del usuario al arrancar. */
   --accent: rgb(96 205 255);
   --accent-fg: rgb(0 0 0);
@@ -91,42 +91,47 @@
   --surface: rgb(243 243 245);
   --surface-solid: rgb(243 243 245);
   --fg: rgb(27 27 31);
-  --muted: rgb(92 99 112);
+  --muted: rgb(74 80 92);
   --line: rgb(0 0 0 / 0.08);
   --line-strong: rgb(0 0 0 / 0.44);
   --hover: rgb(0 0 0 / 0.04);
   --selected: rgb(0 0 0 / 0.06);
   --field: rgb(255 255 255 / 0.7);
-  --danger: rgb(196 43 28);
-  --success: rgb(15 123 15);
+  --danger: rgb(160 30 20);
+  --success: rgb(10 96 10);
   --accent: rgb(0 95 184);
   --accent-fg: rgb(255 255 255);
-  --accent-ink: rgb(0 95 184);
+  --accent-ink: rgb(0 82 164);
   color-scheme: light;
 }
 
 /*
  * Con el vidrio de Windows detrás (Acrylic con el mismo tinte en todas las ventanas), el
- * fondo lo pinta Windows: la UI casi no añade. Lo marca `data-glass="true"` en <html>.
+ * fondo es el tinte del Acrylic (alfa 200/255 ≈ 0,78, materials.rs) más esta capa de
+ * la UI encima. Lo marca `data-glass="true"` en <html>.
+ *
+ * Juntos cubren el 88 % del fondo: 1 − (1 − 0,78)·(1 − 0,45) ≈ 0,88. Es lo mínimo para
+ * que todo el texto (también el secundario, el de error y el de éxito, y sobre una fila
+ * seleccionada) llegue a 4,5:1 sobre el PEOR escritorio posible: negro en tema claro y
+ * blanco en tema oscuro. Lo comprueba src/glass-contrast.test.ts con estos valores.
  */
 :root[data-glass="true"] {
-  --surface: rgb(32 32 36 / 0.22);
+  --surface: rgb(32 32 36 / 0.45);
 }
 :root[data-glass="true"][data-theme="light"] {
-  --surface: rgb(243 243 245 / 0.28);
+  --surface: rgb(243 243 245 / 0.45);
 }
 
 /*
  * Vidrio por CSS para lo que flota *dentro* de una ventana (diálogos, barras fijas):
  * desenfoca lo que hay detrás en la propia página. Es el MISMO aspecto que la ventana:
- * el tinte del Acrylic (alfa 200/255 = 0,78, materials.rs) más la capa `--surface` de
- * encima, compuestos: 1 − (1 − 0,78)·(1 − 0,22) ≈ 0,83 en oscuro (0,84 en claro).
+ * el tinte del Acrylic más la capa `--surface`, compuestos (0,88).
  */
 :root {
-  --glass: rgb(32 32 36 / 0.83);
+  --glass: rgb(32 32 36 / 0.88);
 }
 :root[data-theme="light"] {
-  --glass: rgb(243 243 245 / 0.84);
+  --glass: rgb(243 243 245 / 0.88);
 }
 
 /* Sin vidrio («Desactivar vidrio» o sin material): diálogos y barras fijas, opacos. */

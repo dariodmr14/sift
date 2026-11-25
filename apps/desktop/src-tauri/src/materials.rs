@@ -11,10 +11,12 @@
 //! reposo, que es lo que se ve, el aspecto es idéntico al de la barra.
 //!
 //! Si Acrylic no está disponible se usa blur; si nada, la ventana queda opaca y la UI
-//! pinta su fondo sólido (`data-glass="false"`). Lo mismo con «Desactivar vidrio».
+//! pinta su fondo sólido (`data-glass="false"`). Lo mismo con «Desactivar vidrio» y
+//! cuando Windows no puede pintar el vidrio bien (`glass_support`, ADR 0022).
 
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use serde::Serialize;
@@ -153,8 +155,34 @@ impl Materials {
     }
 }
 
+/// «Desactivar vidrio», en memoria: se consulta cada vez que se muestra la barra.
+static GLASS_WANTED: AtomicBool = AtomicBool::new(true);
+
+/// Apunta si el usuario quiere vidrio (al arrancar y al cambiar «Desactivar vidrio»).
+pub fn set_wanted(wanted: bool) {
+    GLASS_WANTED.store(wanted, Ordering::Relaxed);
+}
+
+/// Pone o quita el vidrio según lo que quiere el usuario y lo que puede Windows ahora
+/// mismo. Devuelve si el material de la ventana ha cambiado (su UI tiene que enterarse).
+pub fn sync(app: &AppHandle, window: &WebviewWindow) -> bool {
+    let before = app.state::<Materials>().get(window.label());
+    let after = set_glass(app, window, GLASS_WANTED.load(Ordering::Relaxed));
+    before != after
+}
+
 /// Pone o quita el vidrio en una ventana y lo apunta. Devuelve el material resultante.
+/// Aunque se pida (`enabled`), no se pone si Windows no puede pintarlo bien.
 pub fn set_glass(app: &AppHandle, window: &WebviewWindow, enabled: bool) -> Material {
+    let blocker = crate::glass_support::blocker();
+    if enabled && let Some(why) = blocker {
+        tracing::debug!(
+            window = window.label(),
+            ?why,
+            "sin vidrio: Windows no puede pintarlo bien"
+        );
+    }
+    let enabled = enabled && blocker.is_none();
     let materials = app.state::<Materials>();
     let current = materials.get(window.label());
     let next = match (enabled, current) {

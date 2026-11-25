@@ -4,8 +4,16 @@
 //! (`AccentPalette`: 3 claros, el base y 3 oscuros). Como hace Fluent, sobre fondo oscuro
 //! se usa un tono claro ("Light 2") y sobre fondo claro uno oscuro ("Dark 1"): así el
 //! acento siempre contrasta con lo que hay detrás.
+//!
+//! El tema puede no ser el de Windows: en Ajustes → General → Apariencia se elige «Como
+//! Windows», «Claro» u «Oscuro» (`ThemePreference`). La elección se guarda en una
+//! variable global para que leer el tema siga costando microsegundos (se lee al mostrar
+//! la barra).
 
-use serde::Serialize;
+use std::sync::atomic::{AtomicU8, Ordering};
+
+use serde::{Deserialize, Serialize};
+use sift_core::ThemePreference;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
@@ -78,20 +86,25 @@ pub struct Appearance {
 /// Fondo opaco de la app en cada tema (`--surface-solid` en index.css).
 const SURFACE_DARK: Rgb = Rgb(32, 32, 36);
 const SURFACE_LIGHT: Rgb = Rgb(243, 243, 245);
+/// El fondo más difícil con vidrio: el vidrio sobre un escritorio blanco (tema oscuro) o
+/// negro (claro), con una fila seleccionada encima. Lo calcula y lo comprueba
+/// src/glass-contrast.test.ts a partir de index.css y materials.rs.
+const GLASS_WORST_DARK: Rgb = Rgb(74, 74, 77);
+const GLASS_WORST_LIGHT: Rgb = Rgb(201, 201, 203);
 /// Contraste mínimo de texto normal (WCAG AA). Un trazo pide 3:1; con 4,5 vale para los dos.
 const INK_CONTRAST: f64 = 4.5;
 
-/// El acento como «tinta» legible: si no contrasta lo bastante con el fondo, se acerca a
-/// negro (tema claro) o a blanco (oscuro) en pasos del 5 % hasta llegar a 4,5:1. Así
-/// sigue siendo tu color, solo más oscuro o más claro.
+/// El acento como «tinta» legible: si no contrasta lo bastante con el fondo (el opaco y
+/// el peor del vidrio), se acerca a negro (tema claro) o a blanco (oscuro) en pasos del
+/// 5 % hasta llegar a 4,5:1. Así sigue siendo tu color, solo más oscuro o más claro.
 pub fn accent_ink(theme: Theme, accent: Rgb) -> Rgb {
-    let (surface, toward) = match theme {
-        Theme::Dark => (SURFACE_DARK, Rgb(255, 255, 255)),
-        Theme::Light => (SURFACE_LIGHT, Rgb(0, 0, 0)),
+    let (surfaces, toward) = match theme {
+        Theme::Dark => ([SURFACE_DARK, GLASS_WORST_DARK], Rgb(255, 255, 255)),
+        Theme::Light => ([SURFACE_LIGHT, GLASS_WORST_LIGHT], Rgb(0, 0, 0)),
     };
     (0..=20)
         .map(|step| accent.mix(toward, f64::from(step) * 0.05))
-        .find(|c| c.contrast(surface) >= INK_CONTRAST)
+        .find(|c| surfaces.iter().all(|s| c.contrast(*s) >= INK_CONTRAST))
         .unwrap_or(toward)
 }
 
@@ -135,7 +148,7 @@ pub fn accent_for(theme: Theme, palette: Option<[Rgb; 7]>, dwm: Option<Rgb>) -> 
 }
 
 pub fn current() -> Appearance {
-    let theme = platform::theme();
+    let theme = theme();
     let accent = accent_for(theme, platform::palette(), platform::dwm_accent());
     Appearance {
         theme,
@@ -145,8 +158,71 @@ pub fn current() -> Appearance {
     }
 }
 
+/// «Tema» en Ajustes, tal como lo ve la UI (`ThemePreference` de sift-core no depende
+/// de specta).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ThemeChoice {
+    System,
+    Light,
+    Dark,
+}
+
+impl From<ThemePreference> for ThemeChoice {
+    fn from(p: ThemePreference) -> Self {
+        match p {
+            ThemePreference::System => Self::System,
+            ThemePreference::Light => Self::Light,
+            ThemePreference::Dark => Self::Dark,
+        }
+    }
+}
+
+impl From<ThemeChoice> for ThemePreference {
+    fn from(c: ThemeChoice) -> Self {
+        match c {
+            ThemeChoice::System => Self::System,
+            ThemeChoice::Light => Self::Light,
+            ThemeChoice::Dark => Self::Dark,
+        }
+    }
+}
+
+/// La elección de Ajustes (0 = como Windows, 1 = claro, 2 = oscuro).
+static PREFERENCE: AtomicU8 = AtomicU8::new(0);
+
+/// Apunta la elección de Ajustes (al arrancar y al cambiarla).
+pub fn set_preference(preference: ThemePreference) {
+    let value = match preference {
+        ThemePreference::System => 0,
+        ThemePreference::Light => 1,
+        ThemePreference::Dark => 2,
+    };
+    PREFERENCE.store(value, Ordering::Relaxed);
+}
+
+/// El tema que resulta de la elección: la de Ajustes o, con «Como Windows», el de Windows.
+pub fn resolve(preference: ThemePreference, windows: Theme) -> Theme {
+    match preference {
+        ThemePreference::System => windows,
+        ThemePreference::Light => Theme::Light,
+        ThemePreference::Dark => Theme::Dark,
+    }
+}
+
+/// El tema de Sift ahora mismo.
 pub fn theme() -> Theme {
-    platform::theme()
+    let preference = match PREFERENCE.load(Ordering::Relaxed) {
+        1 => ThemePreference::Light,
+        2 => ThemePreference::Dark,
+        _ => ThemePreference::System,
+    };
+    resolve(preference, platform::theme())
+}
+
+/// ¿Tiene Windows activados los «Efectos de transparencia»?
+pub fn transparency_enabled() -> bool {
+    platform::transparency_enabled()
 }
 
 /// El tema de la barra de tareas, que puede no ser el de las apps (en Windows 10, por
@@ -205,6 +281,15 @@ mod platform {
         }
     }
 
+    /// «Efectos de transparencia» (Configuración → Personalización → Colores). Sin la
+    /// clave, activados.
+    pub fn transparency_enabled() -> bool {
+        dword(
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+            "EnableTransparency",
+        ) != Some(0)
+    }
+
     pub fn taskbar_theme() -> Theme {
         // 1 = la barra de tareas va en claro. Sin la clave (Windows antiguo), oscura.
         match dword(
@@ -240,6 +325,9 @@ mod platform {
     }
     pub fn taskbar_theme() -> Theme {
         Theme::Dark
+    }
+    pub fn transparency_enabled() -> bool {
+        true
     }
     pub fn palette() -> Option<[Rgb; 7]> {
         None
@@ -294,10 +382,46 @@ mod tests {
         // Lo que ya se lee bien no se toca.
         let dark = accent_for(Theme::Dark, Some(p), None);
         assert_eq!(accent_ink(Theme::Dark, dark), dark);
-        assert_eq!(accent_ink(Theme::Light, DEFAULT_LIGHT), DEFAULT_LIGHT);
+        assert_eq!(accent_ink(Theme::Dark, DEFAULT_DARK), DEFAULT_DARK);
         // Un acento imposible acaba en negro o blanco, nunca ilegible.
         let yellow = Rgb(255, 255, 0);
         assert!(accent_ink(Theme::Light, yellow).contrast(SURFACE_LIGHT) >= INK_CONTRAST);
+    }
+
+    #[test]
+    fn the_accent_ink_also_reads_on_the_worst_glass() {
+        // El azul de Windows por defecto se lee sobre el fondo opaco, pero no sobre el
+        // vidrio encima de un escritorio negro: se oscurece un poco.
+        assert!(DEFAULT_LIGHT.contrast(GLASS_WORST_LIGHT) < INK_CONTRAST);
+        let ink = accent_ink(Theme::Light, DEFAULT_LIGHT);
+        assert!(ink.contrast(GLASS_WORST_LIGHT) >= INK_CONTRAST);
+        assert!(ink.contrast(SURFACE_LIGHT) >= INK_CONTRAST);
+        for accent in [Rgb(255, 185, 0), Rgb(0, 120, 215), Rgb(232, 17, 35)] {
+            for theme in [Theme::Light, Theme::Dark] {
+                let ink = accent_ink(theme, accent);
+                let worst = match theme {
+                    Theme::Light => GLASS_WORST_LIGHT,
+                    Theme::Dark => GLASS_WORST_DARK,
+                };
+                assert!(
+                    ink.contrast(worst) >= INK_CONTRAST,
+                    "{theme:?} {}",
+                    ink.hex()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn the_theme_follows_windows_unless_one_is_chosen() {
+        for windows in [Theme::Light, Theme::Dark] {
+            assert_eq!(resolve(ThemePreference::System, windows), windows);
+            assert_eq!(resolve(ThemePreference::Light, windows), Theme::Light);
+            assert_eq!(resolve(ThemePreference::Dark, windows), Theme::Dark);
+        }
+        for choice in [ThemeChoice::System, ThemeChoice::Light, ThemeChoice::Dark] {
+            assert_eq!(ThemeChoice::from(ThemePreference::from(choice)), choice);
+        }
     }
 
     #[test]

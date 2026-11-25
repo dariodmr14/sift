@@ -27,7 +27,7 @@ Press `Alt+Space` from any app, type what you are looking for and Enter does the
 - **PDFs open on the matching page.** If what you are looking for is on page 37, the PDF opens on page 37.
 - **Quick filters.** "pdf budget" searches only your PDFs. Backspace removes the filter.
 - **What you use comes first.** Files you open often and recently move up the results.
-- **Keyboard first**, following Windows' light or dark theme and accent color.
+- **Keyboard first**, following Windows' light or dark theme and accent color (or the theme you pick in Settings).
 
 ## Installation
 
@@ -84,7 +84,7 @@ That is why Claude shows up on GitHub among the repository's contributors: in th
 - **SQLite** stores everything; **Tantivy** searches by words and **usearch** (HNSW) by vectors. Everything derived can be rebuilt from SQLite.
 - **Search by meaning** with `multilingual-e5-small` on ONNX Runtime. Both searches are combined (Reciprocal Rank Fusion), then what you use most moves up.
 - **PDF** with PDFium, at a pinned version and fingerprint.
-- **Design:** the [Vidrio](docs/design-system.md) system, with a test that forbids stray colors.
+- **Design:** the [Vidrio](docs/design-system.md) system, with a test that forbids stray colors and another that requires 4.5:1 text contrast on the glass over any desktop background.
 
 ### Learn more (in Spanish)
 
