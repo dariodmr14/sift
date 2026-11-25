@@ -631,4 +631,16 @@ body,
   .sift-pressed .sift-key {
     transition: none;
   }
+  /* Sin movimiento, el cambio de paso de la introducción no salta de golpe: un fundido
+     corto, solo de opacidad (no mueve nada, así que no molesta a quien lo pidió). */
+  .sift-step-next,
+  .sift-step-back {
+    animation: sift-fade var(--dur-step) ease-out both;
+  }
+}
+
+@keyframes sift-fade {
+  from {
+    opacity: 0;
+  }
 }

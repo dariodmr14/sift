@@ -41,6 +41,19 @@ describe("tokens de diseño", () => {
     expect(reduce).toMatch(/\.sift-loader \{\s*animation: sift-pulse/);
   });
 
+  // Con las animaciones de Windows apagadas (pasa en Windows Sandbox), los pasos de la
+  // introducción no saltan de golpe: entran con un fundido, sin moverse.
+  it("con «reducir movimiento» los pasos de la introducción se funden", () => {
+    const css = readFileSync(join(import.meta.dirname, "index.css"), "utf8");
+    const reduce = css.slice(css.lastIndexOf("prefers-reduced-motion"));
+    expect(reduce).toMatch(
+      /\.sift-step-next,\s*\.sift-step-back \{\s*animation: sift-fade var\(--dur-step\)/,
+    );
+    expect(reduce).toMatch(
+      /@keyframes sift-fade \{\s*from \{\s*opacity: 0;\s*\}\s*\}/,
+    );
+  });
+
   it.each(files.map((f) => [relative(import.meta.dirname, f), f]))(
     "%s usa solo tokens",
     (_name, path) => {
