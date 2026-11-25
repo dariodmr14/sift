@@ -116,7 +116,10 @@ describe.each(themes)("vidrio en tema $name", (t) => {
   const solid = token(t.tokens, "surface-solid").rgb;
   // Sin vidrio y con él, y con y sin una fila seleccionada encima.
   const plain: [string, Rgb][] = ([["opaco", solid]] as [string, Rgb][]).concat(
-    BACKDROPS.map((b): [string, Rgb] => [`vidrio sobre ${b}`, glassOver(t, b)]),
+    BACKDROPS.map((b): [string, Rgb] => [
+      `vidrio sobre ${b.join(" ")}`,
+      glassOver(t, b),
+    ]),
   );
   const backgrounds: [string, Rgb][] = plain.flatMap(
     ([label, bg]): [string, Rgb][] => [
