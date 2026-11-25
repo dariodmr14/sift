@@ -55,7 +55,7 @@ impl Key {
     }
 
     fn parse(s: &str) -> Option<Key> {
-        let upper = s.to_ascii_uppercase();
+        let upper = s.to_uppercase();
         let mut chars = upper.chars();
         if let (Some(c), None) = (chars.next(), chars.next()) {
             if c.is_ascii_uppercase() {
@@ -64,7 +64,7 @@ impl Key {
             if let Some(d) = c.to_digit(10) {
                 return Some(Key::Digit(d as u8));
             }
-            if c == '`' {
+            if c == '`' || c == 'º' {
                 return Some(Key::Backquote);
             }
         }
@@ -73,7 +73,7 @@ impl Key {
         }
         match upper.as_str() {
             "SPACE" | "ESPACIO" => Some(Key::Space),
-            "ENTER" | "RETURN" => Some(Key::Enter),
+            "ENTER" | "RETURN" | "INTRO" => Some(Key::Enter),
             "TAB" => Some(Key::Tab),
             "BACKQUOTE" => Some(Key::Backquote),
             _ => None,
@@ -133,7 +133,7 @@ pub enum HotkeyParseError {
     MissingKey,
     #[error("el atajo solo puede tener una tecla principal (sobra «{0}»)")]
     TooManyKeys(String),
-    #[error("el atajo necesita al menos un modificador (Ctrl, Alt, Shift o Win)")]
+    #[error("el atajo necesita al menos un modificador (Ctrl, Alt, Mayús o Win)")]
     NoModifier,
 }
 
@@ -150,7 +150,7 @@ impl FromStr for Hotkey {
         let mut key = None;
 
         for part in s.split('+').map(str::trim) {
-            let flag = match part.to_ascii_lowercase().as_str() {
+            let flag = match part.to_lowercase().as_str() {
                 "ctrl" | "control" => Some(&mut modifiers.ctrl),
                 "alt" => Some(&mut modifiers.alt),
                 "shift" | "mayús" | "mayus" => Some(&mut modifiers.shift),
@@ -177,6 +177,33 @@ impl FromStr for Hotkey {
             return Err(HotkeyParseError::NoModifier);
         }
         Ok(Hotkey { modifiers, key })
+    }
+}
+
+impl Hotkey {
+    /// Como se ve en un teclado español («Ctrl+Mayús+Espacio»), para los mensajes a la
+    /// persona. Lo guardado sigue siendo `Display` («Ctrl+Shift+Space»).
+    pub fn label_es(&self) -> String {
+        let key = match self.key {
+            Key::Space => "Espacio".to_owned(),
+            Key::Enter => "Intro".to_owned(),
+            Key::Backquote => "º".to_owned(),
+            other => other.to_string(),
+        };
+        let m = self.modifiers;
+        let mut out = String::new();
+        for (on, name) in [
+            (m.ctrl, "Ctrl"),
+            (m.alt, "Alt"),
+            (m.shift, "Mayús"),
+            (m.win, "Win"),
+        ] {
+            if on {
+                out.push_str(name);
+                out.push('+');
+            }
+        }
+        out + &key
     }
 }
 
@@ -226,6 +253,18 @@ mod tests {
         let h: Hotkey = " control + mayús + k ".parse().unwrap();
         assert!(h.modifiers.ctrl && h.modifiers.shift && !h.modifiers.alt);
         assert_eq!(h.key, Key::Letter('K'));
+    }
+
+    #[test]
+    fn accepts_spanish_key_names_and_shows_them() {
+        let h: Hotkey = "CTRL+MAYÚS+Intro".parse().unwrap();
+        assert!(h.modifiers.ctrl && h.modifiers.shift);
+        assert_eq!(h.key, Key::Enter);
+        assert_eq!(h.to_string(), "Ctrl+Shift+Enter");
+        assert_eq!(h.label_es(), "Ctrl+Mayús+Intro");
+        assert_eq!(Hotkey::DEFAULT.label_es(), "Alt+Espacio");
+        assert_eq!("Alt+º".parse::<Hotkey>().unwrap().key, Key::Backquote);
+        assert_eq!("Win+F2".parse::<Hotkey>().unwrap().label_es(), "Win+F2");
     }
 
     #[test]

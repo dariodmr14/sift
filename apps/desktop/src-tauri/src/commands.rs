@@ -244,8 +244,9 @@ fn set_hotkey(app: AppHandle, hotkey: String) -> Result<String, AppError> {
     crate::change_hotkey(&app, parsed).map_err(|e| {
         tracing::warn!(error = format!("{e:#}"), "no se pudo activar el atajo");
         AppError::HotkeyUnavailable(format!(
-            "No se pudo activar {parsed}: Windows no lo permite ahora mismo. \
-             Prueba con otra combinación."
+            "No se pudo activar {}: Windows no lo permite ahora mismo. \
+             Prueba con otra combinación.",
+            parsed.label_es()
         ))
     })?;
     Ok(parsed.to_string()) // forma canónica: "ctrl + k" → "Ctrl+K"
