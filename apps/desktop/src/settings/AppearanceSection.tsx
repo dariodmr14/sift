@@ -5,7 +5,7 @@ import {
   type GlassBlocker,
   type ThemeChoice,
 } from "../bindings";
-import { Field, Select } from "./ui";
+import { Select } from "./ui";
 
 /** Ajustes → General → Apariencia: tema, iconos de la barra y vidrio. */
 export function AppearanceSection({
@@ -37,7 +37,8 @@ const THEMES: { value: ThemeChoice; label: string }[] = [
 function ThemeSelect({ initial }: { initial: ThemeChoice }) {
   const [theme, setTheme] = useState(initial);
   return (
-    <Field label="Tema">
+    <label className="flex items-center gap-3">
+      Tema
       <Select
         value={theme}
         onChange={(e) => {
@@ -56,7 +57,7 @@ function ThemeSelect({ initial }: { initial: ThemeChoice }) {
           </option>
         ))}
       </Select>
-    </Field>
+    </label>
   );
 }
 
