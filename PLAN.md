@@ -258,6 +258,7 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 ---
 
 ## 4. Backlog (ideas para después)
+- **Para la 1.0.1:** que `latest.json` lleve las notas de verdad. En la 1.0.0 su campo `notes` dice «Notas en camino.», el texto provisional que `release.yml` le pasa a `tauri-action` (`releaseBody`); las notas buenas solo se ponen después en la página de la Release. Arreglo: leer `docs/publicacion/notas/v<versión>.md` en el primer paso y pasarlo como `releaseBody` (o reescribir `notes` en `latest.json` y volver a subirlo con su firma intacta, porque la firma es del instalador y no del JSON).
 - Conectores: Notion, Google Calendar, marcadores del navegador.
 - Sugerencia automática de Espacios agrupando archivos por tema con IA.
 - USN Journal de NTFS para detectar cambios con la app cerrada.
