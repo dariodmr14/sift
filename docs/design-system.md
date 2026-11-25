@@ -5,18 +5,18 @@ Sift tiene que parecer parte de Windows: Acrylic, Segoe UI y **tu** color de ace
 ## Reglas
 
 1. **Solo tokens.** Ningún componente escribe un color a mano (`#…`, `rgb(…)`, `text-red-400`…). El test [`design-tokens.test.ts`](../apps/desktop/src/design-tokens.test.ts) falla si alguno lo hace.
-2. **Windows manda.** El tema (claro/oscuro) y el acento los lee Rust del registro (`appearance.rs`) y la UI los aplica con `applyAppearance()`. No se elige un acento propio.
+2. **Windows manda.** El tema (claro/oscuro) y el acento los lee Rust del registro (`appearance.rs`) y la UI los aplica con `applyAppearance()`. No se elige un acento propio. El tema sí se puede fijar en Ajustes → General → Apariencia («Como Windows», por defecto, «Claro» u «Oscuro»); al cambiarlo, Rust emite `AppearanceChanged` y todas las ventanas se repintan al momento ([ADR 0022](adr/0022-vidrio-legible-y-tema.md)).
 3. **Selección = píldora.** Toda lista seleccionable usa `.sift-option`: fondo `selected` y la píldora de 3 px del acento a la izquierda. Es como lo hacen las listas de Windows.
 4. **Movimiento corto y opcional.** Solo opacidad y escala, nunca propiedades que obliguen a recalcular el diseño. Con «reducir movimiento» (en Windows: *Mostrar animaciones* desactivado) no hay animación.
 
 ## Materiales (el vidrio)
 
-**Un único vidrio para toda la app** (`apps/desktop/src-tauri/src/materials.rs`): Acrylic de Windows con el mismo tinte (`tint()`, alfa 200/255) en la barra, en Ajustes y en cualquier ventana nueva. Encima, la UI solo pone `--surface` casi transparente.
+**Un único vidrio para toda la app** (`apps/desktop/src-tauri/src/materials.rs`): Acrylic de Windows con el mismo tinte (`tint()`, alfa 200/255) en la barra, en Ajustes y en cualquier ventana nueva. Encima, la UI pone `--surface` al 45 %: juntos cubren el **88 %** del escritorio, lo mínimo para que todo el texto llegue a 4,5:1 sobre el peor fondo (negro en claro, blanco en oscuro), también sobre una fila seleccionada. Lo comprueba `src/glass-contrast.test.ts` con los valores reales; si cambias un color o una opacidad, ese test dice si sigue leyéndose ([ADR 0022](adr/0022-vidrio-legible-y-tema.md)).
 
 | Superficie | Vidrio | Sin vidrio |
 |---|---|---|
 | Ventanas (barra, Ajustes) | Acrylic con el tinte común | Opaco |
-| Diálogos y barras fijas dentro de una ventana | `.sift-glass` o `bg-glass backdrop-blur-xl`: el mismo tinte compuesto con `--surface` (≈ 83 %) | Opaco |
+| Diálogos y barras fijas dentro de una ventana | `.sift-glass` o `bg-glass backdrop-blur-xl`: el mismo tinte compuesto con `--surface` (88 %) | Opaco |
 
 Acrylic va a tirones al **arrastrar o redimensionar** una ventana en Windows 10 v1903+ y Windows 11 22000. Por eso, mientras Ajustes se mueve, pasa a *blur* (`materials::on_moved`) con un tinte algo más opaco (`moving_tint()`, ajustado midiendo capturas sobre un fondo de franjas: luminancia 56,6 frente a 55,7 del Acrylic), y 200 ms después de soltarla vuelve el Acrylic. En reposo, que es lo que se ve, es idéntico a la barra.
 
@@ -24,7 +24,7 @@ Las ventanas se crean ocultas y se muestran cuando su UI ya ha pintado (`setting
 
 **Lo que va directamente sobre la ventana no lleva fondo propio** (barra de título, navegación, pies fijos): así se ve el vidrio de la ventana. Un pie fijo se saca de la zona con scroll en vez de pintarle un fondo. `bg-glass` es solo para lo que flota *encima de contenido* (diálogos, la tarjeta que se arrastra).
 
-Vidrio por defecto; **«Desactivar vidrio»** (Ajustes → General) deja toda la app opaca. La UI sabe qué material tiene su ventana (`get_window_material`) y lo marca en `<html data-glass>`. Con «Efectos de transparencia» desactivados en Windows (`prefers-reduced-transparency`), todo es opaco.
+Vidrio por defecto; **«Desactivar vidrio»** (Ajustes → General) deja toda la app opaca. La UI sabe qué material tiene su ventana (`get_window_material`) y lo marca en `<html data-glass>`. Con «Efectos de transparencia» desactivados en Windows (`prefers-reduced-transparency`), todo es opaco. **Donde Windows no puede pintar el vidrio** (Sandbox, escritorio remoto, sin aceleración gráfica, ahorro de batería), Sift no lo pide y va opaco solo (`glass_support.rs`); Ajustes lo explica debajo de «Desactivar vidrio».
 
 ## Tokens
 
@@ -32,20 +32,20 @@ Vidrio por defecto; **«Desactivar vidrio»** (Ajustes → General) deja toda la
 
 | Token | Utilidad | Oscuro | Claro | Uso |
 |---|---|---|---|---|
-| `--surface` | `bg-surface` | `rgb(32 32 36)` · con vidrio 22 % | `rgb(243 243 245)` · con vidrio 28 % | Fondo de ventana |
+| `--surface` | `bg-surface` | `rgb(32 32 36)` · con vidrio 45 % | `rgb(243 243 245)` · con vidrio 45 % | Fondo de ventana |
 | `--fg` | `text-fg` | `rgb(243 244 246)` | `rgb(27 27 31)` | Texto principal |
-| `--muted` | `text-muted` | `rgb(166 173 187)` | `rgb(92 99 112)` | Texto secundario, ayudas |
+| `--muted` | `text-muted` | `rgb(186 192 204)` | `rgb(74 80 92)` | Texto secundario, ayudas |
 | `--line` | `border-line` | blanco 8 % | negro 8 % | Separadores y bordes |
 | `--line-strong` | `border-line-strong` | blanco 36 % | negro 44 % | Trazo inferior de los campos: 3:1 frente al fondo (WCAG 1.4.11) |
 | `--hover` | `bg-hover` | blanco 5 % | negro 4 % | Fondo al pasar el ratón |
 | `--selected` | `bg-selected` | blanco 8 % | negro 6 % | Elemento seleccionado |
 | `--field` | `bg-field` | blanco 6 % | blanco 70 % | Fondo de campos |
 | `--accent` | `bg-accent` | Acento «Light 2» de Windows | Acento «Dark 1» de Windows | Relleno: botón principal, casillas |
-| `--accent-ink` | `text-accent-ink`, `ring-accent-ink`, `border-accent-ink`, `bg-accent-ink` | el acento, aclarado si hace falta | el acento, oscurecido si hace falta | El acento cuando es texto o trazo: foco, la píldora de selección, barras de progreso y la firma. Rust lo ajusta hasta 4,5:1 sobre el fondo (F9) |
+| `--accent-ink` | `text-accent-ink`, `ring-accent-ink`, `border-accent-ink`, `bg-accent-ink` | el acento, aclarado si hace falta | el acento, oscurecido si hace falta | El acento cuando es texto o trazo: foco, la píldora de selección, barras de progreso y la firma. Rust lo ajusta hasta 4,5:1 sobre el fondo opaco y sobre el peor vidrio (F9, ADR 0022) |
 | `--accent-fg` | `text-accent-fg` | negro o blanco, el de más contraste | | Texto sobre el acento |
-| `--danger` | `text-danger` | `rgb(255 153 164)` | `rgb(196 43 28)` | Errores |
-| `--success` | `text-success` | `rgb(108 203 95)` | `rgb(15 123 15)` | Confirmaciones |
-| `--glass` | `bg-glass` | `rgb(32 32 36 / 0.83)` | `rgb(243 243 245 / 0.84)` | Diálogos y barras fijas (con `backdrop-blur`); el mismo aspecto que la ventana |
+| `--danger` | `text-danger` | `rgb(255 168 178)` | `rgb(160 30 20)` | Errores |
+| `--success` | `text-success` | `rgb(124 214 110)` | `rgb(10 96 10)` | Confirmaciones |
+| `--glass` | `bg-glass` | `rgb(32 32 36 / 0.88)` | `rgb(243 243 245 / 0.88)` | Diálogos y barras fijas (con `backdrop-blur`); el mismo aspecto que la ventana |
 | | `bg-caption-close`, `text-caption-close-fg` | `rgb(196 43 28)` / blanco | igual | Botón de cerrar de la barra de título al pasar el ratón (el rojo de Windows) |
 | | `bg-scrim` | negro 50 % | negro 50 % | Fondo tras un diálogo |
 

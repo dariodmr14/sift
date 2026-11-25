@@ -1,4 +1,4 @@
-import { commands } from "./bindings";
+import { commands, events } from "./bindings";
 
 /**
  * Aplica el tema y el acento de Windows (los lee Rust) a la página: `data-theme` y las
@@ -21,6 +21,17 @@ export async function applyAppearance(): Promise<void> {
 export async function applyWindowMaterial(): Promise<void> {
   const material = await commands.getWindowMaterial();
   document.documentElement.dataset.glass = String(material !== "none");
+}
+
+/**
+ * Repinta la ventana cuando cambian el tema o el vidrio (Ajustes → General → Apariencia,
+ * o Windows deja de poder pintar el vidrio). Devuelve la promesa para dejar de escuchar.
+ */
+export function followAppearanceChanges(): Promise<() => void> {
+  return events.appearanceChanged.listen(() => {
+    void applyAppearance();
+    void applyWindowMaterial();
+  });
 }
 
 /** ¿Tiene Windows pedido «reducir movimiento»? */

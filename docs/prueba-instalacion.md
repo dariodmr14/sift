@@ -44,6 +44,8 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 | A2 | El asistente | En español, con la imagen del tamiz a la izquierda y «Te damos la bienvenida a Sift». En las páginas de dentro, el tamiz arriba a la derecha |
 | A2b | La página «Instalando» (pulsa «Ver detalles») | Sale «Instalando WebView2…» y después «WebView2 1xx.x.xxxx.xx». En un PC que ya lo tiene, solo la segunda línea |
 | A3 | Terminar con «Abrir Sift» marcado | Sift se abre y sale la **introducción** (paso 1 de 5), con su ilustración. **No** sale «La ejecución de código no puede continuar porque no se encontró MSVCP140.dll» (ni otra DLL) ni «Could not find the WebView2 Runtime»: ver la nota de abajo |
+| A3b | La introducción, con el **tema claro** de Windows y su fondo azul | Se lee bien: fondo **opaco** (en el Sandbox Windows no pinta el vidrio y Sift lo detecta). En Ajustes → General → Apariencia, debajo de «Desactivar vidrio», pone «Ahora mismo el vidrio no se usa: Sift se está ejecutando en Windows Sandbox…» |
+| A3c | Ajustes → General → Apariencia → **Tema**: «Oscuro», luego «Claro», luego «Como Windows» | Cambia al momento toda la ventana; abre la barra y también ha cambiado. Cierra y vuelve a abrir Sift: se mantiene el último |
 | A4 | Inicio | Sift en el menú Inicio con el icono del tamiz. En la bandeja, el tamiz en blanco |
 | A5 | Pulsar **Alt+Espacio** (haz clic antes dentro del Sandbox) | Se abre la barra y la introducción marca ✓ |
 | A6 | «Elegir otra carpeta…» → Escritorio → **Datos de prueba** | Mientras lee, el tamiz se mueve junto a «Leyendo…»; acaba en «Al día · 12 archivos» |

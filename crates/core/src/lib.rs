@@ -5,7 +5,7 @@ pub mod hotkey;
 pub mod settings;
 
 pub use hotkey::{Hotkey, HotkeyParseError, Key, Modifiers};
-pub use settings::{AppearanceSettings, Settings, SettingsError};
+pub use settings::{AppearanceSettings, Settings, SettingsError, ThemePreference};
 
 /// Versión de Sift, tomada de `Cargo.toml` en tiempo de compilación.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

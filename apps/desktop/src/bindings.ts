@@ -34,6 +34,16 @@ export const commands = {
 	 *  barra y los ajustes). Devuelve si ha quedado desactivado.
 	 */
 	setGlassDisabled: (disabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_glass_disabled", { disabled })),
+	/**
+	 *  «Tema»: lo guarda y lo aplica ya en toda la app. El vidrio se vuelve a poner con el
+	 *  tinte del tema nuevo y cada ventana se repinta al recibir `AppearanceChanged`.
+	 */
+	setTheme: (theme: ThemeChoice) => typedError<ThemeChoice, AppError>(__TAURI_INVOKE("set_theme", { theme })),
+	/**
+	 *  Si Windows no puede pintar el vidrio ahora mismo, por qué (Ajustes lo explica);
+	 *  `null` si puede.
+	 */
+	getGlassBlocker: () => __TAURI_INVOKE<GlassBlocker | null>("get_glass_blocker"),
 	/**  «Buscar actualizaciones al arrancar». Se aplica en el siguiente arranque. */
 	setCheckUpdates: (enabled: boolean) => typedError<boolean, AppError>(__TAURI_INVOKE("set_check_updates", { enabled })),
 	/**  La UI de ajustes ya ha pintado: se puede mostrar su ventana (se crea oculta). */
@@ -150,6 +160,7 @@ export const commands = {
 
 /** Events */
 export const events = {
+	appearanceChanged: makeEvent<AppearanceChanged, AppearanceChanged>("appearance-changed"),
 	glassMoving: makeEvent<GlassMoving, GlassMoving>("glass-moving"),
 	indexProgress: makeEvent<IndexProgress_Serialize, IndexProgress_Deserialize>("index-progress"),
 	launcherHidden: makeEvent<LauncherHidden, LauncherHidden>("launcher-hidden"),
@@ -267,6 +278,12 @@ export type Appearance = {
 	 */
 	accentInk: string,
 };
+
+/**
+ *  Ha cambiado el tema o el vidrio: cada ventana vuelve a pedir su aspecto
+ *  (`applyAppearance` y `applyWindowMaterial` en src/appearance.ts).
+ */
+export type AppearanceChanged = null;
 
 /**  Con qué mecanismo se está escuchando el atajo. */
 export type Backend = "registerHotKey" | "keyboardHook";
@@ -386,6 +403,22 @@ export type FilePreview_Serialize = {
 	monospace: boolean,
 	page: number | null,
 };
+
+/**  Por qué Sift no pone vidrio ahora mismo aunque esté activado. Ajustes lo explica. */
+export type GlassBlocker = 
+/**  «Efectos de transparencia» desactivados en Windows. */
+"transparencyOff" | 
+/**  Windows Sandbox. */
+"sandbox" | 
+/**  Escritorio remoto: Windows no desenfoca a través de la conexión. */
+"remoteSession" | 
+/**
+ *  Sin aceleración gráfica: dibuja el procesador (máquinas virtuales, un PC sin el
+ *  driver de su tarjeta gráfica…).
+ */
+"noGpu" | 
+/**  Ahorro de batería: Windows quita las transparencias. */
+"batterySaver";
 
 /**
  *  Evento para la UI de una ventana: se está moviendo (`true`) o ya ha parado (`false`).
@@ -709,6 +742,8 @@ export type SettingsView = {
 	iconsHidden: boolean,
 	/**  «Desactivar vidrio»: toda la app opaca. */
 	disableGlass: boolean,
+	/**  «Tema»: como Windows, claro u oscuro. */
+	theme: ThemeChoice,
 	/**
 	 *  Hay actualizaciones automáticas en esta compilación (la de las Releases). En las
 	 *  demás, Ajustes no enseña la opción.
@@ -902,6 +937,12 @@ export type SuggestedFolder = {
 export type SuggestedKind = "Documents" | "Desktop";
 
 export type Theme = "light" | "dark";
+
+/**
+ *  «Tema» en Ajustes, tal como lo ve la UI (`ThemePreference` de sift-core no depende
+ *  de specta).
+ */
+export type ThemeChoice = "system" | "light" | "dark";
 
 /**  Archivos que no se pudieron leer por un mismo motivo, con unos pocos ejemplos. */
 export type UnreadGroupView = {

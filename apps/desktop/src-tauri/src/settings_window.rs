@@ -109,9 +109,9 @@ fn open_page(app: &AppHandle, new_space: bool, welcome: bool, origin: Origin) {
         .build();
     match built {
         Ok(window) => {
-            // El mismo vidrio que la barra, salvo con «Desactivar vidrio».
-            let glass = !crate::load_settings(app).appearance.disable_glass;
-            materials::set_glass(app, &window, glass);
+            // El mismo vidrio que la barra, salvo con «Desactivar vidrio» o si Windows
+            // no puede pintarlo bien.
+            materials::sync(app, &window);
             // Por si la UI no llegara a avisar (un error al cargar): se muestra igualmente.
             let app = app.clone();
             std::thread::spawn(move || {

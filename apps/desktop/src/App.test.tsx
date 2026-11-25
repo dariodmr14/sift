@@ -99,6 +99,7 @@ vi.mock("./bindings", () => ({
 vi.mock("./appearance", () => ({
   applyAppearance: () => Promise.resolve(),
   applyWindowMaterial: () => Promise.resolve(),
+  followAppearanceChanges: () => Promise.resolve(() => {}),
   prefersReducedMotion: () => true,
 }));
 

@@ -6,9 +6,9 @@ import {
   type SmartStatus,
   type Status,
 } from "../bindings";
-import { applyWindowMaterial } from "../appearance";
 import { capitalize } from "../format";
 import { TYPE_FILTERS } from "../launcher/filters";
+import { AppearanceSection } from "./AppearanceSection";
 import { FoldersSection } from "./FoldersSection";
 import { SpacesSection } from "./SpacesSection";
 import { TitleBar } from "./TitleBar";
@@ -131,8 +131,11 @@ function Settings() {
                     onSaved={refreshStatus}
                   />
                   <StartupToggle initial={settings.launchAtStartup} />
-                  <IconsToggle initial={settings.iconsHidden} />
-                  <GlassToggle initial={settings.disableGlass} />
+                  <AppearanceSection
+                    theme={settings.theme}
+                    iconsHidden={settings.iconsHidden}
+                    disableGlass={settings.disableGlass}
+                  />
                   <SmartSearchToggle />
                   {settings.updatesAvailable && (
                     <UpdatesToggle initial={settings.checkUpdates} />
@@ -264,34 +267,6 @@ function QuickFilters() {
   );
 }
 
-function GlassToggle({ initial }: { initial: boolean }) {
-  const [disabled, setDisabled] = useState(initial);
-  return (
-    <label className="flex items-start gap-3">
-      <input
-        type="checkbox"
-        checked={disabled}
-        onChange={(e) => {
-          const next = e.currentTarget.checked;
-          void commands.setGlassDisabled(next).then((r) => {
-            if (r.status !== "ok") return;
-            setDisabled(r.data);
-            void applyWindowMaterial(); // esta ventana cambia al momento
-          });
-        }}
-        className="mt-1 size-4 accent-accent"
-      />
-      <span>
-        Desactivar vidrio
-        <span className="block text-xs text-muted">
-          La barra, los ajustes y los diálogos pasan a ser opacos: no se ve lo
-          que hay detrás.
-        </span>
-      </span>
-    </label>
-  );
-}
-
 /**
  * «Buscar actualizaciones al arrancar» (ADR 0018). Solo en las compilaciones de las
  * Releases, que llevan el actualizador. Encendido por defecto; instalar siempre se pregunta.
@@ -320,28 +295,6 @@ function UpdatesToggle({ initial }: { initial: boolean }) {
             archivos ni de tus búsquedas.
           </span>
         </span>
-      </label>
-    </Section>
-  );
-}
-
-function IconsToggle({ initial }: { initial: boolean }) {
-  const [hidden, setHidden] = useState(initial);
-  return (
-    <Section title="Apariencia">
-      <label className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={hidden}
-          onChange={(e) => {
-            const next = e.currentTarget.checked;
-            void commands
-              .setIconsHidden(next)
-              .then((r) => r.status === "ok" && setHidden(r.data));
-          }}
-          className="size-4 accent-accent"
-        />
-        Solo texto: ocultar todos los iconos en la barra
       </label>
     </Section>
   );

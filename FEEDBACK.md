@@ -185,3 +185,9 @@ Al terminar: instalador 1.0.0-rc.3 y cómo actualizar el instalado.
 
 ### 2. «Could not find the WebView2 Runtime» en un Windows limpio
 - [x] ✅ **Resuelto** (`fix/webview2`, ADR 0021: el instalador lleva el bootstrapper de Microsoft, comprueba de verdad que WebView2 queda instalado y, si no puede, avisa en español con el enlace oficial y no instala Sift; `scripts/sandbox.ps1` comparte solo el instalador más reciente y tiene `-SinRed` para probar el aviso). Con el runtime de Visual C++ ya arreglado, Sift fallaba al abrir en el Sandbox, que no trae WebView2 (algunos Windows 10 reales tampoco).
+
+### 3. Vidrio ilegible en tema claro (introducción en el Sandbox)
+- [x] ✅ **Resuelto** (`fix/vidrio-tema-claro`, ADR 0022). Con el tema claro y el fondo azul de Windows, la introducción quedaba casi transparente. El Sandbox no pinta el Acrylic: ahora Sift lo detecta, junto con el escritorio remoto, la falta de aceleración gráfica, el ahorro de batería y la transparencia desactivada, y en esos casos va opaco. Además, el vidrio cubre el 88 % y los colores de texto se han ajustado: todo llega a 4,5:1 sobre el peor escritorio en los dos temas (`src/glass-contrast.test.ts`).
+
+### 4. Elegir el tema en Sift
+- [x] ✅ **Resuelto** (`fix/vidrio-tema-claro`, ADR 0022). En Ajustes → General → Apariencia: «Tema: Como Windows / Claro / Oscuro» (por defecto, como Windows). Se aplica al momento en la barra, Ajustes, los diálogos y la introducción, y se guarda.

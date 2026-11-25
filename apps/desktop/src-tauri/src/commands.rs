@@ -44,6 +44,8 @@ pub struct SettingsView {
     pub icons_hidden: bool,
     /// «Desactivar vidrio»: toda la app opaca.
     pub disable_glass: bool,
+    /// «Tema»: como Windows, claro u oscuro.
+    pub theme: crate::appearance::ThemeChoice,
     /// Hay actualizaciones automáticas en esta compilación (la de las Releases). En las
     /// demás, Ajustes no enseña la opción.
     pub updates_available: bool,
@@ -60,6 +62,11 @@ pub struct LauncherShown;
 /// reinicia mientras está invisible, así al volver a mostrarse no enseña el estado viejo.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
 pub struct LauncherHidden;
+
+/// Ha cambiado el tema o el vidrio: cada ventana vuelve a pedir su aspecto
+/// (`applyAppearance` y `applyWindowMaterial` en src/appearance.ts).
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
+pub struct AppearanceChanged;
 
 /// Se pidió "crear Espacio" desde la barra con la ventana de ajustes ya abierta.
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type, Event)]
@@ -155,6 +162,7 @@ fn get_settings(app: AppHandle) -> SettingsView {
         launch_at_startup: app.autolaunch().is_enabled().unwrap_or(false),
         icons_hidden: crate::load_settings(&app).icons_hidden,
         disable_glass: crate::load_settings(&app).appearance.disable_glass,
+        theme: crate::load_settings(&app).appearance.theme.into(),
         updates_available: crate::updates::configured(&app),
         check_updates: crate::load_settings(&app).updates.check_on_startup,
     }
@@ -176,12 +184,47 @@ fn set_check_updates(app: AppHandle, enabled: bool) -> Result<bool, AppError> {
 fn set_glass_disabled(app: AppHandle, disabled: bool) -> Result<bool, AppError> {
     crate::update_settings(&app, |s| s.appearance.disable_glass = disabled)
         .map_err(|e| AppError::System(format!("{e:#}")))?;
+    crate::materials::set_wanted(!disabled);
     for label in [crate::launcher::LABEL, settings_window::LABEL] {
         if let Some(window) = app.get_webview_window(label) {
-            crate::materials::set_glass(&app, &window, !disabled);
+            crate::materials::sync(&app, &window);
         }
     }
+    if let Err(e) = AppearanceChanged.emit(&app) {
+        tracing::warn!(error = %e, "no se pudo avisar a la UI del cambio de vidrio");
+    }
     Ok(disabled)
+}
+
+/// «Tema»: lo guarda y lo aplica ya en toda la app. El vidrio se vuelve a poner con el
+/// tinte del tema nuevo y cada ventana se repinta al recibir `AppearanceChanged`.
+#[tauri::command]
+#[specta::specta]
+fn set_theme(
+    app: AppHandle,
+    theme: crate::appearance::ThemeChoice,
+) -> Result<crate::appearance::ThemeChoice, AppError> {
+    crate::update_settings(&app, |s| s.appearance.theme = theme.into())
+        .map_err(|e| AppError::System(format!("{e:#}")))?;
+    crate::appearance::set_preference(theme.into());
+    for label in [crate::launcher::LABEL, settings_window::LABEL] {
+        if let Some(window) = app.get_webview_window(label) {
+            crate::materials::refresh(&app, &window);
+        }
+    }
+    crate::launcher::theme_applied(&app);
+    if let Err(e) = AppearanceChanged.emit(&app) {
+        tracing::warn!(error = %e, "no se pudo avisar a la UI del cambio de tema");
+    }
+    Ok(theme)
+}
+
+/// Si Windows no puede pintar el vidrio ahora mismo, por qué (Ajustes lo explica);
+/// `null` si puede.
+#[tauri::command]
+#[specta::specta]
+fn get_glass_blocker() -> Option<crate::glass_support::GlassBlocker> {
+    crate::glass_support::blocker()
 }
 
 #[tauri::command]
@@ -240,6 +283,8 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             set_launch_at_startup,
             set_icons_hidden,
             set_glass_disabled,
+            set_theme,
+            get_glass_blocker,
             set_check_updates,
             settings_ready,
             spaces::list_spaces,
@@ -287,6 +332,7 @@ pub fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             LauncherShown,
             LauncherHidden,
             NewSpaceRequested,
+            AppearanceChanged,
             crate::materials::GlassMoving,
             crate::indexing::IndexProgress,
             crate::spaces_commands::SpaceProgress,

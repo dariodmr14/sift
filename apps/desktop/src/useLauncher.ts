@@ -3,6 +3,7 @@ import { commands, events } from "./bindings";
 import {
   applyAppearance,
   applyWindowMaterial,
+  followAppearanceChanges,
   prefersReducedMotion,
 } from "./appearance";
 
@@ -63,9 +64,11 @@ export function useLauncher(
       hiddenRef.current();
       playMotion(root.current, "sift-from");
     });
+    const appearance = followAppearanceChanges();
     return () => {
       void shown.then((stop) => stop());
       void hidden.then((stop) => stop());
+      void appearance.then((stop) => stop());
     };
   }, [root]);
 }

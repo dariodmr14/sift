@@ -96,3 +96,15 @@ Lo que salió trabajando de noche (2026-11-17/18) y necesita tu visto bueno. Cad
 
 ### 16. Licencia: «sin garantías» y nombre completo — decidido (2026-11-21)
 - **Decidido por Darío:** añadir la cláusula de «sin garantías» y firmar como Darío Morales Riega. Va en el PR del README (pendiente de su revisión), con `authors` de `Cargo.toml`.
+
+## Vidrio y tema para la 1.0 (2026-11-25, `fix/vidrio-tema-claro`)
+
+### 17. Opacidad del vidrio y colores de texto — decidido solo
+- **Contexto:** para que el texto llegue a 4,5:1 sobre el peor escritorio (negro en tema claro, blanco en oscuro), el vidrio tenía que cubrir más. Lo mide `src/glass-contrast.test.ts` ([ADR 0022](../adr/0022-vidrio-legible-y-tema.md)).
+- **Opciones:** (a) solo más opacidad: un 92 % en tema claro, y el vidrio casi no se notaría; (b) un 88 % en los dos temas y el texto secundario, el de error y el de éxito algo más marcados.
+- **Hecho:** (b). Es reversible: son cuatro valores en `index.css`, y el test dice si una alternativa cumple.
+- **Para ti:** mira si el vidrio te sigue gustando con tu fondo. Si lo quieres más transparente, solo se puede bajando el contraste por debajo de AA sobre fondos extremos.
+
+### 18. Textos de «el vidrio no se usa» — decidido solo
+- **Hecho:** debajo de «Desactivar vidrio», solo cuando hace falta: «Ahora mismo el vidrio no se usa: Sift se está ejecutando en Windows Sandbox. Sift pone un fondo opaco para que todo se lea bien, y el vidrio vuelve solo cuando Windows pueda pintarlo.». Hay un motivo por caso: transparencia desactivada, Sandbox, escritorio remoto, sin tarjeta gráfica y ahorro de batería.
+- **Pendiente de ti:** el ahorro de batería también quita el vidrio. Lo pediste tú, y además ahorra batería; si prefieres el vidrio con ahorro de batería, es una línea.

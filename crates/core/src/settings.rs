@@ -70,6 +70,19 @@ pub struct AppearanceSettings {
     /// «Desactivar vidrio»: toda la app opaca (barra, Ajustes y diálogos). Por defecto
     /// no: Sift entera es de vidrio, con un único aspecto.
     pub disable_glass: bool,
+    /// Tema de Sift: el de Windows (por defecto), claro u oscuro.
+    pub theme: ThemePreference,
+}
+
+/// «Tema» en Ajustes → General → Apariencia.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum ThemePreference {
+    /// Como Windows («Elige el modo de aplicación predeterminado»).
+    #[default]
+    System,
+    Light,
+    Dark,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -124,6 +137,7 @@ mod tests {
             icons_hidden: true,
             appearance: AppearanceSettings {
                 disable_glass: true,
+                theme: ThemePreference::Dark,
             },
             indexing: IndexingSettings {
                 skip_media: true,
@@ -171,6 +185,16 @@ mod tests {
     }
 
     #[test]
+    fn the_theme_is_saved_in_camel_case() {
+        let s: Settings =
+            serde_json::from_str(r#"{ "appearance": { "theme": "light" } }"#).unwrap();
+        assert_eq!(s.appearance.theme, ThemePreference::Light);
+        assert!(!s.appearance.disable_glass);
+        let json = serde_json::to_string(&AppearanceSettings::default()).unwrap();
+        assert!(json.contains(r#""theme":"system""#), "{json}");
+    }
+
+    #[test]
     fn default_settings_have_not_seen_the_welcome() {
         assert!(!Settings::default().welcome_done);
         assert!(!Settings::default().indexing.model_download_allowed);
@@ -186,6 +210,7 @@ mod tests {
         assert_eq!(s.hotkey.to_string(), "Ctrl+K");
         assert!(!s.icons_hidden);
         assert!(!s.appearance.disable_glass); // vidrio por defecto
+        assert_eq!(s.appearance.theme, ThemePreference::System); // tema de Windows
     }
 
     #[test]
