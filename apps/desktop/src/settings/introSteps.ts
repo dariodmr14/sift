@@ -2,6 +2,7 @@
 // `docs/proceso/propuesta-introduccion.md`): cinco pasos, uno por pantalla. Lógica pura, para
 // probarla sin React.
 
+import { shortcutLabel } from "../shortcut";
 import type { Draft } from "./draft";
 
 export const INTRO_STEPS = [
@@ -27,9 +28,7 @@ export function clampStep(index: number): number {
 }
 
 /** «Alt+Space» → «Alt+Espacio», como en el teclado español. */
-export function hotkeyText(hotkey: string): string {
-  return hotkey.replace(/\bSpace\b/, "Espacio");
-}
+export const hotkeyText = shortcutLabel;
 
 /**
  * El primer Espacio que se crea en la introducción: un nombre y, como acciones, abrir las

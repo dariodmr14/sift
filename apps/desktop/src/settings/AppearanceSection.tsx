@@ -108,33 +108,49 @@ function useGlassBlocker(): GlassBlocker | null {
   return blocker;
 }
 
+/**
+ * «Desactivar vidrio». Si ahora mismo Windows no puede pintarlo (Sandbox, sin tarjeta
+ * gráfica…), la casilla se ve marcada, bloqueada y en gris, con el motivo debajo: el
+ * vidrio ya está quitado y tocarla no cambiaría nada. La elección guardada no se toca y
+ * vuelve a valer en cuanto Windows pueda pintarlo.
+ */
 function GlassToggle({ initial }: { initial: boolean }) {
   const [disabled, setDisabled] = useState(initial);
   const blocker = useGlassBlocker();
+  const blocked = blocker !== null;
   return (
     <label className="flex items-start gap-3">
       <input
         type="checkbox"
-        checked={disabled}
+        checked={disabled || blocked}
+        disabled={blocked}
+        aria-describedby={blocked ? "glass-blocked" : undefined}
         onChange={(e) => {
           const next = e.currentTarget.checked;
           void commands.setGlassDisabled(next).then((r) => {
             if (r.status === "ok") setDisabled(r.data);
           });
         }}
-        className="mt-1 size-4 accent-accent"
+        className="mt-1 size-4 accent-accent disabled:opacity-40"
       />
       <span>
-        Desactivar vidrio
+        <span className={blocked ? "text-muted" : undefined}>
+          Desactivar vidrio
+        </span>
         <span className="block text-xs text-muted">
           La barra, los ajustes y los diálogos pasan a ser opacos: no se ve lo
           que hay detrás.
         </span>
-        {!disabled && blocker && (
-          <span role="status" className="mt-1 block text-xs text-muted">
-            Ahora mismo el vidrio no se usa: {GLASS_BLOCKED[blocker]} Sift pone
-            un fondo opaco para que todo se lea bien, y el vidrio vuelve solo
-            cuando Windows pueda pintarlo.
+        {blocker && (
+          <span
+            id="glass-blocked"
+            role="status"
+            className="mt-1 block text-xs text-muted"
+          >
+            Ahora mismo el vidrio no se puede usar: {GLASS_BLOCKED[blocker]}{" "}
+            Sift pone un fondo opaco para que todo se lea bien.
+            {!disabled &&
+              " El vidrio vuelve solo cuando Windows pueda pintarlo."}
           </span>
         )}
       </span>

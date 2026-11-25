@@ -62,12 +62,44 @@ describe("Apariencia", () => {
     ).toBeInTheDocument();
   });
 
-  it("con el vidrio desactivado a mano no hace falta explicarlo", async () => {
+  it("sin vidrio posible, la casilla se ve marcada y bloqueada, con el motivo", async () => {
+    blocker = "noGpu";
+    render(
+      <AppearanceSection
+        theme="light"
+        iconsHidden={false}
+        disableGlass={false}
+      />,
+    );
+    const box = screen.getByRole("checkbox", { name: /Desactivar vidrio/ });
+    expect(box).toBeEnabled();
+    await waitFor(() => expect(box).toBeDisabled());
+    expect(box).toBeChecked();
+    expect(box).toHaveAccessibleDescription(/tarjeta gráfica.*vuelve solo/);
+  });
+
+  it("si ya se desactivó a mano, no promete que vuelva", async () => {
     blocker = "batterySaver";
     render(
       <AppearanceSection theme="light" iconsHidden={false} disableGlass />,
     );
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent(/ahorro de batería/);
+    expect(status).not.toHaveTextContent(/vuelve solo/);
+  });
+
+  it("con vidrio posible, la casilla funciona", async () => {
+    render(
+      <AppearanceSection
+        theme="light"
+        iconsHidden={false}
+        disableGlass={false}
+      />,
+    );
     await waitFor(() => expect(commands.getGlassBlocker).toHaveBeenCalled());
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const box = screen.getByRole("checkbox", { name: /Desactivar vidrio/ });
+    await userEvent.click(box);
+    expect(commands.setGlassDisabled).toHaveBeenCalledWith(true);
+    expect(box).toBeChecked();
   });
 });

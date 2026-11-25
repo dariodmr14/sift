@@ -6,6 +6,7 @@ import {
   type SmartStatus,
   type Status,
 } from "../bindings";
+import { shortcutLabel } from "../shortcut";
 import { capitalize } from "../format";
 import { TYPE_FILTERS } from "../launcher/filters";
 import { AppearanceSection } from "./AppearanceSection";
@@ -322,8 +323,10 @@ function HotkeyForm({
   initial: string;
   onSaved: () => void;
 }) {
-  const [value, setValue] = useState(initial);
-  const [saved, setSaved] = useState(initial);
+  // Se ve y se escribe en español («Alt+Espacio»); Rust entiende las dos formas y
+  // devuelve la guardada («Alt+Space»), que se vuelve a enseñar en español.
+  const [value, setValue] = useState(() => shortcutLabel(initial));
+  const [saved, setSaved] = useState(() => shortcutLabel(initial));
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(
     null,
   );
@@ -332,9 +335,10 @@ function HotkeyForm({
     e.preventDefault();
     const result = await commands.setHotkey(value);
     if (result.status === "ok") {
-      setValue(result.data);
-      setSaved(result.data);
-      setMessage({ ok: true, text: `Atajo cambiado a ${result.data}.` });
+      const label = shortcutLabel(result.data);
+      setValue(label);
+      setSaved(label);
+      setMessage({ ok: true, text: `Atajo cambiado a ${label}.` });
       onSaved();
     } else {
       setMessage({ ok: false, text: result.error.message });
@@ -361,8 +365,8 @@ function HotkeyForm({
         </button>
       </form>
       <p id="hotkey-help" className="text-xs text-muted">
-        Una o varias de las teclas Ctrl, Alt, Shift o Win, más otra tecla,
-        unidas con «+». Por ejemplo: Alt+Space, Ctrl+Shift+K o Win+F2.
+        Una o varias de las teclas Ctrl, Alt, Mayús o Win, más otra tecla,
+        unidas con «+». Por ejemplo: Alt+Espacio, Ctrl+Mayús+K o Win+F2.
       </p>
       {message && (
         <p

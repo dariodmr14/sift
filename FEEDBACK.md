@@ -191,3 +191,16 @@ Al terminar: instalador 1.0.0-rc.3 y cómo actualizar el instalado.
 
 ### 4. Elegir el tema en Sift
 - [x] ✅ **Resuelto** (`fix/vidrio-tema-claro`, ADR 0022). En Ajustes → General → Apariencia: «Tema: Como Windows / Claro / Oscuro» (por defecto, como Windows). Se aplica al momento en la barra, Ajustes, los diálogos y la introducción, y se guarda.
+
+## 2026-11-25 — Segunda prueba del instalador 1.0.0 en Windows Sandbox
+
+El vidrio opaco automático, su aviso y el tema funcionan bien.
+
+### 1. En el Sandbox la introducción no se anima
+- [x] ✅ **Resuelto** (`fix/intro-motion-glass-hotkey-labels`). Las ilustraciones por paso sí están (`IntroArt.tsx`); el Sandbox trae apagado «Mostrar animaciones en Windows», y Sift lo respeta como «reducir movimiento». Ahora, en ese caso, cada paso entra con un fundido corto (solo opacidad, 200 ms) en vez de aparecer de golpe; las ilustraciones se ven en su último fotograma.
+
+### 2. «Desactivar vidrio» parece no hacer nada cuando el vidrio no se puede usar
+- [x] ✅ **Resuelto** (`fix/intro-motion-glass-hotkey-labels`). Si Windows no puede pintar el vidrio, la casilla se ve marcada, bloqueada y en gris, con el motivo debajo. La elección guardada no cambia.
+
+### 3. El atajo sale como «Alt+Space»
+- [x] ✅ **Resuelto** (`fix/intro-motion-glass-hotkey-labels`). En toda la interfaz los atajos se ven como en un teclado español («Alt+Espacio», «Ctrl+Mayús+K», «Intro», «º»), también la ayuda de Ajustes y los mensajes de error. Se guarda igual que antes («Alt+Space»), y el campo acepta las dos formas.
