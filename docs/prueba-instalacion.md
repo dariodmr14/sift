@@ -6,6 +6,8 @@ Dos pruebas que hace Darío antes de publicar:
 
 Lo que salga de cada una va a `FEEDBACK.md`, con fecha, como siempre.
 
+> **Estado (2026-11-25):** la prueba en Windows Sandbox se hizo dos veces con el instalador 1.0.0 (2026-11-24 y 25) y lo que salió se arregló (`FEEDBACK.md`, PR #71 a #75). **La prueba con una persona no se hace:** Sift es un proyecto de portfolio, hecho y probado por Darío. El guion se queda aquí por si se hace más adelante.
+
 ---
 
 ## 1. Windows Sandbox
@@ -97,6 +99,8 @@ Si algo falla, los registros están en `%LOCALAPPDATA%\dev.sift.app\logs` **dent
 ---
 
 ## 2. Prueba con una persona que no conozca Sift
+
+> **No se hace en la 1.0** (decidido el 2026-11-25): es un proyecto de portfolio. Ver el estado de arriba.
 
 **Objetivo:** comprobar que alguien lo instala y lo usa **sin explicaciones**. No se prueba a la persona: se prueba Sift.
 

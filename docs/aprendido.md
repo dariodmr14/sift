@@ -85,3 +85,10 @@ Lo más útil de cada fase de Sift, contado al terminarla. El resumen está en e
 - En SQLite con WAL, una segunda conexión de solo lectura no espera al que escribe ni le hace esperar: las lecturas largas van por ahí, y el candado queda para escribir.
 - Un índice que «cubre» la consulta (con todas las columnas que pide) evita leer la tabla. Con `INDEXED BY` se obliga a usarlo, para que el planificador no cambie de idea con otros datos.
 - Un script de pruebas que espera a un contador se queda colgado si el contador miente: hay que esperar a un hecho («ha terminado una revisión completa»), y el contador que mentía era un fallo de Sift.
+
+**Fase 8 (lanzamiento)**
+- Mi PC no es un Windows limpio: Visual Studio deja el runtime de Visual C++ en `System32` y Windows 10 suele traer WebView2. Solo Windows Sandbox destapó que el instalador no arrancaba sin ellos. Ahora los dos van en el instalador y una comprobación lo vigila en la CI y en el workflow de Release (ADR 0020 y 0021).
+- Una prueba en un entorno distinto cambia más que muchas en el mismo: el Sandbox no pinta Acrylic, trae las animaciones apagadas y otro fondo, y salieron tres arreglos de interfaz que en mi escritorio no se veían (ADR 0022).
+- Dos firmas distintas: la de Windows (certificado de pago, quita el aviso de SmartScreen) y la de las actualizaciones (gratis, una clave propia). La segunda basta para que Sift solo instale lo que sale de este repo.
+- Publicar se prepara apagado: el workflow comprueba al empezar que están la clave, los secretos, las notas y que la etiqueta coincide con la versión, y deja la Release en borrador hasta revisarla.
+- Antes de hacer público un repo hay que revisar el historial entero, no solo los archivos: lo borrado sigue en los commits y en los PR.

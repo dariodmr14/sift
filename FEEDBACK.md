@@ -94,7 +94,7 @@ Formato: fecha, qué pasa o qué falta, y a dónde va.
 - [x] ✅ **Filtros rápidos** por tipo («pdf …», «código …», «word …», «imagen …») con una etiqueta que se quita con Retroceso.
 
 ### Para la Fase 7 (pulido)
-- [ ] ⏳ **«Por qué sale este resultado»**: enseñar el fragmento que encaja (y, si llegó por significado, que se entienda la relación). En la barra actual no cabe: pensar el formato (panel lateral, vista previa, al pulsar una tecla como → o Espacio…) sin romper la apertura en < 100 ms.
+- [x] ✅ **Resuelto** (Fase 7: la vista previa con Tab enseña el fragmento que encaja, con lo buscado subrayado, y «Trata de lo mismo» si llegó por significado). **«Por qué sale este resultado»**: enseñar el fragmento que encaja (y, si llegó por significado, que se entienda la relación). En la barra actual no cabe: pensar el formato (panel lateral, vista previa, al pulsar una tecla como → o Espacio…) sin romper la apertura en < 100 ms.
 
 ## 2026-11-18 — Tras probar la versión con vista previa (PR #24 a #31)
 
