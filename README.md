@@ -25,7 +25,7 @@ Pulsas `Alt+Espacio` desde cualquier app, escribes lo que buscas y Enter hace el
 - **Los PDF se abren en la página que encaja.** Si lo que buscas está en la página 37, el PDF se abre en la 37.
 - **Filtros rápidos.** «pdf presupuesto» busca solo en los PDF. Retroceso quita el filtro.
 - **Lo que usas, primero.** Lo que abres a menudo y hace poco sube en los resultados.
-- **Se maneja con el teclado** y sigue el tema claro u oscuro y el color de acento de Windows.
+- **Se maneja con el teclado** y sigue el tema claro u oscuro y el color de acento de Windows (o el tema que elijas en Ajustes).
 
 ## Instalación
 
@@ -82,7 +82,7 @@ Por eso Claude aparece en GitHub entre quienes han contribuido al repositorio: e
 - **SQLite** guarda todo; **Tantivy** busca por palabras y **usearch** (HNSW) por vectores. Lo derivado se puede reconstruir desde SQLite.
 - **Búsqueda por significado** con `multilingual-e5-small` en ONNX Runtime. Las dos búsquedas se combinan (Reciprocal Rank Fusion) y luego sube lo que usas más.
 - **PDF** con PDFium, en una versión y con una huella fijadas.
-- **Diseño:** el sistema [Vidrio](docs/design-system.md), con un test que impide colores sueltos.
+- **Diseño:** el sistema [Vidrio](docs/design-system.md), con un test que impide colores sueltos y otro que exige contraste 4,5:1 del texto sobre el vidrio con cualquier fondo de escritorio.
 
 ### Para saber más
 
