@@ -403,7 +403,11 @@ mod tests {
                     Theme::Light => GLASS_WORST_LIGHT,
                     Theme::Dark => GLASS_WORST_DARK,
                 };
-                assert!(ink.contrast(worst) >= INK_CONTRAST, "{theme:?} {}", ink.hex());
+                assert!(
+                    ink.contrast(worst) >= INK_CONTRAST,
+                    "{theme:?} {}",
+                    ink.hex()
+                );
             }
         }
     }

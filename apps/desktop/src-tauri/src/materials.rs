@@ -176,7 +176,11 @@ pub fn sync(app: &AppHandle, window: &WebviewWindow) -> bool {
 pub fn set_glass(app: &AppHandle, window: &WebviewWindow, enabled: bool) -> Material {
     let blocker = crate::glass_support::blocker();
     if enabled && let Some(why) = blocker {
-        tracing::debug!(window = window.label(), ?why, "sin vidrio: Windows no puede pintarlo bien");
+        tracing::debug!(
+            window = window.label(),
+            ?why,
+            "sin vidrio: Windows no puede pintarlo bien"
+        );
     }
     let enabled = enabled && blocker.is_none();
     let materials = app.state::<Materials>();
