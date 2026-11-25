@@ -2,7 +2,7 @@
 
 Todo lo de publicar está **preparado e inactivo**. Nada sale hasta que hagas estos pasos.
 
-**Estado (2026-11-24):** hechos los pasos 1 a 4 (versión 1.0.0, clave de firma, secretos y clave pública). Quedan el 0, el 5 y del 6 en adelante. Los marcados **(tú)** solo los puedes hacer tú, porque tocan claves, secretos o la visibilidad del repo. Los marcados **(Claude)** los puede preparar Claude en un PR, como siempre.
+**Estado (2026-11-25):** hechos los pasos 0 a 5 (revisión final, versión 1.0.0, clave de firma, secretos, clave pública y notas). Quedan del 6 en adelante. Los marcados **(tú)** solo los puedes hacer tú, porque tocan claves, secretos o la visibilidad del repo. Los marcados **(Claude)** los puede preparar Claude en un PR, como siempre.
 
 | Pieza | Dónde | Estado |
 |---|---|---|
@@ -13,10 +13,10 @@ Todo lo de publicar está **preparado e inactivo**. Nada sale hasta que hagas es
 
 ## 0. Antes (días antes)
 
-- [ ] Mira si queda algo en [`pendiente-decidir.md`](../proceso/pendiente-decidir.md).
-- [ ] Borra la rama remota ya fusionada `feat/instalador` (decisión 14): `git push origin --delete feat/instalador`.
-- [ ] Revisa y fusiona el PR del README.
-- [ ] Haz la prueba en Windows Sandbox y la prueba con una persona ([prueba-instalacion.md](../prueba-instalacion.md)) con la última versión candidata.
+- [x] Mira si queda algo en [`pendiente-decidir.md`](../proceso/pendiente-decidir.md).
+- [x] Borra la rama remota ya fusionada `feat/instalador` (decisión 14): `git push origin --delete feat/instalador`.
+- [x] Revisa y fusiona el PR del README (#65).
+- [x] Haz la prueba en Windows Sandbox ([prueba-instalacion.md](../prueba-instalacion.md)) con la última versión candidata (2026-11-24 y 25). La prueba con una persona no se hace: es un proyecto de portfolio.
 
 ## 1. Subir la versión a 1.0.0 (Claude) — hecho
 
@@ -68,7 +68,7 @@ Hazlo en la web, con tu cuenta: el token de Claude solo tiene acceso al código 
 
 Pásale a Claude el contenido de `sift.key.pub` (es pública) o pégalo tú en `pubkey` de `apps/desktop/src-tauri/tauri.updater.conf.json`, en lugar de `PEGA_AQUI_LA_CLAVE_PUBLICA…`. Va en un PR, con su CI.
 
-## 5. Revisar las notas (tú)
+## 5. Revisar las notas (tú) — hecho
 
 Lee `docs/publicacion/notas/v1.0.0.md`. Es lo que se verá en la página de la Release. Si cambias algo, va en un PR.
 

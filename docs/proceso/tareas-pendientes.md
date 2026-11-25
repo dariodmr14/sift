@@ -2,7 +2,7 @@
 
 Tanda de la noche del 2026-11-21. Se vuelve a leer después de cada tarea.
 
-**Terminada el 2026-11-24.** Dónde ha quedado todo: [estado-sesion.md](estado-sesion.md). Después, también hechos los pasos 1 a 4 de [publicacion/pasos.md](publicacion/pasos.md) (versión 1.0.0, clave y secretos).
+**Terminada el 2026-11-24.** Dónde ha quedado todo: [estado-sesion.md](estado-sesion.md). Después, también hechos los pasos 1 a 4 de [publicacion/pasos.md](../publicacion/pasos.md) (versión 1.0.0, clave y secretos).
 
 **Reglas** (actualizadas el 2026-11-21 por la mañana: Darío está despierto y deja grabar en pantalla sin preguntar): no cerrar el turno mientras queden tareas · decisiones a `docs/proceso/pendiente-decidir.md` (lo pequeño y reversible, «decidido sin mí») · parar solo ante algo irreversible (datos reales, Sift instalado, force push, configuración global, instalar fuera del proyecto) · nada de ventanas ni pruebas en pantalla, salvo grabar el vídeo (tarea 5, permitido expresamente) · cada bloque con CI local, PR y merge (salvo el README, que espera revisión).
 

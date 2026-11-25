@@ -1,6 +1,8 @@
 # Estado de la sesión (2026-11-24, noche)
 
-El repo está listo para publicar: versión **1.0.0**, la clave pública del actualizador puesta y los secretos de firma creados en GitHub. Lo que queda lo hace Darío, en orden: [publicacion/pasos.md](publicacion/pasos.md).
+> Histórico. Después se fusionaron el README (#65) y los arreglos de las pruebas en Windows Sandbox (#71 a #75), y la 1.0.0 se publicó el 2026-11-25 ([pasos.md](../publicacion/pasos.md)).
+
+El repo está listo para publicar: versión **1.0.0**, la clave pública del actualizador puesta y los secretos de firma creados en GitHub. Lo que queda lo hace Darío, en orden: [publicacion/pasos.md](../publicacion/pasos.md).
 
 ## Fusionado en `main`
 

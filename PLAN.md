@@ -238,18 +238,22 @@ Acciones que, además de abrir una app, colocan su ventana en una posición o zo
 
 **Estado (2026-11-18):** todas las tareas hechas y comprobadas en pantalla (`docs/capturas/final/`). Falta lo único que no se puede comprobar solo: que alguien que no conoce Sift lo instale y lo use sin explicaciones. Cuando Darío lo pruebe con una persona, se cierra la fase. Guion de esa prueba y de la instalación limpia en Windows Sandbox: [docs/prueba-instalacion.md](docs/prueba-instalacion.md).
 
-### Fase 8 — Lanzamiento
-- [ ] Instalador (NSIS/MSI) y release en GitHub con GitHub Actions.
-- [ ] Actualizaciones automáticas (plugin updater de Tauri).
-- [ ] README completo: GIF, instalación, arquitectura, decisiones y métricas.
-- [ ] Vídeo demo de 30–60 s y post en LinkedIn. **Se graba con la versión final**, para no enseñar pantallas antiguas (decidido el 2026-11-19). Hay una primera versión fuera del repo, en el equipo de Darío (`Documents\Sift - vídeo de presentación`), con su proyecto de HyperFrames y su guion de grabación.
+**Cerrada (2026-11-25).** La prueba con una persona que no conoce Sift **no se hace**: Sift es un proyecto de portfolio, hecho y probado por Darío. En su lugar, el instalador final se probó dos veces en un Windows recién estrenado (Windows Sandbox, 2026-11-24 y 25) con el guion de [docs/prueba-instalacion.md](docs/prueba-instalacion.md), y lo que salió se arregló (#71 a #75, ADR 0020 a 0022).
 
-- [ ] Preparación de la publicación (apuntado el 2026-11-20):
+### Fase 8 — Lanzamiento
+- [x] Instalador (NSIS/MSI) y release en GitHub con GitHub Actions. Instalador NSIS con el runtime de Visual C++ y WebView2 (ADR 0020 y 0021); workflow `release.yml` con la etiqueta `v*` ([docs/publicacion/pasos.md](docs/publicacion/pasos.md)).
+- [x] Actualizaciones automáticas (plugin updater de Tauri), firmadas y preguntando siempre antes de instalar (ADR 0018).
+- [x] README completo: GIF, instalación, arquitectura, decisiones y métricas, en español y en inglés (#65).
+- [x] Vídeo demo de 30–60 s y post en LinkedIn. El vídeo está hecho en los dos idiomas (fuera del repo); el post lo publica Darío. **Se graba con la versión final**, para no enseñar pantallas antiguas (decidido el 2026-11-19). Hay una primera versión fuera del repo, en el equipo de Darío (`Documents\Sift - vídeo de presentación`), con su proyecto de HyperFrames y su guion de grabación.
+
+- [x] Preparación de la publicación (apuntado el 2026-11-20):
   - README en dos idiomas: `README.md` en español (principal) y `README.en.md` en inglés, con un enlace arriba para cambiar de idioma y el vídeo de cada idioma.
   - Vídeo en inglés: las ventanas y los datos de ejemplo salen en español (p. ej. «Calculadora»); para la versión en inglés, datos de ejemplo y nombres en inglés.
   - Valorar la traducción de la app al inglés (ver backlog).
 
 **Hecho cuando:** cualquiera puede descargarlo desde GitHub e instalarlo.
+
+**Cerrada (2026-11-25):** todo listo para hacer público el repo y publicar la Release **Sift 1.0.0** (instalador, firma, `latest.json` y `SHA256SUMS.txt`) con los pasos de [docs/publicacion/pasos.md](docs/publicacion/pasos.md). La traducción de la app al inglés queda en el backlog.
 
 ---
 

@@ -89,7 +89,7 @@ Nada de eso identifica a nadie: no hay universidad, nombres de personas ni rutas
 | `docs/proceso/*` | Auditorías, decisiones pendientes, la dirección de unslop y la revisión anterior | **Dejar.** Están apartados y se entienden como proceso |
 | `docs/auditoria-1.0.md` | La auditoría de la 1.0, con cifras | **Dejar.** El README la enlaza |
 | `docs/borradores/README-publico.md` | El borrador del README público | **Borrar** cuando el README nuevo esté fusionado (va en ese PR) |
-| `docs/tareas-pendientes.md` | La lista de esta noche | **Mover** a `docs/proceso/` al acabar, o borrarla |
+| `docs/tareas-pendientes.md` | La lista de esta noche | **Movida** a `docs/proceso/` (2026-11-25), con `estado-sesion.md` |
 | `docs/lanzamiento.md` | Releases y actualizaciones | **Sustituido** por `docs/publicacion/pasos.md` (tarea 4) |
 | `PLAN.md`, Fase 8 | Cita la carpeta del vídeo fuera del repo (`Documents\Sift - vídeo de presentación`) | Dejar: no es personal |
 | `.vscode/` | Ajustes del editor | Dejar |
@@ -128,6 +128,10 @@ El coste es alto para algo de gravedad baja. **Recomiendo no hacerlo.** Si aun a
 ## Decidido (2026-11-21)
 
 1. Cambiar la ruta en `docs/proceso/publicar-revision.md` (§3): **sí, hecho** (`C:\Users\<tu usuario>`).
-2. Borrar la rama remota `feat/instalador` (§7): **sí**. Queda para ti, porque los permisos del proyecto no dejan a Claude borrar ramas remotas: `git push origin --delete feat/instalador`.
+2. Borrar la rama remota `feat/instalador` (§7): **sí, hecho** (comprobado el 2026-11-25: en GitHub solo queda `main`).
 3. gitleaks (§1): **no**.
 4. Reescribir el historial (§9): **no**.
+
+## Repaso final (2026-11-25)
+
+Antes de hacerlo público, repetida la búsqueda en los archivos actuales y en los commits desde el 21-11: sin secretos, sin tu correo (todos los commits usan el `noreply` de GitHub) y sin tu ruta de usuario. En GitHub solo queda la rama `main`, sin PR abiertos ni etiquetas.
