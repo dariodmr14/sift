@@ -2,7 +2,7 @@
 
 Todo lo de publicar está **preparado e inactivo**. Nada sale hasta que hagas estos pasos.
 
-**Estado (2026-11-25):** hechos los pasos 0 a 5 (revisión final, versión 1.0.0, clave de firma, secretos, clave pública y notas). Quedan del 6 en adelante. Los marcados **(tú)** solo los puedes hacer tú, porque tocan claves, secretos o la visibilidad del repo. Los marcados **(Claude)** los puede preparar Claude en un PR, como siempre.
+**Estado (2026-11-25):** **Sift 1.0.0 publicada.** Repo público, etiqueta `v1.0.0` y Release comprobada (archivos, huella, firma, `latest.json` y enlace del README). Para la 1.0.1, ver el backlog de `PLAN.md`: que `latest.json` lleve las notas de verdad. Los marcados **(tú)** solo los puedes hacer tú, porque tocan claves, secretos o la visibilidad del repo. Los marcados **(Claude)** los puede preparar Claude en un PR, como siempre.
 
 | Pieza | Dónde | Estado |
 |---|---|---|
@@ -106,17 +106,17 @@ GitHub → **Actions → Release**. Tarda unos 20–30 minutos.
 
 En **Releases** aparece **Sift 1.0.0** en borrador (*Draft*). Comprueba:
 
-- [ ] Tiene `Sift_1.0.0_x64-setup.exe`, `Sift_1.0.0_x64-setup.exe.sig`, `latest.json` y `SHA256SUMS.txt`.
-- [ ] Las notas son las de `notas/v1.0.0.md`.
-- [ ] **No** está marcada como *pre-release*.
-- [ ] Descarga el instalador y comprueba su huella: `Get-FileHash .\Sift_1.0.0_x64-setup.exe` tiene que dar lo mismo que `SHA256SUMS.txt`.
+- [x] Tiene `Sift_1.0.0_x64-setup.exe`, `Sift_1.0.0_x64-setup.exe.sig`, `latest.json` y `SHA256SUMS.txt`.
+- [x] Las notas son las de `notas/v1.0.0.md`.
+- [x] **No** está marcada como *pre-release*.
+- [x] Descarga el instalador y comprueba su huella: `Get-FileHash .\Sift_1.0.0_x64-setup.exe` tiene que dar lo mismo que `SHA256SUMS.txt`.
 - [ ] Instálalo en la Windows Sandbox (`scripts/sandbox.ps1`): abre, busca y en Ajustes → General sale «Buscar actualizaciones al arrancar», **marcado**.
 
 Si todo está bien: **Edit → Publish release**.
 
 Después:
-- [ ] `https://github.com/dariodmr14/Sift/releases/latest/download/latest.json` se abre y dice `"version": "1.0.0"`.
-- [ ] El enlace de descarga del README lleva a la Release.
+- [x] `https://github.com/dariodmr14/Sift/releases/latest/download/latest.json` se abre y dice `"version": "1.0.0"`.
+- [x] El enlace de descarga del README lleva a la Release.
 - [ ] Las actualizaciones se podrán comprobar de verdad con la siguiente versión (1.0.1): una 1.0.0 instalada tiene que preguntar al arrancar si quieres instalarla.
 
 ## 10. Si algo sale mal
