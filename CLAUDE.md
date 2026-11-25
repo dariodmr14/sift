@@ -15,6 +15,7 @@ Todo es local: lo único que sale del PC son descargas puntuales (modelo de embe
 **Documentos de referencia:**
 | Archivo | Para qué |
 |---|---|
+| `docs/proceso/retomar.md` | **Empieza aquí al retomar Sift** (aparcado tras la 1.0.0): estado, lista de la 1.1, entorno y qué hay fuera del repo |
 | `PLAN.md` | Fases, criterios de "hecho" y backlog. Léelo antes de empezar una tarea. |
 | `FEEDBACK.md` | Lo que nota Darío usando la app |
 | `docs/adr/` | Decisiones de arquitectura (plantilla: `docs/adr/0001-*.md`) |
