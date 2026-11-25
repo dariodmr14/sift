@@ -4,6 +4,7 @@
 
 import type { IndexStatus, Status } from "../bindings";
 import { count, files } from "../format";
+import { shortcutLabel } from "../shortcut";
 import { statusLine } from "./folders";
 
 export type Tone = "ok" | "working" | "warning" | "error" | "off";
@@ -16,9 +17,7 @@ export interface StatusCard {
 }
 
 /** «Alt+Space» → «Alt+Espacio», como se ve en el teclado español. */
-export function hotkeyLabel(hotkey: string): string {
-  return hotkey.replace(/\bSpace\b/, "Espacio");
-}
+export const hotkeyLabel = shortcutLabel;
 
 export function statusCards(
   status: Status,

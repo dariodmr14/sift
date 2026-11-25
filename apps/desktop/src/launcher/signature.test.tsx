@@ -39,8 +39,9 @@ describe("atajos como teclas", () => {
     return [...container.querySelectorAll("kbd")].map((k) => k.textContent);
   };
 
-  it("separa las teclas por el «+»", () => {
-    expect(keys("Ctrl+Shift+C")).toEqual(["Ctrl", "Shift", "C"]);
+  it("separa las teclas por el «+», con sus nombres en español", () => {
+    expect(keys("Ctrl+Shift+C")).toEqual(["Ctrl", "Mayús", "C"]);
+    expect(keys("Alt+Space")).toEqual(["Alt", "Espacio"]);
   });
 
   it("la tecla «,» y la del «+» también", () => {
